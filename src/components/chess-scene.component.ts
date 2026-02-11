@@ -40,7 +40,7 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
   private mouse: any;
   private animationId: number = 0;
 
-  // Custom Geometry Cache: keys can be 'k' (generic) or 'k_w' (white king), 'k_b' (black king)
+  // Custom Geometry Cache
   private customGeometries: Map<string, any> = new Map();
   private customBoardGeometry: any = null;
 
@@ -63,12 +63,6 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
     this.loading = false;
   }
 
-  /**
-   * key can be:
-   *  - 'p', 'r'... (generic piece)
-   *  - 'p_w', 'p_b'... (specific colored piece)
-   *  - 'board'
-   */
   async loadCustomModel(file: File, key: string) {
     if (!this.three) return;
 
@@ -80,44 +74,96 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
 
       if (fileName.endsWith('.stl')) {
         geometry = await this.loadSTL(url);
-        geometry.rotateX(-Math.PI / 2); 
       } else if (fileName.endsWith('.glb') || fileName.endsWith('.gltf')) {
         geometry = await this.loadGLTF(url);
       }
 
       if (!geometry) throw new Error("No geometry found");
 
-      // --- Geometry Normalization ---
+      // --- 1. Center & Measure ---
       geometry.center();
       geometry.computeBoundingBox();
-      const box = geometry.boundingBox;
-      const size = new this.three.Vector3();
-      box.getSize(size);
+      let size = new this.three.Vector3();
+      geometry.boundingBox!.getSize(size);
+
+      // --- 2. Auto-Orientation (Axis Correction) ---
+      if (key !== 'board') {
+        // Step A: Ensure Verticality
+        // If the model is "laying down" (Z or X is much larger than Y), rotate it up.
+        // Heuristic: Chess pieces are usually taller than they are wide.
+        if (size.z > size.y * 1.2 && size.z > size.x) {
+            geometry.rotateX(-Math.PI / 2); // Rotate Z-up to Y-up
+        } else if (size.x > size.y * 1.2 && size.x > size.z) {
+             geometry.rotateZ(-Math.PI / 2); // Rotate X-up to Y-up
+        }
+
+        // Re-measure after rotation
+        geometry.computeBoundingBox();
+        geometry.center(); 
+        
+        // Step B: Ensure "Base Down" (Fix Upside Down)
+        // Heuristic: The bottom of a chess piece is usually wider (or at least as wide) and denser than the top.
+        // We measure the bounding radius of the bottom 20% vs top 20% of vertices.
+        const positions = geometry.attributes.position.array;
+        const box = geometry.boundingBox!;
+        const height = box.max.y - box.min.y;
+        const bottomThreshold = box.min.y + (height * 0.2);
+        const topThreshold = box.max.y - (height * 0.2);
+
+        let maxRadiusBottom = 0;
+        let maxRadiusTop = 0;
+
+        for (let i = 0; i < positions.length; i += 3) {
+          const x = positions[i];
+          const y = positions[i+1];
+          const z = positions[i+2];
+          const radiusSq = x*x + z*z;
+
+          if (y < bottomThreshold) {
+            maxRadiusBottom = Math.max(maxRadiusBottom, radiusSq);
+          } else if (y > topThreshold) {
+            maxRadiusTop = Math.max(maxRadiusTop, radiusSq);
+          }
+        }
+
+        // If top is significantly wider than bottom (e.g., upside down pyramid), flip it.
+        // We use a factor of 1.2 to be safe.
+        if (maxRadiusTop > maxRadiusBottom * 1.2) {
+           geometry.rotateX(Math.PI); // Flip 180 degrees
+           geometry.center(); // Re-center
+        }
+      }
+
+      // --- 3. Final Scaling & Positioning ---
+      geometry.computeBoundingBox();
+      const finalBox = geometry.boundingBox!;
+      const finalSize = new this.three.Vector3();
+      finalBox.getSize(finalSize);
 
       if (key === 'board') {
-         const maxDim = Math.max(size.x, size.z);
+         const maxDim = Math.max(finalSize.x, finalSize.z);
          const targetSize = 12.0;
          const scaleFactor = targetSize / maxDim;
          geometry.scale(scaleFactor, scaleFactor, scaleFactor);
          
          geometry.computeBoundingBox();
-         const newBox = geometry.boundingBox;
+         const newBox = geometry.boundingBox!;
          const offset = -0.05 - newBox.max.y;
          geometry.translate(0, offset, 0);
          geometry.computeVertexNormals();
-         
          this.customBoardGeometry = geometry;
          this.createBoard();
 
       } else {
-         // Piece
-         const maxBaseDim = Math.max(size.x, size.z);
-         const targetSize = 0.75; 
+         const maxBaseDim = Math.max(finalSize.x, finalSize.z);
+         const targetSize = 0.70; // Slightly smaller to fit nicely
          let scaleFactor = targetSize / maxBaseDim;
          
          geometry.scale(scaleFactor, scaleFactor, scaleFactor);
          geometry.computeBoundingBox();
-         const newBox = geometry.boundingBox;
+         const newBox = geometry.boundingBox!;
+         
+         // Sit exactly on floor (Y=0)
          const lift = -newBox.min.y;
          geometry.translate(0, lift, 0);
          geometry.computeVertexNormals(); 
@@ -178,44 +224,53 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
     const height = this.canvasRef.nativeElement.clientHeight;
 
     this.scene = new this.three.Scene();
-    this.scene.background = new this.three.Color(0x283044); 
-    this.scene.fog = new this.three.FogExp2(0x283044, 0.02);
+    this.scene.background = null; // Transparent, handled by CSS gradient
 
     this.camera = new this.three.PerspectiveCamera(45, width / height, 0.1, 100);
-    this.camera.position.set(0, 12, 12);
+    this.camera.position.set(0, 10, 10); // Slightly lower angle for drama
 
     this.renderer = new this.three.WebGLRenderer({ 
       canvas: this.canvasRef.nativeElement, 
       antialias: true,
-      alpha: true
+      alpha: true,
+      powerPreference: "high-performance"
     });
     this.renderer.setSize(width, height);
     this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = this.three.PCFSoftShadowMap; 
+    this.renderer.shadowMap.type = this.three.PCFSoftShadowMap; // Softer shadows
     this.renderer.toneMapping = this.three.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.2;
+    this.renderer.toneMappingExposure = 1.0;
 
     this.controls = new OrbitControls.OrbitControls(this.camera, this.renderer.domElement);
     this.controls.enableDamping = true;
     this.controls.dampingFactor = 0.05;
-    this.controls.maxPolarAngle = Math.PI / 2.2; 
-    this.controls.minDistance = 5;
+    this.controls.maxPolarAngle = Math.PI / 2.1; 
+    this.controls.minDistance = 4;
     this.controls.maxDistance = 20;
 
-    const ambientLight = new this.three.AmbientLight(0xffffff, 0.6); 
+    // --- LIGHTING SETUP (High Contrast, Soft Shadows) ---
+    const ambientLight = new this.three.AmbientLight(0xffffff, 0.4); // Lower ambient for opaque shadows
     this.scene.add(ambientLight);
 
-    const dirLight = new this.three.DirectionalLight(0xffffff, 1.8);
-    dirLight.position.set(5, 12, 5);
+    const dirLight = new this.three.DirectionalLight(0xffffff, 2.0); // Strong key light
+    dirLight.position.set(5, 10, 5);
     dirLight.castShadow = true;
-    dirLight.shadow.mapSize.width = 2048;
-    dirLight.shadow.mapSize.height = 2048;
-    dirLight.shadow.bias = -0.0005;
+    
+    // Shadow Tuning
+    dirLight.shadow.mapSize.width = 4096; // High Res
+    dirLight.shadow.mapSize.height = 4096;
+    dirLight.shadow.camera.near = 0.5;
+    dirLight.shadow.camera.far = 50;
+    dirLight.shadow.bias = -0.0001;
+    dirLight.shadow.radius = 4; // Blur amount
+    dirLight.shadow.blurSamples = 25; // Smoother look
+    
     this.scene.add(dirLight);
 
-    const fillLight = new this.three.DirectionalLight(0xb0c4de, 0.5);
-    fillLight.position.set(-5, 8, -5);
-    this.scene.add(fillLight);
+    // Rim Light (for cool outline)
+    const rimLight = new this.three.DirectionalLight(0x60a5fa, 0.8);
+    rimLight.position.set(-5, 5, -5);
+    this.scene.add(rimLight);
 
     this.boardGroup = new this.three.Group();
     this.scene.add(this.boardGroup);
@@ -251,6 +306,20 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
     });
   }
 
+  // --- MATERIAL FACTORY (Enhanced) ---
+  private createPieceMaterial(colorHex: number, isSelected: boolean): any {
+     // MeshPhysicalMaterial allows for Clearcoat (shiny ceramic look)
+     return new this.three.MeshPhysicalMaterial({
+        color: colorHex,
+        roughness: 0.2,   // Smooth
+        metalness: 0.1,   // Ceramic/Plastic feel
+        clearcoat: 1.0,   // Polished top layer
+        clearcoatRoughness: 0.1,
+        emissive: isSelected ? 0xffd700 : 0x000000,
+        emissiveIntensity: isSelected ? 0.4 : 0
+     });
+  }
+
   private createBoard() {
     if (!this.three || !this.boardGroup) return;
     this.boardGroup.clear();
@@ -261,10 +330,10 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
       mesh.receiveShadow = true;
       mesh.castShadow = true;
       this.boardGroup.add(mesh);
-
+      
+      // Hitboxes for click detection on custom board
       const geo = new this.three.BoxGeometry(1, 0.2, 1);
-      const hitboxMat = new this.three.MeshBasicMaterial({ color: 0xff0000, transparent: true, opacity: 0, depthWrite: false });
-
+      const hitboxMat = new this.three.MeshBasicMaterial({ visible: false }); // Invisible hitboxes
       for (let x = 0; x < 8; x++) {
         for (let z = 0; z < 8; z++) {
           const square = new this.three.Mesh(geo, hitboxMat);
@@ -275,8 +344,9 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
       }
     } else {
       const geo = new this.three.BoxGeometry(1, 0.2, 1);
-      const darkMat = new this.three.MeshStandardMaterial({ color: 0x475569, roughness: 0.3, metalness: 0.2 });
-      const lightMat = new this.three.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.3, metalness: 0.2 });
+      // More realistic board materials
+      const darkMat = new this.three.MeshPhysicalMaterial({ color: 0x334155, roughness: 0.5, metalness: 0.2, clearcoat: 0.3 });
+      const lightMat = new this.three.MeshPhysicalMaterial({ color: 0xf1f5f9, roughness: 0.5, metalness: 0.2, clearcoat: 0.3 });
 
       for (let x = 0; x < 8; x++) {
         for (let z = 0; z < 8; z++) {
@@ -289,7 +359,7 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
         }
       }
       const borderGeo = new this.three.BoxGeometry(8.6, 0.3, 8.6);
-      const borderMat = new this.three.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5, metalness: 0.1 });
+      const borderMat = new this.three.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.6 });
       const border = new this.three.Mesh(borderGeo, borderMat);
       border.position.y = -0.15;
       border.receiveShadow = true;
@@ -310,7 +380,6 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
           if (piece.type === 'cm' || piece.type === 'ck') {
              mesh = this.createCheckersPiece(piece, isSelected, style);
           } else {
-             // Chess Pieces
              if (style === 'classic') {
                 mesh = this.createClassicPiece(piece, isSelected);
              } else if (style === 'neon') {
@@ -340,31 +409,21 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
 
   // --- STYLE: CUSTOM ---
   private createCustomPiece(piece: Piece, isSelected: boolean): any {
-    // 1. Check for Specific Color Model (e.g. 'k_w' or 'k_b')
     const colorKey = `${piece.type}_${piece.color}`;
     let customGeo = this.customGeometries.get(colorKey);
 
-    // 2. Fallback to Generic Model (e.g. 'k')
     if (!customGeo) {
         customGeo = this.customGeometries.get(piece.type);
     }
 
     if (customGeo) {
-        // Use generic material colors, unless user textured it (we assume material color override for now)
         const color = piece.color === 'w' ? 0xffffff : 0x222222;
-        const material = new this.three.MeshStandardMaterial({ 
-          color: color, 
-          roughness: 0.3, 
-          metalness: 0.3,
-          emissive: isSelected ? 0xffd700 : 0x000000,
-          emissiveIntensity: isSelected ? 0.4 : 0
-        });
+        const material = this.createPieceMaterial(color, isSelected);
         const mesh = new this.three.Mesh(customGeo, material);
         mesh.castShadow = true;
         mesh.receiveShadow = true;
         return mesh;
     } else {
-        // If it's a checker piece but no custom model, use default
         if (piece.type === 'cm' || piece.type === 'ck') {
             return this.createCheckersPiece(piece, isSelected, 'minimal');
         }
@@ -375,16 +434,9 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
   // --- CHECKERS DEFAULT ---
   private createCheckersPiece(piece: Piece, isSelected: boolean, style: string): any {
       const color = piece.color === 'w' ? 0xfdf6e3 : 0x1a1a1a; 
-      const material = new this.three.MeshStandardMaterial({ 
-        color: color, 
-        roughness: 0.2, 
-        metalness: 0.1,
-        emissive: isSelected ? 0xffd700 : 0x000000,
-        emissiveIntensity: isSelected ? 0.3 : 0
-      });
+      const material = this.createPieceMaterial(color, isSelected);
 
       const group = new this.three.Group();
-      // Base Checker
       const geo = new this.three.CylinderGeometry(0.35, 0.35, 0.15, 32);
       geo.translate(0, 0.075, 0);
       const mesh = new this.three.Mesh(geo, material);
@@ -392,16 +444,14 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
       mesh.receiveShadow = true;
       group.add(mesh);
 
-      // King Mark (Another checker on top or a crown)
       if (piece.type === 'ck') {
           const crownGeo = new this.three.CylinderGeometry(0.35, 0.35, 0.15, 32);
-          crownGeo.translate(0, 0.225, 0); // Sit on top
+          crownGeo.translate(0, 0.225, 0); 
           const crown = new this.three.Mesh(crownGeo, material);
           crown.castShadow = true;
           crown.receiveShadow = true;
           group.add(crown);
           
-          // Gold ring to distinguish
           const ring = new this.three.Mesh(
               new this.three.TorusGeometry(0.2, 0.02, 16, 32),
               new this.three.MeshBasicMaterial({ color: 0xffd700 })
@@ -410,10 +460,9 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
           ring.position.y = 0.31;
           group.add(ring);
       } else {
-          // Inner detail for man
           const inner = new this.three.Mesh(
               new this.three.CylinderGeometry(0.25, 0.25, 0.16, 32),
-              new this.three.MeshStandardMaterial({ color: color, roughness: 0.5 })
+              material
           );
           inner.translate(0, 0.075, 0);
           group.add(inner);
@@ -424,13 +473,7 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
   // --- STYLE: MINIMAL ---
   private createMinimalPiece(piece: Piece, isSelected: boolean): any {
     const color = piece.color === 'w' ? 0xffffff : 0x1e293b;
-    const material = new this.three.MeshStandardMaterial({ 
-      color: color, 
-      roughness: 0.2, 
-      metalness: 0.5,
-      emissive: isSelected ? 0xffd700 : 0x000000,
-      emissiveIntensity: isSelected ? 0.5 : 0
-    });
+    const material = this.createPieceMaterial(color, isSelected);
 
     let geometry;
     switch(piece.type) {
@@ -471,16 +514,10 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
     return new this.three.Mesh(geometry, material);
   }
 
-  // --- STYLE: CLASSIC (Composite) ---
+  // --- STYLE: CLASSIC ---
   private createClassicPiece(piece: Piece, isSelected: boolean): any {
      const color = piece.color === 'w' ? 0xfdf6e3 : 0x1a1a1a; 
-     const material = new this.three.MeshStandardMaterial({
-        color: color,
-        roughness: 0.3, 
-        metalness: 0.1,
-        emissive: isSelected ? 0xffd700 : 0x000000,
-        emissiveIntensity: isSelected ? 0.3 : 0
-     });
+     const material = this.createPieceMaterial(color, isSelected);
 
      const group = new this.three.Group();
      
