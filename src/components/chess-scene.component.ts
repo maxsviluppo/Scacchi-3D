@@ -88,11 +88,11 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
 
       // --- 2. Auto-Orientation (Axis Correction) ---
       if (key !== 'board') {
-        // Step A: Ensure Verticality
+        // Step A: Ensure Verticality (Z-up vs Y-up)
         if (size.z > size.y * 1.2 && size.z > size.x) {
-            geometry.rotateX(-Math.PI / 2); // Rotate Z-up to Y-up
+            geometry.rotateX(-Math.PI / 2); 
         } else if (size.x > size.y * 1.2 && size.x > size.z) {
-             geometry.rotateZ(-Math.PI / 2); // Rotate X-up to Y-up
+             geometry.rotateZ(-Math.PI / 2); 
         }
 
         // Re-measure after rotation
@@ -126,6 +126,14 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
            geometry.rotateX(Math.PI); // Flip 180 degrees
            geometry.center(); // Re-center
         }
+
+        // Step C: Rotate 90 degrees for Knights (Request: "ruota 90 gradi")
+        // Many imported knight models are sideways (profile). This rotates them to face Z.
+        if (key.includes('n')) {
+             geometry.rotateY(-Math.PI / 2);
+             geometry.computeBoundingBox();
+             geometry.center();
+        }
       }
 
       // --- 3. Final Scaling & Positioning ---
@@ -150,7 +158,7 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
 
       } else {
          const maxBaseDim = Math.max(finalSize.x, finalSize.z);
-         const targetSize = 0.70; // Slightly smaller to fit nicely
+         const targetSize = 0.70; 
          let scaleFactor = targetSize / maxBaseDim;
          
          geometry.scale(scaleFactor, scaleFactor, scaleFactor);
@@ -242,43 +250,33 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
     this.controls.minDistance = 4;
     this.controls.maxDistance = 20;
 
-    // --- LIGHTING SETUP (Enhanced for Dynamic Shadows & Depth) ---
-    
-    // 1. Ambient: Reduced intensity to deepen shadows
+    // --- LIGHTING SETUP ---
     const ambientLight = new this.three.AmbientLight(0xffffff, 0.25); 
     this.scene.add(ambientLight);
 
-    // 2. Key Light (Warm, Directional): Main shadow caster
     const dirLight = new this.three.DirectionalLight(0xfff0dd, 2.5); 
     dirLight.position.set(5, 12, 5); 
     dirLight.castShadow = true;
     
-    // Optimize Shadow Map Bounds: Tight fit around the board (approx -8 to 8)
-    // This maximizes the 4096 resolution usage.
     const d = 8;
     dirLight.shadow.camera.left = -d;
     dirLight.shadow.camera.right = d;
     dirLight.shadow.camera.top = d;
     dirLight.shadow.camera.bottom = -d;
-    
     dirLight.shadow.mapSize.width = 4096;
     dirLight.shadow.mapSize.height = 4096;
     dirLight.shadow.camera.near = 0.1;
     dirLight.shadow.camera.far = 50;
-    
-    // Shadow Quality Tweaks
     dirLight.shadow.bias = -0.0005; 
-    dirLight.shadow.normalBias = 0.02; // Reduces self-shadowing artifacts on curved pieces
-    dirLight.shadow.radius = 2; // Slight blur for PCFSoft
+    dirLight.shadow.normalBias = 0.02; 
+    dirLight.shadow.radius = 2; 
     
     this.scene.add(dirLight);
 
-    // 3. Fill Light (Cool Blue): Adds color complexity to shadows, prevents pitch black voids
     const fillLight = new this.three.DirectionalLight(0xb0c4de, 1.2);
     fillLight.position.set(-5, 8, -5);
     this.scene.add(fillLight);
 
-    // 4. Rim Light (Subtle highlight on edges)
     const rimLight = new this.three.SpotLight(0x60a5fa, 2.0);
     rimLight.position.set(0, 2, -10);
     rimLight.lookAt(0, 0, 0);
@@ -318,11 +316,10 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
     });
   }
 
-  // --- MATERIAL FACTORY (Enhanced) ---
   private createPieceMaterial(colorHex: number, isSelected: boolean): any {
      return new this.three.MeshPhysicalMaterial({
         color: colorHex,
-        roughness: 0.25,  // Slightly rougher for better light diffusion
+        roughness: 0.25,  
         metalness: 0.15,  
         clearcoat: 1.0,   
         clearcoatRoughness: 0.15,
@@ -354,8 +351,6 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
       }
     } else {
       const geo = new this.three.BoxGeometry(1, 0.2, 1);
-      
-      // Updated Board Materials: Lower roughness for better shadow reception and reflection
       const darkMat = new this.three.MeshPhysicalMaterial({ color: 0x334155, roughness: 0.4, metalness: 0.1, clearcoat: 0.2 });
       const lightMat = new this.three.MeshPhysicalMaterial({ color: 0xf1f5f9, roughness: 0.4, metalness: 0.1, clearcoat: 0.2 });
 
@@ -433,6 +428,14 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
         const mesh = new this.three.Mesh(customGeo, material);
         mesh.castShadow = true;
         mesh.receiveShadow = true;
+
+        // Dynamic Rotation: Ensure Knights face opponents
+        // White (at +Z) needs to face -Z (Math.PI)
+        // Black (at -Z) needs to face +Z (0)
+        if (piece.type === 'n') {
+           mesh.rotation.y = piece.color === 'w' ? Math.PI : 0;
+        }
+
         return mesh;
     } else {
         if (piece.type === 'cm' || piece.type === 'ck') {
@@ -562,7 +565,12 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
          head.position.y = 0.55;
          head.rotation.x = -0.2;
          group.add(body, head);
-         group.rotation.y = piece.color === 'w' ? 0 : Math.PI;
+         
+         // Fix: Rotate to face Opponents (Forward) instead of Backwards
+         // White (at +Z) needs to look at -Z (Math.PI)
+         // Black (at -Z) needs to look at +Z (0)
+         group.rotation.y = piece.color === 'w' ? Math.PI : 0;
+
      } else if (piece.type === 'b') {
          const body = new this.three.Mesh(new this.three.CylinderGeometry(0.1, 0.25, 0.8, 32), material);
          body.position.y = 0.5;
