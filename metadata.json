@@ -1,0 +1,5 @@
+{
+  "name": "Gemini 3D Chess",
+  "description": "A fully interactive 3D Chess game featuring board rotation, dynamic lighting, and an integrated Gemini AI opponent.",
+  "requestFramePermissions": []
+}
