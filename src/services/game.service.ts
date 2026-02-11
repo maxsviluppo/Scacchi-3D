@@ -17,7 +17,8 @@ export class GameService {
   board = signal<Board>(ChessUtils.createInitialBoard('chess'));
   turn = signal<PieceColor>('w');
   selectedPos = signal<Position | null>(null);
-  pieceStyle = signal<PieceStyle>('classic'); 
+  pieceStyle = signal<PieceStyle>('classic');
+  useOriginalTexture = signal<boolean>(false); // New Option
   
   // Computed
   validMoves = computed(() => {
@@ -32,6 +33,15 @@ export class GameService {
   // Actions
   setPieceStyle(style: PieceStyle) {
     this.pieceStyle.set(style);
+  }
+
+  toggleOriginalTexture(value: boolean) {
+    this.useOriginalTexture.set(value);
+    // Force re-render if style is custom
+    if (this.pieceStyle() === 'custom') {
+       // Trigger effect in component
+       this.pieceStyle.set('custom');
+    }
   }
 
   setGameMode(mode: GameMode) {

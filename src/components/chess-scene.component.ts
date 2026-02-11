@@ -40,8 +40,8 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
   private mouse: any;
   private animationId: number = 0;
 
-  // Custom Geometry Cache
-  private customGeometries: Map<string, any> = new Map();
+  // Custom Model Cache: Stores { geometry, material? }
+  private customCache: Map<string, any> = new Map();
   private customBoardGeometry: any = null;
 
   constructor() {
@@ -50,6 +50,7 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
       const validMoves = this.gameService.validMoves();
       const selected = this.gameService.selectedPos();
       const style = this.gameService.pieceStyle(); 
+      const useOriginal = this.gameService.useOriginalTexture(); // trigger update on toggle
       
       if (this.three && this.scene) {
         this.updatePieces(board, selected, style);
@@ -70,15 +71,18 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
     const fileName = file.name.toLowerCase();
     
     try {
-      let geometry: any = null;
+      let result: any = null;
 
       if (fileName.endsWith('.stl')) {
-        geometry = await this.loadSTL(url);
+        const geo = await this.loadSTL(url);
+        result = { geometry: geo, material: null };
       } else if (fileName.endsWith('.glb') || fileName.endsWith('.gltf')) {
-        geometry = await this.loadGLTF(url);
+        result = await this.loadGLTF(url);
       }
 
-      if (!geometry) throw new Error("No geometry found");
+      if (!result || !result.geometry) throw new Error("No geometry found");
+
+      const geometry = result.geometry;
 
       // --- 1. Center & Measure ---
       geometry.center();
@@ -127,8 +131,8 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
            geometry.center(); // Re-center
         }
 
-        // Step C: Rotate 90 degrees for Knights (Request: "ruota 90 gradi")
-        // Many imported knight models are sideways (profile). This rotates them to face Z.
+        // Step C: Rotate 90 degrees for Knights (Request: "ruota 90 gradi" during import fix)
+        // Keep this import rotation as is, we handle the 180 flip in updatePieces
         if (key.includes('n')) {
              geometry.rotateY(-Math.PI / 2);
              geometry.computeBoundingBox();
@@ -170,7 +174,7 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
          geometry.translate(0, lift, 0);
          geometry.computeVertexNormals(); 
          
-         this.customGeometries.set(key, geometry);
+         this.customCache.set(key, { geometry, material: result.material });
 
          if (this.gameService.pieceStyle() === 'custom') {
             this.gameService.setPieceStyle('custom'); 
@@ -195,12 +199,18 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
     return new Promise((resolve, reject) => {
       this.gltfLoader.load(url, (gltf: any) => {
         let foundGeometry: any = null;
+        let foundMaterial: any = null;
+
         gltf.scene.traverse((child: any) => {
           if (!foundGeometry && child.isMesh) {
-            foundGeometry = child.geometry.clone(); 
+            foundGeometry = child.geometry.clone();
+            // Clone material to keep textures
+            if (child.material) {
+                foundMaterial = child.material.clone();
+            }
           }
         });
-        if (foundGeometry) resolve(foundGeometry);
+        if (foundGeometry) resolve({ geometry: foundGeometry, material: foundMaterial });
         else reject('No mesh found in GLTF');
       }, undefined, reject);
     });
@@ -416,24 +426,39 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
   // --- STYLE: CUSTOM ---
   private createCustomPiece(piece: Piece, isSelected: boolean): any {
     const colorKey = `${piece.type}_${piece.color}`;
-    let customGeo = this.customGeometries.get(colorKey);
+    let cached = this.customCache.get(colorKey);
 
-    if (!customGeo) {
-        customGeo = this.customGeometries.get(piece.type);
+    if (!cached) {
+        cached = this.customCache.get(piece.type);
     }
 
-    if (customGeo) {
-        const color = piece.color === 'w' ? 0xffffff : 0x222222;
-        const material = this.createPieceMaterial(color, isSelected);
-        const mesh = new this.three.Mesh(customGeo, material);
+    if (cached) {
+        // Material Selection
+        let material;
+        if (this.gameService.useOriginalTexture() && cached.material) {
+             material = cached.material;
+             // Ensure emissivity for selection works on original material if possible
+             if (isSelected && material.emissive) {
+                // Cloning is expensive but necessary to not affect other pieces
+                material = material.clone();
+                material.emissive.setHex(0xffd700);
+                material.emissiveIntensity = 0.4;
+             }
+        } else {
+             const color = piece.color === 'w' ? 0xffffff : 0x222222;
+             material = this.createPieceMaterial(color, isSelected);
+        }
+
+        const mesh = new this.three.Mesh(cached.geometry, material);
         mesh.castShadow = true;
         mesh.receiveShadow = true;
 
         // Dynamic Rotation: Ensure Knights face opponents
-        // White (at +Z) needs to face -Z (Math.PI)
-        // Black (at -Z) needs to face +Z (0)
+        // PREVIOUS LOGIC (Inverted as per request):
+        // White (at +Z) was facing -Z (Math.PI) -> NOW faces +Z (0)
+        // Black (at -Z) was facing +Z (0) -> NOW faces -Z (Math.PI)
         if (piece.type === 'n') {
-           mesh.rotation.y = piece.color === 'w' ? Math.PI : 0;
+           mesh.rotation.y = piece.color === 'w' ? 0 : Math.PI;
         }
 
         return mesh;

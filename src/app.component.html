@@ -96,6 +96,20 @@
                 </select>
              </div>
 
+             <!-- Texture Toggle (Only visible if custom) -->
+             @if (gameService.pieceStyle() === 'custom') {
+               <div class="flex flex-col gap-1">
+                  <label class="flex items-center justify-between cursor-pointer group">
+                     <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider group-hover:text-slate-200">Usa Texture Originali</span>
+                     <div class="relative">
+                        <input type="checkbox" [checked]="gameService.useOriginalTexture()" (change)="gameService.toggleOriginalTexture($any($event.target).checked)" class="sr-only peer">
+                        <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                     </div>
+                  </label>
+                  <p class="text-[9px] text-slate-500 leading-tight">Mantiene i colori originali dei file GLB/GLTF caricati.</p>
+               </div>
+             }
+
              <hr class="border-white/10">
 
              <!-- Open Import Panel -->
