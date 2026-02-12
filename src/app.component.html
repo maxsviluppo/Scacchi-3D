@@ -6,30 +6,17 @@
     
     <!-- Left Island: Branding (Glass Effect) -->
     <div class="pointer-events-auto bg-slate-900/40 backdrop-blur-xl border-t border-l border-white/10 border-b border-r border-black/40 shadow-[0_8px_32px_0_rgba(0,0,0,0.36)] rounded-2xl p-2 pr-6 flex items-center gap-4 transition-transform hover:scale-[1.02]">
-      <div class="relative w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center border border-white/10 shadow-inner">
-        <span class="text-2xl drop-shadow-[0_0_8px_rgba(59,130,246,0.6)]">♟️</span>
+      <!-- New Logo: Glowing Knight -->
+      <div class="relative w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-indigo-500/20 to-blue-600/20 border border-blue-400/30 shadow-[0_0_15px_rgba(59,130,246,0.4)] backdrop-blur-md">
+        <span class="text-3xl text-blue-100 drop-shadow-[0_0_5px_rgba(59,130,246,0.8)]">♞</span>
       </div>
       <div class="flex flex-col">
         <h1 class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-cyan-400 tracking-wide">Scacchi 3D</h1>
-        <span class="text-[10px] text-slate-400 font-mono tracking-[0.2em] uppercase">Studio Edition</span>
+        <span class="text-[10px] text-slate-400 font-mono tracking-[0.2em] uppercase">Gemini Edition</span>
       </div>
     </div>
 
-    <!-- Center Island: Turn Indicator (Glass Effect) -->
-    <div class="absolute left-1/2 -translate-x-1/2 top-0 pointer-events-auto mt-2 hidden md:flex flex-col items-center">
-        <div class="bg-slate-900/40 backdrop-blur-xl border-t border-white/10 border-b border-black/50 shadow-[0_8px_32px_0_rgba(0,0,0,0.36)] px-8 py-3 rounded-b-2xl rounded-t-lg flex items-center gap-4 border-x border-white/5">
-           <div class="flex flex-col items-center">
-              <span class="text-[9px] text-slate-400 uppercase tracking-widest font-bold">Turno di Gioco</span>
-              <div class="flex items-center gap-2 mt-1">
-                 <div [class]="gameService.turn() === 'w' ? 'bg-white shadow-[0_0_10px_white]' : 'bg-slate-700/50 border border-slate-600'" class="w-3 h-3 rounded-full transition-all duration-300"></div>
-                 <span class="text-sm font-bold text-white tracking-wide min-w-[100px] text-center drop-shadow-md">
-                    {{ gameService.turn() === 'w' ? 'Bianco' : 'Nero' }}
-                 </span>
-                 <div [class]="gameService.turn() === 'b' ? 'bg-black border border-slate-500 shadow-[0_0_10px_black]' : 'bg-slate-700/50 border border-slate-600'" class="w-3 h-3 rounded-full transition-all duration-300"></div>
-              </div>
-           </div>
-        </div>
-    </div>
+    <!-- Center Island REMOVED (Turn indicator is now on the 3D board) -->
 
     <!-- Right Island: Controls (Glass Effect) -->
     <div class="pointer-events-auto flex items-start gap-4">

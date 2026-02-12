@@ -1,7 +1,7 @@
 
 import { Component, ElementRef, ViewChild, AfterViewInit, inject, effect, OnDestroy, signal } from '@angular/core';
 import { GameService } from '../services/game.service';
-import { Position, Piece, PieceType } from '../logic/chess-types';
+import { Position, Piece, PieceType, PieceColor, LastMove } from '../logic/chess-types';
 
 @Component({
   selector: 'app-chess-scene',
@@ -36,11 +36,16 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
   private piecesGroup: any;
   private boardGroup: any; 
   private highlightsGroup: any;
+  private animGroup: any; 
+
   private raycaster: any;
   private mouse: any;
   private animationId: number = 0;
 
-  // Custom Model Cache: Stores { geometry, material? }
+  // Animation State
+  private currentlyAnimatingMove: LastMove | null = null;
+
+  // Custom Model Cache
   private customCache: Map<string, any> = new Map();
   private customBoardGeometry: any = null;
 
@@ -50,11 +55,16 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
       const validMoves = this.gameService.validMoves();
       const selected = this.gameService.selectedPos();
       const style = this.gameService.pieceStyle(); 
-      const useOriginal = this.gameService.useOriginalTexture(); // trigger update on toggle
+      const lastMove = this.gameService.lastMove();
+      const useOriginal = this.gameService.useOriginalTexture();
       
       if (this.three && this.scene) {
-        this.updatePieces(board, selected, style);
+        this.updatePieces(board, selected, style, lastMove);
         this.updateHighlights(validMoves, selected);
+
+        if (lastMove) {
+          this.animateMove(lastMove, style);
+        }
       }
     });
   }
@@ -83,27 +93,22 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
       if (!result || !result.geometry) throw new Error("No geometry found");
 
       const geometry = result.geometry;
-
-      // --- 1. Center & Measure ---
+      // Normalization logic
       geometry.center();
       geometry.computeBoundingBox();
       let size = new this.three.Vector3();
       geometry.boundingBox!.getSize(size);
 
-      // --- 2. Auto-Orientation (Axis Correction) ---
       if (key !== 'board') {
-        // Step A: Ensure Verticality (Z-up vs Y-up)
         if (size.z > size.y * 1.2 && size.z > size.x) {
             geometry.rotateX(-Math.PI / 2); 
         } else if (size.x > size.y * 1.2 && size.x > size.z) {
              geometry.rotateZ(-Math.PI / 2); 
         }
 
-        // Re-measure after rotation
         geometry.computeBoundingBox();
         geometry.center(); 
         
-        // Step B: Ensure "Base Down" (Fix Upside Down)
         const positions = geometry.attributes.position.array;
         const box = geometry.boundingBox!;
         const height = box.max.y - box.min.y;
@@ -127,12 +132,10 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
         }
 
         if (maxRadiusTop > maxRadiusBottom * 1.2) {
-           geometry.rotateX(Math.PI); // Flip 180 degrees
-           geometry.center(); // Re-center
+           geometry.rotateX(Math.PI);
+           geometry.center();
         }
 
-        // Step C: Rotate 90 degrees for Knights (Request: "ruota 90 gradi" during import fix)
-        // Keep this import rotation as is, we handle the 180 flip in updatePieces
         if (key.includes('n')) {
              geometry.rotateY(-Math.PI / 2);
              geometry.computeBoundingBox();
@@ -140,7 +143,6 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
         }
       }
 
-      // --- 3. Final Scaling & Positioning ---
       geometry.computeBoundingBox();
       const finalBox = geometry.boundingBox!;
       const finalSize = new this.three.Vector3();
@@ -169,7 +171,6 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
          geometry.computeBoundingBox();
          const newBox = geometry.boundingBox!;
          
-         // Sit exactly on floor (Y=0)
          const lift = -newBox.min.y;
          geometry.translate(0, lift, 0);
          geometry.computeVertexNormals(); 
@@ -178,7 +179,6 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
 
          if (this.gameService.pieceStyle() === 'custom') {
             this.gameService.setPieceStyle('custom'); 
-            this.updatePieces(this.gameService.board(), this.gameService.selectedPos(), 'custom');
          }
       }
 
@@ -204,7 +204,6 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
         gltf.scene.traverse((child: any) => {
           if (!foundGeometry && child.isMesh) {
             foundGeometry = child.geometry.clone();
-            // Clone material to keep textures
             if (child.material) {
                 foundMaterial = child.material.clone();
             }
@@ -260,26 +259,23 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
     this.controls.minDistance = 4;
     this.controls.maxDistance = 20;
 
-    // --- LIGHTING SETUP ---
     const ambientLight = new this.three.AmbientLight(0xffffff, 0.25); 
     this.scene.add(ambientLight);
 
     const dirLight = new this.three.DirectionalLight(0xfff0dd, 2.5); 
     dirLight.position.set(5, 12, 5); 
     dirLight.castShadow = true;
+    dirLight.shadow.mapSize.width = 4096;
+    dirLight.shadow.mapSize.height = 4096;
+    dirLight.shadow.camera.near = 0.1;
+    dirLight.shadow.camera.far = 50;
+    dirLight.shadow.bias = -0.0005; 
     
     const d = 8;
     dirLight.shadow.camera.left = -d;
     dirLight.shadow.camera.right = d;
     dirLight.shadow.camera.top = d;
     dirLight.shadow.camera.bottom = -d;
-    dirLight.shadow.mapSize.width = 4096;
-    dirLight.shadow.mapSize.height = 4096;
-    dirLight.shadow.camera.near = 0.1;
-    dirLight.shadow.camera.far = 50;
-    dirLight.shadow.bias = -0.0005; 
-    dirLight.shadow.normalBias = 0.02; 
-    dirLight.shadow.radius = 2; 
     
     this.scene.add(dirLight);
 
@@ -302,14 +298,15 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
     
     this.highlightsGroup = new this.three.Group();
     this.scene.add(this.highlightsGroup);
+    
+    this.animGroup = new this.three.Group();
+    this.scene.add(this.animGroup);
 
     this.raycaster = new this.three.Raycaster();
     this.mouse = new this.three.Vector2();
 
     this.canvasRef.nativeElement.addEventListener('click', (e) => this.onCanvasClick(e));
     
-    this.updatePieces(this.gameService.board(), this.gameService.selectedPos(), this.gameService.pieceStyle());
-
     const animate = () => {
       this.animationId = requestAnimationFrame(animate);
       this.controls.update();
@@ -324,6 +321,152 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
       this.camera.updateProjectionMatrix();
       this.renderer.setSize(w, h);
     });
+  }
+
+  // --- ANIMATION SYSTEM ---
+
+  private animateMove(move: LastMove, style: string) {
+    if (!this.three) return;
+    
+    this.animGroup.clear();
+    this.currentlyAnimatingMove = move;
+
+    // --- SETUP ---
+    const startX = move.from.col - 3.5;
+    const startZ = move.from.row - 3.5;
+    const endX = move.to.col - 3.5;
+    const endZ = move.to.row - 3.5;
+
+    // Moving Piece Clone
+    const movingMesh = this.createPieceMesh(move.piece, false, style);
+    movingMesh.position.set(startX, 0.1, startZ);
+    // Cleanup metadata
+    if(movingMesh.userData) movingMesh.userData = {}; 
+    if(movingMesh.children) movingMesh.children.forEach((c:any) => c.userData = {});
+    
+    this.animGroup.add(movingMesh);
+
+    // Captured Piece Clone (if exists)
+    let capturedMesh: any = null;
+    if (move.capturedPiece && move.capturedPos) {
+       capturedMesh = this.createPieceMesh(move.capturedPiece, false, style);
+       capturedMesh.position.set(move.capturedPos.col - 3.5, 0.1, move.capturedPos.row - 3.5);
+       if(capturedMesh.userData) capturedMesh.userData = {};
+       if(capturedMesh.children) capturedMesh.children.forEach((c:any) => c.userData = {});
+       this.animGroup.add(capturedMesh);
+    }
+
+    // --- CONFIG ---
+    const startTime = performance.now();
+    const duration = 650; // Slower for elegance
+
+    // Determine Height: Knight, Capture or Jump get high arcs. Normal moves get a small lift.
+    const isKnight = move.piece.type === 'n';
+    const isCapture = !!move.capturedPiece;
+    const isBigJump = isKnight || isCapture || move.isJump;
+    
+    const peakHeight = isBigJump ? 2.5 : 0.6; // 0.6 is a subtle "lift" for sliding pieces
+
+    // Direction vector for tilt calculation
+    const dx = endX - startX;
+    const dz = endZ - startZ;
+    const dist = Math.sqrt(dx*dx + dz*dz);
+    
+    const animateStep = (time: number) => {
+        const elapsed = time - startTime;
+        const progress = Math.min(elapsed / duration, 1.0);
+        
+        // Custom Easing: Smooth start/end
+        const t = this.easeInOutCubic(progress);
+
+        // 1. Position Interpolation (Linear X/Z)
+        const curX = startX + (endX - startX) * t;
+        const curZ = startZ + (endZ - startZ) * t;
+
+        // 2. Parabolic Y (Height)
+        // Formula: 4 * height * t * (1-t) creates a perfect parabola peaking at t=0.5
+        const curY = 0.1 + (4 * peakHeight * t * (1 - t));
+
+        movingMesh.position.set(curX, curY, curZ);
+
+        // 3. Dynamic Tilt (Action feel)
+        // Tilt forward during acceleration, backward during deceleration
+        // Only if distance is significant to avoid jitter on small steps
+        if (dist > 0.5 && !isKnight) { 
+           // Derivative of parabola is 4*h*(1-2t). Use this for tilt angle.
+           const tiltFactor = 0.3; // Max tilt radians
+           const tilt = (1 - 2 * t) * tiltFactor; 
+           
+           // Rotate around local X axis perpendicular to movement would be complex,
+           // so we approximate by tilting based on dominant axis or just X for visual flair
+           // A simple approach: tilt "forward" in the direction of movement.
+           // Calculate angle of movement
+           const angle = Math.atan2(dx, dz); // Angle in Y-plane
+           movingMesh.rotation.set(0, 0, 0); // Reset
+           movingMesh.rotateY(move.piece.type === 'n' ? (move.piece.color === 'w' ? 0 : Math.PI) : 0); // Preserve base rotation
+           
+           // Apply tilt relative to camera/world? No, relative to movement.
+           // Axis of rotation is perpendicular to movement (angle + PI/2)
+           const axisX = Math.cos(angle);
+           const axisZ = -Math.sin(angle);
+           const tiltAxis = new this.three.Vector3(axisX, 0, axisZ);
+           
+           // Only tilt if it's a big jump or meaningful move
+           if (isBigJump) {
+              movingMesh.rotateOnWorldAxis(tiltAxis, tilt);
+           }
+        }
+
+        // 4. Capture Animation (Delayed Squash)
+        if (capturedMesh) {
+             // Start shrinking only when attacker is descending (t > 0.7)
+             if (t > 0.7) {
+                 const shrinkProgress = (t - 0.7) / 0.3; // 0 to 1
+                 const scale = Math.max(0, 1 - shrinkProgress);
+                 capturedMesh.scale.setScalar(scale);
+                 // Add a little spin
+                 capturedMesh.rotation.y += 0.2;
+             }
+        }
+
+        if (progress < 1.0) {
+            requestAnimationFrame(animateStep);
+        } else {
+            // FINISH
+            this.animGroup.clear();
+            this.currentlyAnimatingMove = null;
+            // Force redraw to reveal the real piece
+            this.updatePieces(
+                this.gameService.board(), 
+                this.gameService.selectedPos(), 
+                this.gameService.pieceStyle(), 
+                null 
+            );
+        }
+    };
+    requestAnimationFrame(animateStep);
+  }
+
+  private easeInOutCubic(x: number): number {
+    return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+  }
+
+  private createPieceMesh(piece: Piece, isSelected: boolean, style: string): any {
+     let mesh;
+     if (piece.type === 'cm' || piece.type === 'ck') {
+         mesh = this.createCheckersPiece(piece, isSelected, style);
+     } else {
+         if (style === 'classic') {
+            mesh = this.createClassicPiece(piece, isSelected);
+         } else if (style === 'neon') {
+            mesh = this.createNeonPiece(piece, isSelected);
+         } else if (style === 'custom') {
+            mesh = this.createCustomPiece(piece, isSelected);
+         } else {
+            mesh = this.createMinimalPiece(piece, isSelected);
+         }
+     }
+     return mesh;
   }
 
   private createPieceMaterial(colorHex: number, isSelected: boolean): any {
@@ -383,41 +526,37 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  private updatePieces(board: any[][], selected: Position | null, style: string) {
+  private updatePieces(board: any[][], selected: Position | null, style: string, lastMove: LastMove | null) {
     if (!this.three) return;
     this.piecesGroup.clear();
 
     board.forEach((row, r) => {
       row.forEach((piece, c) => {
         if (piece) {
-          const isSelected = selected && selected.row === r && selected.col === c;
-          let mesh;
-          
-          if (piece.type === 'cm' || piece.type === 'ck') {
-             mesh = this.createCheckersPiece(piece, isSelected, style);
-          } else {
-             if (style === 'classic') {
-                mesh = this.createClassicPiece(piece, isSelected);
-             } else if (style === 'neon') {
-                mesh = this.createNeonPiece(piece, isSelected);
-             } else if (style === 'custom') {
-                mesh = this.createCustomPiece(piece, isSelected);
-             } else {
-                mesh = this.createMinimalPiece(piece, isSelected);
-             }
+          let visible = true;
+          // Hide piece if it is currently arriving at this location
+          if (this.currentlyAnimatingMove && 
+              this.currentlyAnimatingMove.to.row === r && 
+              this.currentlyAnimatingMove.to.col === c) {
+              visible = false;
           }
-          
-          mesh.position.set(c - 3.5, 0.1, r - 3.5);
-          
-          if (mesh.type === 'Group') {
-             mesh.children.forEach((child: any) => {
-                child.userData = { isPiece: true, row: r, col: c };
-             });
-          } else {
-             mesh.userData = { isPiece: true, row: r, col: c };
+
+          if (visible) {
+              const isSelected = selected && selected.row === r && selected.col === c;
+              const mesh = this.createPieceMesh(piece, isSelected, style);
+              
+              mesh.position.set(c - 3.5, 0.1, r - 3.5);
+              
+              if (mesh.type === 'Group') {
+                 mesh.children.forEach((child: any) => {
+                    child.userData = { isPiece: true, row: r, col: c };
+                 });
+              } else {
+                 mesh.userData = { isPiece: true, row: r, col: c };
+              }
+              
+              this.piecesGroup.add(mesh);
           }
-          
-          this.piecesGroup.add(mesh);
         }
       });
     });
@@ -433,13 +572,10 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
     }
 
     if (cached) {
-        // Material Selection
         let material;
         if (this.gameService.useOriginalTexture() && cached.material) {
              material = cached.material;
-             // Ensure emissivity for selection works on original material if possible
              if (isSelected && material.emissive) {
-                // Cloning is expensive but necessary to not affect other pieces
                 material = material.clone();
                 material.emissive.setHex(0xffd700);
                 material.emissiveIntensity = 0.4;
@@ -453,10 +589,6 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
         mesh.castShadow = true;
         mesh.receiveShadow = true;
 
-        // Dynamic Rotation: Ensure Knights face opponents
-        // PREVIOUS LOGIC (Inverted as per request):
-        // White (at +Z) was facing -Z (Math.PI) -> NOW faces +Z (0)
-        // Black (at -Z) was facing +Z (0) -> NOW faces -Z (Math.PI)
         if (piece.type === 'n') {
            mesh.rotation.y = piece.color === 'w' ? 0 : Math.PI;
         }
@@ -590,10 +722,6 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
          head.position.y = 0.55;
          head.rotation.x = -0.2;
          group.add(body, head);
-         
-         // Fix: Rotate to face Opponents (Forward) instead of Backwards
-         // White (at +Z) needs to look at -Z (Math.PI)
-         // Black (at -Z) needs to look at +Z (0)
          group.rotation.y = piece.color === 'w' ? Math.PI : 0;
 
      } else if (piece.type === 'b') {
@@ -660,6 +788,9 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
 
   private onCanvasClick(event: MouseEvent) {
     if (!this.camera || !this.scene || !this.three) return;
+    
+    // Disable clicking while animating to avoid state mismatch
+    if (this.currentlyAnimatingMove) return;
 
     const rect = this.canvasRef.nativeElement.getBoundingClientRect();
     this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;

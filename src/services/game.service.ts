@@ -1,6 +1,6 @@
 
 import { Injectable, signal, computed, inject } from '@angular/core';
-import { Board, PieceColor, Position, GameMode } from '../logic/chess-types';
+import { Board, PieceColor, Position, GameMode, LastMove, Piece } from '../logic/chess-types';
 import { ChessUtils } from '../logic/chess-utils';
 import { AiService } from './ai.service';
 
@@ -18,7 +18,10 @@ export class GameService {
   turn = signal<PieceColor>('w');
   selectedPos = signal<Position | null>(null);
   pieceStyle = signal<PieceStyle>('classic');
-  useOriginalTexture = signal<boolean>(false); 
+  useOriginalTexture = signal<boolean>(false);
+  
+  // Animation State
+  lastMove = signal<LastMove | null>(null);
   
   // Computed
   validMoves = computed(() => {
@@ -74,32 +77,69 @@ export class GameService {
   }
 
   async executeMove(from: Position, to: Position) {
-    // CRITICAL VALIDATION: Ensure the piece belongs to the current turn
+    // CRITICAL VALIDATION
     const currentBoard = this.board();
     const pieceToMove = currentBoard[from.row][from.col];
     
     if (!pieceToMove || pieceToMove.color !== this.turn()) {
-        console.warn('Attempted to move invalid piece or opponent piece');
+        console.warn('Attempted to move invalid piece');
         return;
     }
 
     const mode = this.gameMode();
+    let capturedPiece: Piece | null = null;
+    let capturedPos: Position | null = null;
+    let isJump = false;
 
+    // --- DETECTION LOGIC ---
+    if (mode === 'checkers') {
+        // Checkers Capture (Jump over)
+        if (Math.abs(to.row - from.row) === 2) {
+            const midRow = (from.row + to.row) / 2;
+            const midCol = (from.col + to.col) / 2;
+            capturedPiece = currentBoard[midRow][midCol];
+            capturedPos = { row: midRow, col: midCol };
+            isJump = true;
+        } 
+    } else {
+        // Chess Capture (Land on)
+        const target = currentBoard[to.row][to.col];
+        if (target) {
+            capturedPiece = target;
+            capturedPos = { ...to };
+            isJump = true; 
+        }
+        // Knight always jumps nicely
+        if (pieceToMove.type === 'n') {
+            isJump = true;
+        }
+    }
+
+    // Prepare Animation Data
+    const moveData: LastMove = {
+        from,
+        to,
+        piece: pieceToMove,
+        capturedPiece,
+        capturedPos,
+        isJump
+    };
+
+    // Update Board State
     this.board.update(b => {
       const newBoard = b.map(row => [...row]);
       let movingPiece = newBoard[from.row][from.col];
 
       // Handle Checkers Jump Removal
-      if (mode === 'checkers' && Math.abs(to.row - from.row) === 2) {
-          const midRow = (from.row + to.row) / 2;
-          const midCol = (from.col + to.col) / 2;
-          newBoard[midRow][midCol] = null; // Capture
+      if (capturedPos && mode === 'checkers') {
+          newBoard[capturedPos.row][capturedPos.col] = null;
       }
 
-      // Checkers Promotion (Kinging)
+      // Checkers Promotion
       if (mode === 'checkers' && movingPiece?.type === 'cm') {
           if ((movingPiece.color === 'w' && to.row === 0) || (movingPiece.color === 'b' && to.row === 7)) {
               movingPiece = { ...movingPiece, type: 'ck' };
+              moveData.piece = movingPiece; // Update animation reference
           }
       }
 
@@ -108,14 +148,17 @@ export class GameService {
       return newBoard;
     });
 
+    // Notify Scene
+    this.lastMove.set(moveData);
+
     this.selectedPos.set(null);
     const nextTurn = this.turn() === 'w' ? 'b' : 'w';
     this.turn.set(nextTurn);
     this.gameStatus.set(`${nextTurn === 'w' ? 'Tocca al Bianco' : 'Tocca al Nero'}`);
 
-    // AI Logic 
+    // AI Trigger
     if (mode === 'chess' && nextTurn === 'b') {
-      setTimeout(() => this.triggerAiMove(), 500); 
+      setTimeout(() => this.triggerAiMove(), 700); // Slight delay to let animation start
     }
   }
 
@@ -125,8 +168,6 @@ export class GameService {
 
     try {
       const fen = ChessUtils.boardToFEN(this.board(), 'b');
-      
-      // 1. Generate ALL valid moves for Black
       const legalMoves = this.getAllLegalMoves('b');
 
       if (legalMoves.length === 0) {
@@ -135,22 +176,17 @@ export class GameService {
           return;
       }
 
-      // 2. Ask AI to pick one
-      console.log('AI Legal Moves:', legalMoves);
       const uciMove = await this.aiService.getBestMove(fen, legalMoves);
-      console.log('AI Selected:', uciMove);
-
+      
       let chosenMove = uciMove;
 
-      // 3. FALLBACK: If AI fails/errors/invalid, pick Random to keep game alive
       if (!chosenMove || !legalMoves.includes(chosenMove)) {
-         console.warn('AI failed or returned invalid. Using Random Fallback.');
+         console.warn('AI unavailable. Using CPU Fallback.');
          const randomIndex = Math.floor(Math.random() * legalMoves.length);
          chosenMove = legalMoves[randomIndex];
-         this.gameStatus.set('Gemini (Random Fallback)');
+         this.gameStatus.set('CPU (Offline)');
       }
 
-      // 4. Execute
       if (chosenMove) {
           const from = this.uciToCoords(chosenMove.substring(0, 2));
           const to = this.uciToCoords(chosenMove.substring(2, 4));
@@ -161,7 +197,6 @@ export class GameService {
 
     } catch (e) {
         console.error('AI Critical Error', e);
-        // Emergency Fallback
         const legalMoves = this.getAllLegalMoves('b');
         if (legalMoves.length > 0) {
             const fallback = legalMoves[Math.floor(Math.random() * legalMoves.length)];
@@ -176,7 +211,6 @@ export class GameService {
     }
   }
 
-  // Helper: Generates all UCI moves for a specific color (used for AI constraints)
   getAllLegalMoves(color: PieceColor): string[] {
     const moves: string[] = [];
     const board = this.board();
@@ -190,7 +224,6 @@ export class GameService {
           const valid = ChessUtils.getValidMoves(board, from, this.gameMode());
           
           valid.forEach(to => {
-             // Convert to UCI (e.g., e7e5)
              const uci = `${cols[from.col]}${8 - from.row}${cols[to.col]}${8 - to.row}`;
              moves.push(uci);
           });
@@ -218,6 +251,7 @@ export class GameService {
     this.board.set(ChessUtils.createInitialBoard(this.gameMode()));
     this.turn.set('w');
     this.selectedPos.set(null);
+    this.lastMove.set(null);
     this.gameStatus.set('Tocca al Bianco');
     this.isAiThinking.set(false);
   }
