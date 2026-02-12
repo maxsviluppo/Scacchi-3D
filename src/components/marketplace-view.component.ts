@@ -5,19 +5,19 @@ import { SupabaseService } from '../services/supabase.service';
 import { GameService } from '../services/game.service';
 
 interface AssetCollection {
-    id: string;
-    name: string;
-    author_name?: string;
-    price_eur: number;
-    preview_image_url: string;
-    is_public: boolean;
+  id: string;
+  name: string;
+  author_name?: string;
+  price_eur: number;
+  preview_image_url: string;
+  is_public: boolean;
 }
 
 @Component({
-    selector: 'app-marketplace-view',
-    standalone: true,
-    imports: [CommonModule],
-    template: `
+  selector: 'app-marketplace-view',
+  standalone: true,
+  imports: [CommonModule],
+  template: `
     <div class="fixed inset-0 z-[100] flex flex-col bg-slate-950/95 backdrop-blur-2xl animate-fade-in">
       
       <!-- Premium Header -->
@@ -122,7 +122,7 @@ interface AssetCollection {
       </div>
     </div>
   `,
-    styles: [`
+  styles: [`
     .scrollbar-hide::-webkit-scrollbar { display: none; }
     .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
     
@@ -134,33 +134,33 @@ interface AssetCollection {
   `]
 })
 export class MarketplaceViewComponent implements OnInit {
-    supabase = inject(SupabaseService);
-    gameService = inject(GameService);
+  supabase = inject(SupabaseService);
+  gameService = inject(GameService);
 
-    assets: AssetCollection[] = [];
-    loading = true;
-    categories = ['Tutti', 'Classici', 'Neon', 'Medievali', 'Futuristici'];
-    activeCategory = 'Tutti';
+  assets: AssetCollection[] = [];
+  loading = true;
+  categories = ['Tutti', 'Classici', 'Neon', 'Medievali', 'Futuristici'];
+  activeCategory = 'Tutti';
 
-    ngOnInit() {
-        this.fetchAssets();
+  ngOnInit() {
+    this.fetchAssets();
+  }
+
+  async fetchAssets() {
+    this.loading = true;
+    try {
+      const { data, error } = await this.supabase.client
+        .from('asset_collections')
+        .select('*')
+        .eq('is_public', true);
+
+      if (!error && data) {
+        this.assets = data;
+      }
+    } catch (e) {
+      console.error('Error fetching assets:', e);
+    } finally {
+      this.loading = false;
     }
-
-    async fetchAssets() {
-        this.loading = true;
-        try {
-            const { data, error } = await this.supabase.client
-                .from('asset_collections')
-                .select('*')
-                .eq('is_public', true);
-
-            if (!error && data) {
-                this.assets = data;
-            }
-        } catch (e) {
-            console.error('Error fetching assets:', e);
-        } finally {
-            this.loading = false;
-        }
-    }
+  }
 }

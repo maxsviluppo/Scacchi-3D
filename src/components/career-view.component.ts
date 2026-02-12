@@ -6,10 +6,10 @@ import { GameService } from '../services/game.service';
 import { GameMode } from '../logic/chess-types';
 
 @Component({
-    selector: 'app-career-view',
-    standalone: true,
-    imports: [CommonModule],
-    template: `
+  selector: 'app-career-view',
+  standalone: true,
+  imports: [CommonModule],
+  template: `
     <div class="fixed inset-0 z-[100] flex flex-col bg-slate-950/98 backdrop-blur-3xl animate-fade-in overflow-hidden">
       
       <!-- Premium Career Header -->
@@ -127,7 +127,7 @@ import { GameMode } from '../logic/chess-types';
       </div>
     </div>
   `,
-    styles: [`
+  styles: [`
     .custom-scrollbar::-webkit-scrollbar { width: 6px; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(249, 115, 22, 0.3); border-radius: 10px; }
     .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
@@ -143,52 +143,52 @@ import { GameMode } from '../logic/chess-types';
   `]
 })
 export class CareerViewComponent implements OnInit {
-    supabase = inject(SupabaseService);
-    gameService = inject(GameService);
+  supabase = inject(SupabaseService);
+  gameService = inject(GameService);
 
-    activeMode: GameMode = 'chess';
-    currentChessLevel = 1;
-    currentCheckersLevel = 1;
-    totalPoints = 0;
-    savedGame: any = null;
-    loading = true;
+  activeMode: GameMode = 'chess';
+  currentChessLevel = 1;
+  currentCheckersLevel = 1;
+  totalPoints = 0;
+  savedGame: any = null;
+  loading = true;
 
-    levels = Array.from({ length: 100 }, (_, i) => i + 1);
+  levels = Array.from({ length: 100 }, (_, i) => i + 1);
 
-    ngOnInit() {
-        this.loadProgress();
+  ngOnInit() {
+    this.loadProgress();
+  }
+
+  async loadProgress() {
+    this.loading = true;
+    const progress = await this.supabase.getCareerProgress();
+    if (progress) {
+      this.currentChessLevel = progress.chess_level || 1;
+      this.currentCheckersLevel = progress.checkers_level || 1;
+      this.totalPoints = progress.total_points || 0;
+      this.savedGame = progress.current_game_state;
     }
+    this.loading = false;
+  }
 
-    async loadProgress() {
-        this.loading = true;
-        const progress = await this.supabase.getCareerProgress();
-        if (progress) {
-            this.currentChessLevel = progress.chess_level || 1;
-            this.currentCheckersLevel = progress.checkers_level || 1;
-            this.totalPoints = progress.total_points || 0;
-            this.savedGame = progress.current_game_state;
-        }
-        this.loading = false;
-    }
+  startLevel(level: number) {
+    this.gameService.startGame(this.activeMode, 'career', level);
+  }
 
-    startLevel(level: number) {
-        this.gameService.startGame(this.activeMode, 'career', level);
+  resumeGame() {
+    if (this.savedGame) {
+      this.gameService.gameMode.set(this.savedGame.type);
+      this.gameService.playerMode.set('career');
+      this.gameService.careerLevel.set(this.savedGame.level);
+      this.gameService.board.set(this.savedGame.state.board);
+      this.gameService.turn.set(this.savedGame.state.turn);
+      this.gameService.lastMove.set(this.savedGame.state.lastMove);
+      this.gameService.viewState.set('game');
     }
+  }
 
-    resumeGame() {
-        if (this.savedGame) {
-            this.gameService.gameMode.set(this.savedGame.type);
-            this.gameService.playerMode.set('career');
-            this.gameService.careerLevel.set(this.savedGame.level);
-            this.gameService.board.set(this.savedGame.state.board);
-            this.gameService.turn.set(this.savedGame.state.turn);
-            this.gameService.lastMove.set(this.savedGame.state.lastMove);
-            this.gameService.viewState.set('game');
-        }
-    }
-
-    async abandonSavedGame() {
-        await this.supabase.clearSavedGame();
-        this.savedGame = null;
-    }
+  async abandonSavedGame() {
+    await this.supabase.clearSavedGame();
+    this.savedGame = null;
+  }
 }

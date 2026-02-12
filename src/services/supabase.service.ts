@@ -9,6 +9,7 @@ export class SupabaseService {
     private supabase: SupabaseClient;
     user = signal<User | null>(null);
     username = signal<string | null>(null);
+    avatarUrl = signal<string | null>(null);
     loading = signal<boolean>(true);
 
     // Inserimento URL fornito dall'utente. 
@@ -36,10 +37,19 @@ export class SupabaseService {
     private async fetchProfile(uid?: string) {
         if (!uid) {
             this.username.set(null);
+            this.avatarUrl.set(null);
             return;
         }
-        const { data } = await this.supabase.from('profiles').select('username').eq('id', uid).single();
+        const { data } = await this.supabase.from('profiles').select('username, avatar_url').eq('id', uid).single();
         this.username.set(data?.username ?? null);
+        this.avatarUrl.set(data?.avatar_url ?? null);
+    }
+
+    async loadUserProfile() {
+        const uid = this.user()?.id;
+        if (uid) {
+            await this.fetchProfile(uid);
+        }
     }
 
     get client() {
