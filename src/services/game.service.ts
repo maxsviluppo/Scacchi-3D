@@ -115,8 +115,7 @@ export class GameService {
 
     // AI Logic 
     if (mode === 'chess' && nextTurn === 'b') {
-      // Use setTimeout to allow UI to update before AI freezes thread (though with async it's fine)
-      setTimeout(() => this.triggerAiMove(), 50);
+      setTimeout(() => this.triggerAiMove(), 500); 
     }
   }
 
@@ -126,40 +125,84 @@ export class GameService {
 
     try {
       const fen = ChessUtils.boardToFEN(this.board(), 'b');
-      const uciMove = await this.aiService.getBestMove(fen);
+      
+      // 1. Generate ALL valid moves for Black
+      const legalMoves = this.getAllLegalMoves('b');
 
-      if (uciMove) {
-        const fromStr = uciMove.substring(0, 2);
-        const toStr = uciMove.substring(2, 4);
-        
-        const from = this.uciToCoords(fromStr);
-        const to = this.uciToCoords(toStr);
-
-        if (from && to) {
-            // Validate that AI is actually moving a Black piece
-            const aiPiece = this.board()[from.row][from.col];
-            if (aiPiece && aiPiece.color === 'b') {
-                this.executeMove(from, to);
-            } else {
-                console.error('AI tried to move a White piece or empty square:', fromStr);
-                this.gameStatus.set('AI: Errore (Mossa illegale). Tocca a te.');
-                this.turn.set('w'); // Skip turn back to human to unblock
-            }
-        } else {
-          this.gameStatus.set('Errore AI: Coordinate non valide');
-          this.turn.set('w');
-        }
-      } else {
-        this.gameStatus.set('AI: Impossibile muovere (Resa?)');
-        this.turn.set('w');
+      if (legalMoves.length === 0) {
+          this.gameStatus.set('Scacco Matto / Stallo! Partita finita.');
+          this.isAiThinking.set(false);
+          return;
       }
+
+      // 2. Ask AI to pick one
+      console.log('AI Legal Moves:', legalMoves);
+      const uciMove = await this.aiService.getBestMove(fen, legalMoves);
+      console.log('AI Selected:', uciMove);
+
+      let chosenMove = uciMove;
+
+      // 3. FALLBACK: If AI fails/errors/invalid, pick Random to keep game alive
+      if (!chosenMove || !legalMoves.includes(chosenMove)) {
+         console.warn('AI failed or returned invalid. Using Random Fallback.');
+         const randomIndex = Math.floor(Math.random() * legalMoves.length);
+         chosenMove = legalMoves[randomIndex];
+         this.gameStatus.set('Gemini (Random Fallback)');
+      }
+
+      // 4. Execute
+      if (chosenMove) {
+          const from = this.uciToCoords(chosenMove.substring(0, 2));
+          const to = this.uciToCoords(chosenMove.substring(2, 4));
+          if (from && to) {
+              this.executeMove(from, to);
+          }
+      }
+
     } catch (e) {
         console.error('AI Critical Error', e);
-        this.gameStatus.set('Errore Connessione AI');
-        this.turn.set('w'); // Ensure game is not stuck
+        // Emergency Fallback
+        const legalMoves = this.getAllLegalMoves('b');
+        if (legalMoves.length > 0) {
+            const fallback = legalMoves[Math.floor(Math.random() * legalMoves.length)];
+            const f = this.uciToCoords(fallback.substring(0,2));
+            const t = this.uciToCoords(fallback.substring(2,4));
+            if(f && t) this.executeMove(f, t);
+        } else {
+            this.handleAiError('Errore Fatale');
+        }
     } finally {
         this.isAiThinking.set(false);
     }
+  }
+
+  // Helper: Generates all UCI moves for a specific color (used for AI constraints)
+  getAllLegalMoves(color: PieceColor): string[] {
+    const moves: string[] = [];
+    const board = this.board();
+    const cols = ['a','b','c','d','e','f','g','h'];
+    
+    for(let r=0; r<8; r++) {
+      for(let c=0; c<8; c++) {
+        const piece = board[r][c];
+        if(piece && piece.color === color) {
+          const from: Position = {row: r, col: c};
+          const valid = ChessUtils.getValidMoves(board, from, this.gameMode());
+          
+          valid.forEach(to => {
+             // Convert to UCI (e.g., e7e5)
+             const uci = `${cols[from.col]}${8 - from.row}${cols[to.col]}${8 - to.row}`;
+             moves.push(uci);
+          });
+        }
+      }
+    }
+    return moves;
+  }
+
+  private handleAiError(msg: string) {
+      this.gameStatus.set(`${msg} Tocca a te.`);
+      this.turn.set('w'); 
   }
 
   uciToCoords(sq: string): Position | null {
