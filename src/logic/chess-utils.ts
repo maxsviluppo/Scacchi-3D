@@ -48,37 +48,37 @@ export class ChessUtils {
 
     // --- CHECKERS LOGIC (Simplified for Visual Play) ---
     if (mode === 'checkers') {
-       // Checkers move diagonally. 
-       // Man: Forward 1. King: Forward/Back 1 (or more depending on rules, keeping simple 1 step + jumps)
-       const dirs = piece.type === 'ck' ? [[1,1], [1,-1], [-1,1], [-1,-1]] : 
-                    (piece.color === 'w' ? [[-1,-1], [-1,1]] : [[1,-1], [1,1]]);
-       
-       // Simple moves
-       for (const [dr, dc] of dirs) {
-          const r = pos.row + dr;
-          const c = pos.col + dc;
-          if (this.isValidPos({row: r, col: c}) && board[r][c] === null) {
-             moves.push({row: r, col: c});
+      // Checkers move diagonally. 
+      // Man: Forward 1. King: Forward/Back 1 (or more depending on rules, keeping simple 1 step + jumps)
+      const dirs = piece.type === 'ck' ? [[1, 1], [1, -1], [-1, 1], [-1, -1]] :
+        (piece.color === 'w' ? [[-1, -1], [-1, 1]] : [[1, -1], [1, 1]]);
+
+      // Simple moves
+      for (const [dr, dc] of dirs) {
+        const r = pos.row + dr;
+        const c = pos.col + dc;
+        if (this.isValidPos({ row: r, col: c }) && board[r][c] === null) {
+          moves.push({ row: r, col: c });
+        }
+
+        // Simple Jumps (Captures) - Visual only validation (not forced capture logic)
+        const jr = pos.row + (dr * 2);
+        const jc = pos.col + (dc * 2);
+        if (this.isValidPos({ row: jr, col: jc }) && board[jr][jc] === null) {
+          // Check if there is an enemy in between
+          const mr = pos.row + dr;
+          const mc = pos.col + dc;
+          const mid = board[mr][mc];
+          if (mid && mid.color !== piece.color) {
+            moves.push({ row: jr, col: jc });
           }
-          
-          // Simple Jumps (Captures) - Visual only validation (not forced capture logic)
-          const jr = pos.row + (dr * 2);
-          const jc = pos.col + (dc * 2);
-          if (this.isValidPos({row: jr, col: jc}) && board[jr][jc] === null) {
-             // Check if there is an enemy in between
-             const mr = pos.row + dr;
-             const mc = pos.col + dc;
-             const mid = board[mr][mc];
-             if (mid && mid.color !== piece.color) {
-                moves.push({row: jr, col: jc});
-             }
-          }
-       }
-       return moves;
+        }
+      }
+      return moves;
     }
 
     // --- CHESS LOGIC ---
-    
+
     const direction = piece.color === 'w' ? -1 : 1;
     const startRow = piece.color === 'w' ? 6 : 1;
 
@@ -87,7 +87,7 @@ export class ChessUtils {
       if (!this.isValidPos({ row: r, col: c })) return false;
       const target = board[r][c];
       if (moveOnly && target !== null) return false;
-      if (captureOnly && (target === null || target.color === piece.color)) return false; 
+      if (captureOnly && (target === null || target.color === piece.color)) return false;
       if (!captureOnly && !moveOnly && target?.color === piece.color) return false;
       moves.push({ row: r, col: c });
       return target !== null;
@@ -95,28 +95,28 @@ export class ChessUtils {
 
     if (piece.type === 'p') {
       const r1 = pos.row + direction;
-      if (this.isValidPos({row: r1, col: pos.col}) && board[r1][pos.col] === null) {
-        moves.push({row: r1, col: pos.col});
+      if (this.isValidPos({ row: r1, col: pos.col }) && board[r1][pos.col] === null) {
+        moves.push({ row: r1, col: pos.col });
         const r2 = pos.row + direction * 2;
-        if (pos.row === startRow && this.isValidPos({row: r2, col: pos.col}) && board[r2][pos.col] === null) {
-           moves.push({row: r2, col: pos.col});
+        if (pos.row === startRow && this.isValidPos({ row: r2, col: pos.col }) && board[r2][pos.col] === null) {
+          moves.push({ row: r2, col: pos.col });
         }
       }
       [[r1, pos.col - 1], [r1, pos.col + 1]].forEach(([r, c]) => {
-         if (this.isValidPos({row: r, col: c})) {
-           const target = board[r][c];
-           if (target && target.color !== piece.color) {
-             moves.push({row: r, col: c});
-           }
-         }
+        if (this.isValidPos({ row: r, col: c })) {
+          const target = board[r][c];
+          if (target && target.color !== piece.color) {
+            moves.push({ row: r, col: c });
+          }
+        }
       });
     } else {
       const directions: Record<string, number[][]> = {
-        'r': [[1,0], [-1,0], [0,1], [0,-1]],
-        'b': [[1,1], [1,-1], [-1,1], [-1,-1]],
-        'q': [[1,0], [-1,0], [0,1], [0,-1], [1,1], [1,-1], [-1,1], [-1,-1]],
-        'n': [[2,1], [2,-1], [-2,1], [-2,-1], [1,2], [1,-2], [-1,2], [-1,-2]],
-        'k': [[1,0], [-1,0], [0,1], [0,-1], [1,1], [1,-1], [-1,1], [-1,-1]]
+        'r': [[1, 0], [-1, 0], [0, 1], [0, -1]],
+        'b': [[1, 1], [1, -1], [-1, 1], [-1, -1]],
+        'q': [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]],
+        'n': [[2, 1], [2, -1], [-2, 1], [-2, -1], [1, 2], [1, -2], [-1, 2], [-1, -2]],
+        'k': [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]
       };
 
       const dirs = directions[piece.type] || [];
@@ -134,7 +134,7 @@ export class ChessUtils {
             if (target.color !== piece.color) {
               moves.push({ row: r, col: c });
             }
-            break; 
+            break;
           }
           r += dr;
           c += dc;
@@ -145,6 +145,92 @@ export class ChessUtils {
     return moves;
   }
 
+  static getLegalMoves(board: Board, pos: Position, mode: GameMode = 'chess'): Position[] {
+    const validMoves = this.getValidMoves(board, pos, mode);
+    if (mode === 'checkers') return validMoves;
+
+    const piece = board[pos.row][pos.col];
+    if (!piece) return [];
+
+    // Filter moves that leave the king in check
+    return validMoves.filter(to => {
+      const simulatedBoard = this.simulateMove(board, pos, to);
+      return !this.isKingInCheck(simulatedBoard, piece.color);
+    });
+  }
+
+  static isKingInCheck(board: Board, color: PieceColor): boolean {
+    // 1. Find the King
+    let kingPos: Position | null = null;
+    for (let r = 0; r < 8; r++) {
+      for (let c = 0; c < 8; c++) {
+        const p = board[r][c];
+        if (p && p.type === 'k' && p.color === color) {
+          kingPos = { row: r, col: c };
+          break;
+        }
+      }
+      if (kingPos) break;
+    }
+
+    if (!kingPos) return false;
+
+    // 2. Check if any opponent piece can reach the king
+    const opponentColor: PieceColor = color === 'w' ? 'b' : 'w';
+    for (let r = 0; r < 8; r++) {
+      for (let c = 0; c < 8; c++) {
+        const p = board[r][c];
+        if (p && p.color === opponentColor) {
+          const attacks = this.getValidMoves(board, { row: r, col: c }, 'chess');
+          if (attacks.some(m => m.row === kingPos!.row && m.col === kingPos!.col)) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+  static simulateMove(board: Board, from: Position, to: Position): Board {
+    const newBoard = board.map(row => [...row]);
+    newBoard[to.row][to.col] = newBoard[from.row][from.col];
+    newBoard[from.row][from.col] = null;
+    return newBoard;
+  }
+
+  static isCheckmate(board: Board, color: PieceColor): boolean {
+    if (!this.isKingInCheck(board, color)) return false;
+
+    // If any piece has a legal move, it's not checkmate
+    for (let r = 0; r < 8; r++) {
+      for (let c = 0; c < 8; c++) {
+        const p = board[r][c];
+        if (p && p.color === color) {
+          if (this.getLegalMoves(board, { row: r, col: c }, 'chess').length > 0) {
+            return false;
+          }
+        }
+      }
+    }
+    return true;
+  }
+
+  static isStalemate(board: Board, color: PieceColor): boolean {
+    if (this.isKingInCheck(board, color)) return false;
+
+    for (let r = 0; r < 8; r++) {
+      for (let c = 0; c < 8; c++) {
+        const p = board[r][c];
+        if (p && p.color === color) {
+          if (this.getLegalMoves(board, { row: r, col: c }, 'chess').length > 0) {
+            return false;
+          }
+        }
+      }
+    }
+    return true;
+  }
+
   static boardToFEN(board: Board, turn: PieceColor): string {
     let fen = '';
     for (let r = 0; r < 8; r++) {
@@ -153,7 +239,6 @@ export class ChessUtils {
         const p = board[r][c];
         if (p) {
           if (empty > 0) { fen += empty; empty = 0; }
-          // Map checkers types to something generic or ignore FEN for checkers AI
           const char = p.type === 'cm' ? 'p' : (p.type === 'ck' ? 'k' : p.type);
           fen += p.color === 'w' ? char.toUpperCase() : char;
         } else {

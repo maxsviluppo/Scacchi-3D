@@ -248,7 +248,7 @@ import { PieceType } from '../logic/chess-types';
       @if (showSetup) {
         <div class="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 backdrop-blur-md animate-fade-in p-4"
              (click)="gameService.setView('home')">
-          <div class="relative bg-gradient-to-br from-slate-900/98 to-slate-800/98 border-2 border-blue-500/30 rounded-3xl p-6 md:p-10 max-w-4xl w-full shadow-[0_0_80px_rgba(59,130,246,0.3)] overflow-y-auto max-h-[90vh]"
+          <div class="relative bg-gradient-to-br from-slate-900/98 to-slate-800/98 border-2 border-blue-500/30 rounded-3xl p-6 md:p-10 max-w-4xl w-full shadow-[0_0_80px_rgba(59,130,246,0.3)] overflow-y-auto max-h-[90vh] custom-scrollbar"
                (click)="$event.stopPropagation()">
             
             <!-- Close Button -->
@@ -260,8 +260,8 @@ import { PieceType } from '../logic/chess-types';
               </svg>
             </button>
 
-            <h2 class="text-3xl md:text-4xl font-black text-center mb-10 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-300 to-blue-400">
-              CONFIGURAZIONE GIOCO
+            <h2 class="text-3xl md:text-4xl font-black text-center mb-10 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-300 to-blue-400 tracking-wider">
+              SETUP GIOCO
             </h2>
 
             <!-- Configuration Sections -->
@@ -270,24 +270,26 @@ import { PieceType } from '../logic/chess-types';
               <!-- SCACCHI ASSETS -->
               <section>
                 <div class="flex items-center gap-3 mb-6">
-                  <div class="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400 border border-blue-500/30">
-                    <span class="font-bold">S</span>
+                  <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500/30 to-indigo-500/30 flex items-center justify-center text-blue-300 border border-blue-400/40 shadow-lg">
+                    <svg viewBox="0 0 100 100" fill="currentColor" class="w-6 h-6">
+                      <path d="M50 10 L45 20 L40 15 L40 25 L35 25 L35 30 L30 30 L30 70 L25 70 L25 80 L75 80 L75 70 L70 70 L70 30 L65 30 L65 25 L60 25 L60 15 L55 20 L50 10 Z"/>
+                    </svg>
                   </div>
-                  <h3 class="text-xl font-bold text-white tracking-widest uppercase">Modelli Scacchi</h3>
+                  <h3 class="text-xl font-black text-white tracking-widest uppercase">PEZZI SCACCHI</h3>
                 </div>
                 
                 <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
                   @for (type of pieceTypes; track type.id) {
                     <div class="space-y-2">
-                       <label class="block text-[10px] text-slate-400 font-bold uppercase tracking-tighter text-center">{{type.label}}</label>
-                       <div class="flex flex-col gap-2">
+                       <label class="block text-[9px] text-slate-400 font-black uppercase tracking-wider text-center mb-1">{{type.label}}</label>
+                       <div class="flex flex-col gap-1.5">
                           <button (click)="fileInputW.click()" 
-                                  class="w-full py-2 px-1 text-[10px] bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-white transition-all">
-                             Bianco
+                                  class="w-full py-2 px-1 text-[9px] font-bold uppercase tracking-wide bg-gradient-to-r from-white/10 to-white/5 hover:from-white/20 hover:to-white/10 border border-white/20 rounded-lg text-white transition-all shadow-sm hover:shadow-md">
+                             ⚪ Bianco
                           </button>
                           <button (click)="fileInputB.click()" 
-                                  class="w-full py-2 px-1 text-[10px] bg-slate-800/60 hover:bg-slate-700/60 border border-white/10 rounded-lg text-white transition-all">
-                             Nero
+                                  class="w-full py-2 px-1 text-[9px] font-bold uppercase tracking-wide bg-gradient-to-r from-slate-800/80 to-slate-900/80 hover:from-slate-700/80 hover:to-slate-800/80 border border-slate-600/30 rounded-lg text-white transition-all shadow-sm hover:shadow-md">
+                             ⚫ Nero
                           </button>
                           <input #fileInputW type="file" class="hidden" (change)="onFileSelected($event, type.id, 'w')" accept=".stl,.glb,.gltf">
                           <input #fileInputB type="file" class="hidden" (change)="onFileSelected($event, type.id, 'b')" accept=".stl,.glb,.gltf">
@@ -300,24 +302,27 @@ import { PieceType } from '../logic/chess-types';
               <!-- DAMA ASSETS -->
               <section>
                 <div class="flex items-center gap-3 mb-6">
-                  <div class="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center text-purple-400 border border-purple-500/30">
-                    <span class="font-bold">D</span>
+                  <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500/30 to-pink-500/30 flex items-center justify-center text-purple-300 border border-purple-400/40 shadow-lg">
+                    <svg viewBox="0 0 100 100" fill="currentColor" class="w-6 h-6">
+                      <circle cx="50" cy="50" r="35"/>
+                      <circle cx="50" cy="50" r="25" class="text-pink-300"/>
+                    </svg>
                   </div>
-                  <h3 class="text-xl font-bold text-white tracking-widest uppercase">Modelli Dama</h3>
+                  <h3 class="text-xl font-black text-white tracking-widest uppercase">PEZZI DAMA</h3>
                 </div>
                 
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   @for (type of checkerTypes; track type.id) {
                     <div class="space-y-2">
-                       <label class="block text-[10px] text-slate-400 font-bold uppercase tracking-tighter text-center">{{type.label}}</label>
-                       <div class="grid grid-cols-2 gap-2">
+                       <label class="block text-[9px] text-slate-400 font-black uppercase tracking-wider text-center mb-1">{{type.label}}</label>
+                       <div class="grid grid-cols-2 gap-1.5">
                           <button (click)="cInputW.click()" 
-                                  class="w-full py-2 text-[10px] bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-white transition-all">
-                            Bianco
+                                  class="w-full py-2 text-[9px] font-bold uppercase tracking-wide bg-gradient-to-r from-white/10 to-white/5 hover:from-white/20 hover:to-white/10 border border-white/20 rounded-lg text-white transition-all shadow-sm hover:shadow-md">
+                            ⚪
                           </button>
                           <button (click)="cInputB.click()" 
-                                  class="w-full py-2 text-[10px] bg-slate-800/60 hover:bg-slate-700/60 border border-white/10 rounded-lg text-white transition-all">
-                            Nero
+                                  class="w-full py-2 text-[9px] font-bold uppercase tracking-wide bg-gradient-to-r from-slate-800/80 to-slate-900/80 hover:from-slate-700/80 hover:to-slate-800/80 border border-slate-600/30 rounded-lg text-white transition-all shadow-sm hover:shadow-md">
+                            ⚫
                           </button>
                           <input #cInputW type="file" class="hidden" (change)="onFileSelected($event, type.id, 'w')" accept=".stl,.glb,.gltf">
                           <input #cInputB type="file" class="hidden" (change)="onFileSelected($event, type.id, 'b')" accept=".stl,.glb,.gltf">
@@ -327,21 +332,25 @@ import { PieceType } from '../logic/chess-types';
                   
                   <!-- Board Asset -->
                   <div class="space-y-2">
-                     <label class="block text-[10px] text-slate-400 font-bold uppercase tracking-tighter text-center">Tavoliere 3D</label>
+                     <label class="block text-[9px] text-slate-400 font-black uppercase tracking-wider text-center mb-1">SCACCHIERA</label>
                      <button (click)="boardInput.click()" 
-                             class="w-full py-2 flex items-center justify-center gap-2 text-[10px] bg-gradient-to-r from-blue-600/40 to-indigo-600/40 hover:from-blue-500/50 hover:to-indigo-500/50 border border-blue-400/30 rounded-lg text-white transition-all">
-                        📦 Carica Scacchiera
+                             class="w-full py-3 flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-wide bg-gradient-to-r from-blue-600/50 to-indigo-600/50 hover:from-blue-500/60 hover:to-indigo-500/60 border border-blue-400/40 rounded-xl text-white transition-all shadow-lg hover:shadow-xl">
+                        <svg viewBox="0 0 100 100" fill="currentColor" class="w-4 h-4">
+                          <rect x="10" y="10" width="80" height="80" rx="4" fill="none" stroke="currentColor" stroke-width="4"/>
+                          <path d="M10 30 L90 30 M10 50 L90 50 M10 70 L90 70 M30 10 L30 90 M50 10 L50 90 M70 10 L70 90"/>
+                        </svg>
+                        CARICA
                      </button>
                      <input #boardInput type="file" class="hidden" (change)="onFileSelected($event, 'board')" accept=".stl,.glb,.gltf">
                   </div>
                 </div>
               </section>
 
-              <!-- Reset Action -->
-              <div class="pt-6 border-t border-white/5 flex justify-center">
+              <!-- Save Action -->
+              <div class="pt-8 border-t border-white/10 flex justify-center">
                  <button (click)="gameService.setView('home')" 
-                   class="px-12 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:scale-105 active:scale-95 text-white font-black uppercase tracking-widest rounded-2xl shadow-[0_10px_40px_rgba(37,99,235,0.4)] transition-all">
-                    SALVA CONFIGURAZIONE
+                   class="px-16 py-5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 hover:scale-105 active:scale-95 text-white font-black text-lg uppercase tracking-widest rounded-2xl shadow-[0_10px_50px_rgba(37,99,235,0.5)] hover:shadow-[0_15px_60px_rgba(37,99,235,0.6)] transition-all">
+                    ✓ SALVA
                  </button>
               </div>
 
@@ -410,8 +419,8 @@ import { PieceType } from '../logic/chess-types';
               </svg>
             </button>
 
-            <h2 class="text-2xl md:text-3xl font-black text-center mb-6 md:mb-8 text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">
-              Partita Locale
+            <h2 class="text-2xl md:text-3xl font-black text-center mb-6 md:mb-8 text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400 tracking-wider">
+              PARTITA LOCALE
             </h2>
             
             <div class="grid grid-cols-2 gap-4">
@@ -606,6 +615,17 @@ import { PieceType } from '../logic/chess-types';
       10% { opacity: 0.5; }
       90% { opacity: 0.5; }
       100% { transform: translateX(100vw) rotate(5deg); opacity: 0; }
+    }
+    
+    /* Hide Scrollbar but keep functionality */
+    .custom-scrollbar {
+      scrollbar-width: none; /* Firefox */
+      -ms-overflow-style: none; /* IE/Edge */
+      -webkit-overflow-scrolling: touch; /* Smooth touch scroll */
+    }
+    
+    .custom-scrollbar::-webkit-scrollbar {
+      display: none; /* Chrome/Safari/Edge */
     }
   `]
 })

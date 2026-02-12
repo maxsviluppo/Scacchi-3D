@@ -34,10 +34,11 @@ export class GameService {
   validMoves = computed(() => {
     const pos = this.selectedPos();
     if (!pos) return [];
-    return ChessUtils.getValidMoves(this.board(), pos, this.gameMode());
+    return ChessUtils.getLegalMoves(this.board(), pos, this.gameMode());
   });
 
   isAiThinking = signal(false);
+  isGameOver = signal(false);
   gameStatus = signal<string>('Tocca al Bianco');
 
   // Actions
@@ -69,7 +70,7 @@ export class GameService {
   }
 
   selectSquare(pos: Position) {
-    if (this.isAiThinking()) return;
+    if (this.isAiThinking() || this.isGameOver()) return;
 
     const currentBoard = this.board();
     const piece = currentBoard[pos.row][pos.col];
@@ -172,11 +173,37 @@ export class GameService {
     this.selectedPos.set(null);
     const nextTurn = this.turn() === 'w' ? 'b' : 'w';
     this.turn.set(nextTurn);
-    this.gameStatus.set(`${nextTurn === 'w' ? 'Tocca al Bianco' : 'Tocca al Nero'}`);
+
+    // --- GAME OVER DETECTION ---
+    const board = this.board();
+    if (mode === 'chess') {
+      if (ChessUtils.isCheckmate(board, nextTurn)) {
+        this.gameStatus.set(`SCACCO MATTO! Vince il ${this.turn() === 'b' ? 'Bianco' : 'Nero'}`);
+        this.isGameOver.set(true);
+        return; // Stop game
+      } else if (ChessUtils.isStalemate(board, nextTurn)) {
+        this.gameStatus.set('STALLO! Pareggio.');
+        this.isGameOver.set(true);
+        return; // Stop game
+      } else if (ChessUtils.isKingInCheck(board, nextTurn)) {
+        this.gameStatus.set(`SCACCO al ${nextTurn === 'w' ? 'Bianco' : 'Nero'}!`);
+      } else {
+        this.gameStatus.set(`Tocca al ${nextTurn === 'w' ? 'Bianco' : 'Nero'}`);
+      }
+    } else {
+      // Checkers Game Over (Simplified)
+      const hasMoves = this.getAllLegalMoves(nextTurn).length > 0;
+      if (!hasMoves) {
+        this.gameStatus.set(`${this.turn() === 'b' ? 'Bianco' : 'Nero'} vince!`);
+        this.isGameOver.set(true);
+        return;
+      }
+      this.gameStatus.set(`Tocca al ${nextTurn === 'w' ? 'Bianco' : 'Nero'}`);
+    }
 
     // AI Trigger
     if (nextTurn === 'b' && this.playerMode() === 'ai') {
-      setTimeout(() => this.triggerAiMove(), 700); // Slight delay to let animation start
+      setTimeout(() => this.triggerAiMove(), 700);
     }
   }
 
@@ -244,7 +271,7 @@ export class GameService {
         const piece = board[r][c];
         if (piece && piece.color === color) {
           const from: Position = { row: r, col: c };
-          const valid = ChessUtils.getValidMoves(board, from, this.gameMode());
+          const valid = ChessUtils.getLegalMoves(board, from, this.gameMode());
 
           valid.forEach(to => {
             const uci = `${cols[from.col]}${8 - from.row}${cols[to.col]}${8 - to.row}`;
@@ -277,5 +304,6 @@ export class GameService {
     this.lastMove.set(null);
     this.gameStatus.set('Tocca al Bianco');
     this.isAiThinking.set(false);
+    this.isGameOver.set(false);
   }
 }

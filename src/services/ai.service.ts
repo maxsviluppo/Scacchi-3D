@@ -44,18 +44,21 @@ export class AiService {
       // L'IA deve SOLO scegliere la migliore da questa lista.
       const gameName = mode === 'chess' ? 'Chess' : 'Checkers (Dama)';
       const prompt = `
-      Context: ${gameName} Game. You are playing BLACK.
+      Context: ${gameName} Game. You are an expert player playing BLACK.
       Current FEN: ${fen}
       
-      ALLOWED MOVES LIST:
+      ALLOWED MOVES LIST (in UCI format):
       [${validMoves.join(', ')}]
       
-      Task: Select the absolute best move for Black from the ALLOWED MOVES LIST above.
+      Objective:
+      1. Prioritize capturing opponent pieces if it gives you a tactical advantage.
+      2. Protect your pieces from being captured.
+      3. Aim for checkmate (Chess) or clearing the board (Checkers).
+      4. Select the absolute best move for Black from the ALLOWED MOVES LIST above.
       
       Output Rules:
       1. Return ONLY the move string (e.g. "e7e5").
-      2. Do NOT output any explanation.
-      3. You MUST pick one from the list.
+      2. No explanations, no extra text.
       `;
 
       const response = await this.ai.models.generateContent({
