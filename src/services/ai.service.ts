@@ -7,7 +7,8 @@ import { GoogleGenAI } from '@google/genai';
 })
 export class AiService {
   private ai: GoogleGenAI;
-  // Using Gemini 2.5 Flash for speed
+  // Utilizziamo 'gemini-2.5-flash': È il modello più veloce ed efficiente.
+  // Ideale per le quote gratuite e per avere risposte rapide nel gioco.
   private model = 'gemini-2.5-flash';
 
   constructor() {
@@ -16,23 +17,16 @@ export class AiService {
 
   async getBestMove(fen: string): Promise<string | null> {
     try {
-      const prompt = `
-        You are a chess engine playing the Black pieces.
-        The current board position in FEN is: ${fen}.
-        Analyze the position and provide the best move for Black.
-        
-        Strict Output Format:
-        Return ONLY the move in UCI format (e.g., "e2e4", "g8f6", "a7a8q").
-        Do NOT add any explanation, numbering, or other text.
-      `;
+      // Prompt ottimizzato per consumare meno token (migliore per il tier gratuito)
+      const prompt = `FEN: ${fen}. Play as Black. Best move in UCI format only (e.g. e2e4). No explanations.`;
 
       const response = await this.ai.models.generateContent({
         model: this.model,
         contents: prompt,
         config: {
-          // Game AI Optimization: Disable thinking for low latency response
+          // Disabilita il "pensiero" esteso per ridurre la latenza e i costi
           thinkingConfig: { thinkingBudget: 0 },
-          // Low temperature for more deterministic/precise play
+          // Temperatura bassa per uno stile di gioco preciso e deterministico
           temperature: 0.1, 
         }
       });
@@ -41,7 +35,7 @@ export class AiService {
       if (!text) return null;
 
       const move = text.trim();
-      // Basic validation of response format (4-5 chars)
+      // Validazione base formato UCI (4-5 caratteri)
       if (move.length >= 4 && move.length <= 5) {
         return move;
       }
