@@ -25,6 +25,9 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
   
   gameService = inject(GameService);
   loading = true;
+  
+  // Prevents animations while heavy assets are processing
+  private isLoadingModel = false;
 
   private three: any; 
   private stlLoader: any; 
@@ -44,6 +47,7 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
 
   // Animation State
   private currentlyAnimatingMove: LastMove | null = null;
+  private lastAnimatedMove: LastMove | null = null;
 
   // Custom Model Cache
   private customCache: Map<string, any> = new Map();
@@ -59,11 +63,23 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
       const useOriginal = this.gameService.useOriginalTexture();
       
       if (this.three && this.scene) {
-        this.updatePieces(board, selected, style, lastMove);
-        this.updateHighlights(validMoves, selected);
+        // Always verify if we are in a safe state to render
+        if (!this.isLoadingModel) {
+            
+            // Fix: Detect new move and set state BEFORE updatePieces to hide destination piece
+            const isNewMove = lastMove && lastMove !== this.lastAnimatedMove;
+            
+            if (isNewMove) {
+                this.currentlyAnimatingMove = lastMove;
+                this.lastAnimatedMove = lastMove;
+            }
 
-        if (lastMove) {
-          this.animateMove(lastMove, style);
+            this.updatePieces(board, selected, style, lastMove);
+            this.updateHighlights(validMoves, selected);
+
+            if (isNewMove) {
+              this.animateMove(lastMove!, style);
+            }
         }
       }
     });
@@ -76,6 +92,9 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
 
   async loadCustomModel(file: File, key: string) {
     if (!this.three) return;
+    
+    // START LOCK
+    this.isLoadingModel = true;
 
     const url = URL.createObjectURL(file);
     const fileName = file.name.toLowerCase();
@@ -186,6 +205,17 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
       console.error('Failed to load Model', e);
     } finally {
       URL.revokeObjectURL(url);
+      
+      // END LOCK
+      this.isLoadingModel = false;
+      
+      // Force immediate redraw to show new model
+      this.updatePieces(
+          this.gameService.board(), 
+          this.gameService.selectedPos(), 
+          this.gameService.pieceStyle(), 
+          null
+      );
     }
   }
 
@@ -250,7 +280,7 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = this.three.PCFSoftShadowMap;
     this.renderer.toneMapping = this.three.ACESFilmicToneMapping;
-    // Increased exposure slightly for brightness
+    // Increased exposure slightly for brightness (Maintained from previous request)
     this.renderer.toneMappingExposure = 1.35; 
 
     this.controls = new OrbitControls.OrbitControls(this.camera, this.renderer.domElement);
@@ -260,13 +290,11 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
     this.controls.minDistance = 4;
     this.controls.maxDistance = 20;
 
-    // 1. Hemisphere Light (Soft global fill - Sky vs Ground)
-    // Replaces/Augments Ambient for better 3D shape definition
+    // Lighting (Maintained from previous request for calibrated brightness)
     const hemiLight = new this.three.HemisphereLight(0xffffff, 0x444444, 0.6); 
     this.scene.add(hemiLight);
 
-    // 2. Main Directional Light (Sun/Key)
-    const dirLight = new this.three.DirectionalLight(0xfff0dd, 2.8); // Increased Intensity
+    const dirLight = new this.three.DirectionalLight(0xfff0dd, 2.8); 
     dirLight.position.set(5, 12, 5); 
     dirLight.castShadow = true;
     dirLight.shadow.mapSize.width = 4096;
@@ -283,12 +311,10 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
     
     this.scene.add(dirLight);
 
-    // 3. Fill Light (Opposite side to open up shadows on dark pieces)
-    const fillLight = new this.three.DirectionalLight(0xdbeafe, 1.5); // Cooler, softer
+    const fillLight = new this.three.DirectionalLight(0xdbeafe, 1.5); 
     fillLight.position.set(-5, 6, -5);
     this.scene.add(fillLight);
 
-    // 4. Rim Light (Backlight for edge definition)
     const rimLight = new this.three.SpotLight(0x60a5fa, 3.0);
     rimLight.position.set(0, 5, -8);
     rimLight.lookAt(0, 0, 0);
@@ -334,8 +360,20 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
   private animateMove(move: LastMove, style: string) {
     if (!this.three) return;
     
+    // Safety check: Do not animate if models are reloading or unstable
+    if (this.isLoadingModel) {
+       this.updatePieces(
+          this.gameService.board(), 
+          this.gameService.selectedPos(), 
+          this.gameService.pieceStyle(), 
+          null
+       );
+       return;
+    }
+
     this.animGroup.clear();
-    this.currentlyAnimatingMove = move;
+    // Use existing variable, assignment here just confirms it for the loop
+    this.currentlyAnimatingMove = move; 
 
     // --- SETUP ---
     const startX = move.from.col - 3.5;
@@ -373,65 +411,65 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
     
     const peakHeight = isBigJump ? 2.5 : 0.6; // 0.6 is a subtle "lift" for sliding pieces
 
-    // Direction vector for tilt calculation
+    // Vectors for rotation logic
     const dx = endX - startX;
     const dz = endZ - startZ;
     const dist = Math.sqrt(dx*dx + dz*dz);
+    const angle = Math.atan2(dx, dz); // Heading angle
     
+    // Store original rotation (especially important for Knights)
+    const baseRotationY = move.piece.type === 'n' ? (move.piece.color === 'w' ? 0 : Math.PI) : 0;
+
     const animateStep = (time: number) => {
         const elapsed = time - startTime;
         const progress = Math.min(elapsed / duration, 1.0);
         
-        // Custom Easing: Smooth start/end
+        // Easing Functions
+        // Horizontal: easeInOutCubic for smooth start/stop
         const t = this.easeInOutCubic(progress);
-
+        
         // 1. Position Interpolation (Linear X/Z)
         const curX = startX + (endX - startX) * t;
         const curZ = startZ + (endZ - startZ) * t;
 
         // 2. Parabolic Y (Height)
-        // Formula: 4 * height * t * (1-t) creates a perfect parabola peaking at t=0.5
         const curY = 0.1 + (4 * peakHeight * t * (1 - t));
 
         movingMesh.position.set(curX, curY, curZ);
 
-        // 3. Dynamic Tilt (Action feel)
-        // Tilt forward during acceleration, backward during deceleration
-        // Only if distance is significant to avoid jitter on small steps
-        if (dist > 0.5 && !isKnight) { 
-           // Derivative of parabola is 4*h*(1-2t). Use this for tilt angle.
-           const tiltFactor = 0.3; // Max tilt radians
-           const tilt = (1 - 2 * t) * tiltFactor; 
-           
-           // Rotate around local X axis perpendicular to movement would be complex,
-           // so we approximate by tilting based on dominant axis or just X for visual flair
-           // A simple approach: tilt "forward" in the direction of movement.
-           // Calculate angle of movement
-           const angle = Math.atan2(dx, dz); // Angle in Y-plane
-           movingMesh.rotation.set(0, 0, 0); // Reset
-           movingMesh.rotateY(move.piece.type === 'n' ? (move.piece.color === 'w' ? 0 : Math.PI) : 0); // Preserve base rotation
-           
-           // Apply tilt relative to camera/world? No, relative to movement.
-           // Axis of rotation is perpendicular to movement (angle + PI/2)
-           const axisX = Math.cos(angle);
-           const axisZ = -Math.sin(angle);
-           const tiltAxis = new this.three.Vector3(axisX, 0, axisZ);
-           
-           // Only tilt if it's a big jump or meaningful move
-           if (isBigJump) {
-              movingMesh.rotateOnWorldAxis(tiltAxis, tilt);
-           }
+        // 3. Dynamic Rotation (Depth & Fluidity)
+        if (dist > 0.2) {
+            movingMesh.rotation.set(0, 0, 0); // Reset loop
+
+            // A. Base Facing
+            movingMesh.rotateY(baseRotationY);
+
+            // B. "Pitch" (Tilt forward/back)
+            const maxTilt = 0.35; 
+            const tilt = (1 - 2 * t) * maxTilt; 
+            
+            const axisX = Math.cos(angle); 
+            const axisZ = -Math.sin(angle);
+            const pitchAxis = new this.three.Vector3(axisX, 0, axisZ);
+            
+            if (isBigJump) {
+                movingMesh.rotateOnWorldAxis(pitchAxis, tilt);
+            }
+
+            // C. "Roll" (Subtle side wobble for life-like feel)
+            const rollAmount = 0.15;
+            const roll = Math.sin(t * Math.PI * 2) * rollAmount;
+            const rollAxis = new this.three.Vector3(Math.sin(angle), 0, Math.cos(angle));
+            movingMesh.rotateOnWorldAxis(rollAxis, roll);
         }
 
         // 4. Capture Animation (Delayed Squash)
         if (capturedMesh) {
-             // Start shrinking only when attacker is descending (t > 0.7)
              if (t > 0.7) {
                  const shrinkProgress = (t - 0.7) / 0.3; // 0 to 1
                  const scale = Math.max(0, 1 - shrinkProgress);
                  capturedMesh.scale.setScalar(scale);
-                 // Add a little spin
-                 capturedMesh.rotation.y += 0.2;
+                 capturedMesh.rotation.y += 0.25;
              }
         }
 
@@ -441,7 +479,7 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
             // FINISH
             this.animGroup.clear();
             this.currentlyAnimatingMove = null;
-            // Force redraw to reveal the real piece
+            // Force redraw to reveal the real piece now that animation is over
             this.updatePieces(
                 this.gameService.board(), 
                 this.gameService.selectedPos(), 
@@ -476,12 +514,10 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
   }
 
   private createPieceMaterial(colorHex: number, isSelected: boolean): any {
-     // Reduced roughness slightly for better highlights on dark pieces
-     // Reduced metalness for black pieces (managed via color logic mostly, but good defaults here)
      return new this.three.MeshPhysicalMaterial({
         color: colorHex,
         roughness: 0.2,   // Shinier
-        metalness: 0.1,   // Less metallic to avoid dark chrome look
+        metalness: 0.1,   // Less metallic
         clearcoat: 1.0,   // High polish
         clearcoatRoughness: 0.1,
         emissive: isSelected ? 0xffd700 : 0x000000,
@@ -641,11 +677,9 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
           ring.position.y = 0.31;
           group.add(ring);
       } else {
-          const inner = new this.three.Mesh(
-              new this.three.CylinderGeometry(0.25, 0.25, 0.16, 32),
-              material
-          );
-          inner.translate(0, 0.075, 0);
+          const innerGeo = new this.three.CylinderGeometry(0.25, 0.25, 0.16, 32);
+          innerGeo.translate(0, 0.075, 0);
+          const inner = new this.three.Mesh(innerGeo, material);
           group.add(inner);
       }
       return group;

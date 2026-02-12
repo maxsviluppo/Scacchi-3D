@@ -8,7 +8,39 @@ import { PieceType } from './logic/chess-types';
   selector: 'app-root',
   standalone: true,
   imports: [ChessSceneComponent],
-  templateUrl: './app.component.html'
+  templateUrl: './app.component.html',
+  styles: [`
+    @keyframes blob {
+      0% { transform: translate(0px, 0px) scale(1); }
+      33% { transform: translate(30px, -50px) scale(1.1); }
+      66% { transform: translate(-20px, 20px) scale(0.9); }
+      100% { transform: translate(0px, 0px) scale(1); }
+    }
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.3; transform: scale(0.8); }
+      50% { opacity: 1; transform: scale(1.2); }
+    }
+    @keyframes float-particle {
+      0% { transform: translateY(0) translateX(0); }
+      50% { transform: translateY(-20px) translateX(10px); }
+      100% { transform: translateY(0) translateX(0); }
+    }
+    .animate-blob {
+      animation: blob 15s infinite alternate ease-in-out;
+    }
+    .animate-twinkle {
+      animation: twinkle 4s infinite ease-in-out;
+    }
+    .animate-float-slow {
+      animation: float-particle 10s infinite ease-in-out;
+    }
+    .animate-float-medium {
+      animation: float-particle 7s infinite ease-in-out;
+    }
+    .animation-delay-2000 { animation-delay: 2s; }
+    .animation-delay-4000 { animation-delay: 4s; }
+    .animation-delay-1000 { animation-delay: 1s; }
+  `]
 })
 export class AppComponent {
   gameService = inject(GameService);
