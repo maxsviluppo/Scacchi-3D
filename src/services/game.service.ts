@@ -3,10 +3,12 @@ import { Injectable, signal, computed, inject } from '@angular/core';
 import { Board, PieceColor, Position, GameMode, LastMove, Piece } from '../logic/chess-types';
 import { ChessUtils } from '../logic/chess-utils';
 import { AiService } from './ai.service';
+import { SupabaseService } from './supabase.service';
+
 
 export type PieceStyle = 'minimal' | 'classic' | 'neon' | 'custom';
 export type AppView = 'home' | 'game' | 'settings' | 'admin' | 'marketplace' | 'adventure' | 'career';
-export type PlayerMode = 'ai' | 'local' | 'online';
+export type PlayerMode = 'ai' | 'local' | 'online' | 'career';
 
 @Injectable({
   providedIn: 'root'
@@ -26,6 +28,11 @@ export class GameService {
   pieceStyle = signal<PieceStyle>('classic');
   useOriginalTexture = signal<boolean>(false);
   bgBlur = signal<boolean>(true);
+
+  // Career State
+  careerLevel = signal<number>(1);
+  careerPoints = signal<number>(0);
+  isCareerGame = computed(() => this.playerMode() === 'career');
 
   // Animation State
   lastMove = signal<LastMove | null>(null);
@@ -57,9 +64,12 @@ export class GameService {
     this.viewState.set(view);
   }
 
-  startGame(mode: GameMode, playerMode: PlayerMode = 'local') {
+  startGame(mode: GameMode, playerMode: PlayerMode = 'local', level?: number) {
     this.gameMode.set(mode);
     this.playerMode.set(playerMode);
+    if (playerMode === 'career' && level) {
+      this.careerLevel.set(level);
+    }
     this.resetGame();
     this.viewState.set('game');
   }
@@ -176,40 +186,76 @@ export class GameService {
 
     // --- GAME OVER DETECTION ---
     const board = this.board();
+    let gameOver = false;
+    let winner: PieceColor | 'draw' | null = null;
+
     if (mode === 'chess') {
       if (ChessUtils.isCheckmate(board, nextTurn)) {
         this.gameStatus.set(`SCACCO MATTO! Vince il ${this.turn() === 'b' ? 'Bianco' : 'Nero'}`);
-        this.isGameOver.set(true);
-        return; // Stop game
+        gameOver = true;
+        winner = this.turn();
       } else if (ChessUtils.isStalemate(board, nextTurn)) {
         this.gameStatus.set('STALLO! Pareggio.');
-        this.isGameOver.set(true);
-        return; // Stop game
+        gameOver = true;
+        winner = 'draw';
       } else if (ChessUtils.isKingInCheck(board, nextTurn)) {
         this.gameStatus.set(`SCACCO al ${nextTurn === 'w' ? 'Bianco' : 'Nero'}!`);
       } else {
         this.gameStatus.set(`Tocca al ${nextTurn === 'w' ? 'Bianco' : 'Nero'}`);
       }
     } else {
-      // Checkers Game Over (Simplified)
       const hasMoves = this.getAllLegalMoves(nextTurn).length > 0;
       if (!hasMoves) {
         this.gameStatus.set(`${this.turn() === 'b' ? 'Bianco' : 'Nero'} vince!`);
-        this.isGameOver.set(true);
-        return;
+        gameOver = true;
+        winner = this.turn();
+      } else {
+        this.gameStatus.set(`Tocca al ${nextTurn === 'w' ? 'Bianco' : 'Nero'}`);
       }
-      this.gameStatus.set(`Tocca al ${nextTurn === 'w' ? 'Bianco' : 'Nero'}`);
+    }
+
+    if (gameOver) {
+      this.isGameOver.set(true);
+      if (this.playerMode() === 'career') {
+        this.handleCareerEnd(winner);
+      }
+      return;
+    }
+
+    // Save Career Game progress if active
+    if (this.playerMode() === 'career') {
+      this.saveCareerState();
     }
 
     // AI Trigger
-    if (nextTurn === 'b' && this.playerMode() === 'ai') {
+    if (nextTurn === 'b' && (this.playerMode() === 'ai' || this.playerMode() === 'career')) {
       setTimeout(() => this.triggerAiMove(), 700);
     }
   }
 
+  private supabase = inject(SupabaseService);
+
+  private saveCareerState() {
+    this.supabase.saveCareerGame(this.gameMode(), this.careerLevel(), {
+      board: this.board(),
+      turn: this.turn(),
+      lastMove: this.lastMove()
+    });
+  }
+
+  private async handleCareerEnd(winner: PieceColor | 'draw' | null) {
+    if (winner === 'w') { // Player won
+      const points = 100 + (this.careerLevel() * 10);
+      await this.supabase.updateCareerProgress(this.gameMode(), this.careerLevel(), points);
+      this.gameStatus.set(`${this.gameStatus()} +${points} PUNTI! LIVELLO SUPERATO.`);
+    } else {
+      await this.supabase.clearSavedGame();
+    }
+  }
+
   private async triggerAiMove() {
-    // Only trigger AI if we're in AI mode and it's black's turn
-    if (this.playerMode() !== 'ai' || this.turn() !== 'b') {
+    // Only trigger AI if we're in AI or Career mode and it's black's turn
+    if ((this.playerMode() !== 'ai' && this.playerMode() !== 'career') || this.turn() !== 'b') {
       return;
     }
 
@@ -226,7 +272,8 @@ export class GameService {
         return;
       }
 
-      const uciMove = await this.aiService.getBestMove(fen, legalMoves, this.gameMode());
+      const level = this.playerMode() === 'career' ? this.careerLevel() : 50; // Default to 50 for normal AI matches
+      const uciMove = await this.aiService.getBestMove(fen, legalMoves, this.gameMode(), level);
 
       let chosenMove = uciMove;
 

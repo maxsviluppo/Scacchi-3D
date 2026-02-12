@@ -25,7 +25,7 @@ export class AiService {
     }
   }
 
-  async getBestMove(fen: string, validMoves: string[], mode: 'chess' | 'checkers' = 'chess'): Promise<string | null> {
+  async getBestMove(fen: string, validMoves: string[], mode: 'chess' | 'checkers' = 'chess', level: number = 1): Promise<string | null> {
     // Safety check: if AI isn't initialized, return null immediately
     if (!this.ai) {
       console.warn('AiService: Chiamata saltata (Client non inizializzato/Manca API_KEY)');
@@ -39,12 +39,28 @@ export class AiService {
     }
 
     try {
-      // Prompt Constraint-Based:
-      // Forniamo la lista esatta delle mosse valide generate dall'engine locale.
-      // L'IA deve SOLO scegliere la migliore da questa lista.
+      // Dynamic difficulty configuration
+      let difficultyContext = '';
+      let temperature = 0.1;
+
+      if (level <= 20) {
+        difficultyContext = 'You are a beginner. Play casually and sometimes make sub-optimal moves to allow the user to learn.';
+        temperature = 0.7;
+      } else if (level <= 50) {
+        difficultyContext = 'You are an intermediate player. Play solidly but not aggressively.';
+        temperature = 0.4;
+      } else if (level <= 80) {
+        difficultyContext = 'You are an advanced player. Play tactically and prioritize capturing opponent pieces.';
+        temperature = 0.2;
+      } else {
+        difficultyContext = 'You are a Grandmaster. Play with maximum precision, brutal tactics, and absolute efficiency.';
+        temperature = 0.05;
+      }
+
       const gameName = mode === 'chess' ? 'Chess' : 'Checkers (Dama)';
       const prompt = `
       Context: ${gameName} Game. You are an expert player playing BLACK.
+      Level: ${level} (1-100). ${difficultyContext}
       Current FEN: ${fen}
       
       ALLOWED MOVES LIST (in UCI format):
@@ -54,7 +70,7 @@ export class AiService {
       1. Prioritize capturing opponent pieces if it gives you a tactical advantage.
       2. Protect your pieces from being captured.
       3. Aim for checkmate (Chess) or clearing the board (Checkers).
-      4. Select the absolute best move for Black from the ALLOWED MOVES LIST above.
+      4. Select the absolute best move for Black from the ALLOWED MOVES LIST above according to your indicated skill level.
       
       Output Rules:
       1. Return ONLY the move string (e.g. "e7e5").
@@ -66,7 +82,7 @@ export class AiService {
         contents: prompt,
         config: {
           thinkingConfig: { thinkingBudget: 0 },
-          temperature: 0.1, // Basso per essere deterministico e logico
+          temperature: temperature,
         }
       });
 

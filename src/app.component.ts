@@ -1,13 +1,15 @@
 import { Component, inject, ViewChild } from '@angular/core';
 import { ChessSceneComponent } from './components/chess-scene.component';
 import { HomeViewComponent } from './components/home-view.component';
+import { MarketplaceViewComponent } from './components/marketplace-view.component';
+import { CareerViewComponent } from './components/career-view.component';
 import { GameService } from './services/game.service';
 import { PieceType, Position } from './logic/chess-types';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [ChessSceneComponent, HomeViewComponent],
+  imports: [ChessSceneComponent, HomeViewComponent, MarketplaceViewComponent, CareerViewComponent],
   template: `
     <div class="h-screen w-full relative overflow-hidden bg-slate-950 main-container">
       
@@ -24,6 +26,14 @@ import { PieceType, Position } from './logic/chess-types';
           [showSetup]="gameService.viewState() === 'settings'"
           (fileSelected)="onFileSelected($event.event, $event.type, $event.colorSuffix)">
         </app-home-view>
+      }
+
+      @if (gameService.viewState() === 'marketplace') {
+        <app-marketplace-view></app-marketplace-view>
+      }
+
+      @if (gameService.viewState() === 'career') {
+        <app-career-view></app-career-view>
       }
 
       @if (gameService.viewState() === 'game') {

@@ -1,46 +1,175 @@
 
-import { Component, inject, Input, Output, EventEmitter } from '@angular/core';
+import { Component, inject, Input, Output, EventEmitter, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { GameService } from '../services/game.service';
+import { SupabaseService } from '../services/supabase.service';
 import { PieceType } from '../logic/chess-types';
 
 @Component({
   selector: 'app-home-view',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   template: `
     <div class="fixed inset-0 z-50 flex flex-col p-4 md:p-6 overflow-hidden">
       
       <!-- Top Bar: Title and Login -->
       <div class="relative z-50 flex items-center justify-between mb-6 md:mb-8">
-        <!-- THE KING Logo with Crown -->
-        <div class="flex items-center gap-2 md:gap-3">
-          <!-- Crown Icon -->
-          <div class="w-10 h-10 md:w-12 md:h-12 flex-shrink-0 animate-float">
-            <svg viewBox="0 0 100 100" fill="currentColor" class="text-yellow-400 drop-shadow-[0_0_20px_rgba(251,191,36,0.8)]">
-              <path d="M10 70 L20 30 L35 45 L50 20 L65 45 L80 30 L90 70 Z M15 75 L85 75 L85 85 L15 85 Z"/>
-              <circle cx="20" cy="30" r="5" class="text-amber-300"/>
-              <circle cx="50" cy="20" r="5" class="text-amber-300"/>
-              <circle cx="80" cy="30" r="5" class="text-amber-300"/>
-            </svg>
+        <!-- THE KING Logo Section -->
+        <div class="flex items-center gap-4">
+          <div class="relative">
+            <img src="/logo.png" alt="THE KING Logo" 
+              class="h-12 sm:h-16 md:h-20 w-auto drop-shadow-[0_0_20px_rgba(251,191,36,0.3)] animate-float">
+            
+            @if (supabase.user() && supabase.username()) {
+              <div class="absolute -bottom-4 left-1 animate-fade-in translate-y-1">
+                <p class="text-[9px] md:text-[11px] font-black text-indigo-400 uppercase tracking-[0.25em] whitespace-nowrap bg-slate-950/40 backdrop-blur-sm px-2 py-0.5 rounded-full border border-indigo-500/10">
+                  {{ supabase.username() }}
+                </p>
+              </div>
+            }
           </div>
-          <h1 class="text-3xl sm:text-4xl md:text-5xl font-black tracking-tighter leading-none">
-            <span class="block text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-200 
-                         drop-shadow-[0_0_30px_rgba(251,191,36,0.5)] animate-shimmer">
-              THE KING
-            </span>
-          </h1>
         </div>
         
         <!-- Login Button (top right) -->
-        <button (click)="gameService.setView('admin')" 
-          class="w-10 h-10 md:w-12 md:h-12 rounded-full bg-slate-800/60 backdrop-blur-md border border-white/10 hover:border-purple-400/50 transition-all flex items-center justify-center group">
-          <svg viewBox="0 0 100 100" fill="currentColor" class="w-5 h-5 md:w-6 md:h-6 text-slate-400 group-hover:text-purple-400 transition-colors">
-            <circle cx="50" cy="30" r="18"/>
-            <path d="M20 80 Q50 60 80 80 L80 90 L20 90 Z"/>
-          </svg>
+        <button (click)="toggleAuth()" 
+          class="relative flex items-center justify-center w-12 h-12 rounded-full bg-slate-800/40 backdrop-blur-md border border-white/10 hover:border-indigo-400/40 transition-all group shadow-2xl">
+          <div [class.shadow-[0_0_25px_rgba(99,102,241,0.6)]]="supabase.user()"
+               [class.border-indigo-400/50]="supabase.user()"
+               [class.grayscale]="!supabase.user()"
+               [class.opacity-40]="!supabase.user()"
+               class="w-full h-full rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center p-2.5 transition-all duration-500 group-hover:scale-105 border border-transparent">
+            <svg viewBox="0 0 100 100" fill="currentColor" class="text-white drop-shadow-lg">
+              @if (supabase.user()) {
+                <path d="M50 50 L20 80 Q50 60 80 80 Z" fill="white"/>
+                <circle cx="50" cy="35" r="20"/>
+              } @else {
+                <circle cx="50" cy="30" r="18"/>
+                <path d="M20 80 Q50 60 80 80 L80 90 L20 90 Z"/>
+              }
+            </svg>
+          </div>
         </button>
       </div>
+
+      <!-- Auth Modal -->
+      @if (showAuth) {
+        <div class="fixed inset-0 z-[100] flex items-center justify-center bg-gradient-to-br from-slate-950/98 via-indigo-950/95 to-slate-900/98 backdrop-blur-2xl animate-fade-in p-4"
+             (click)="showAuth = false">
+          <div class="relative bg-slate-900/60 backdrop-blur-3xl border border-white/10 rounded-[3rem] max-w-lg w-full shadow-[0_0_120px_rgba(99,102,241,0.25)] overflow-hidden"
+               (click)="$event.stopPropagation()">
+            
+            <!-- Animated Gradient Background -->
+            <div class="absolute inset-0 bg-gradient-to-br from-indigo-600/10 via-purple-600/5 to-pink-600/10 animate-gradient-shift"></div>
+            <div class="absolute -top-32 -left-32 w-80 h-80 bg-indigo-500/20 rounded-full blur-[100px] animate-pulse-slow"></div>
+            <div class="absolute -bottom-32 -right-32 w-80 h-80 bg-purple-500/20 rounded-full blur-[100px] animate-pulse-slow" style="animation-delay: 1s;"></div>
+
+            <div class="relative z-10 p-8 md:p-12">
+              <!-- Hero Section -->
+              <div class="flex flex-col items-center text-center mb-10">
+                <div class="relative mb-6">
+                  <div class="absolute inset-0 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl blur-xl opacity-60 animate-pulse-subtle"></div>
+                  <div class="relative w-20 h-20 rounded-3xl bg-gradient-to-br from-indigo-500 via-purple-600 to-pink-600 flex items-center justify-center shadow-2xl border border-white/20">
+                     <svg viewBox="0 0 24 24" fill="none" class="w-10 h-10 text-white" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                       <circle cx="12" cy="7" r="4"></circle>
+                     </svg>
+                  </div>
+                </div>
+                
+                <h2 class="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-200 to-white tracking-tight uppercase mb-2 drop-shadow-[0_0_20px_rgba(255,255,255,0.3)]">
+                  {{ authMode === 'login' ? 'Bentornato' : 'Inizia Ora' }}
+                </h2>
+                <p class="text-indigo-300/80 text-sm font-bold uppercase tracking-[0.2em] max-w-xs">
+                  {{ authMode === 'login' ? 'Accedi al Regno' : 'Unisciti alla Leggenda' }}
+                </p>
+              </div>
+
+              <!-- Form -->
+              <form (submit)="handleAuth($event)" class="space-y-5">
+                <div class="space-y-2">
+                  <label class="flex items-center gap-2 text-xs font-black text-indigo-300 uppercase tracking-[0.15em] ml-2">
+                    <svg viewBox="0 0 24 24" fill="none" class="w-4 h-4" stroke="currentColor" stroke-width="2.5">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                      <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    Nickname
+                  </label>
+                  <input type="text" name="nickname" [(ngModel)]="authNickname" required
+                    placeholder="es. Magnus99"
+                    class="w-full bg-slate-950/70 border border-white/10 rounded-2xl px-6 py-4 text-white text-lg placeholder-slate-500 focus:outline-none focus:border-indigo-400/60 focus:ring-4 focus:ring-indigo-500/20 transition-all shadow-inner">
+                </div>
+
+                @if (authMode === 'register') {
+                  <div class="space-y-2">
+                    <label class="flex items-center gap-2 text-xs font-black text-indigo-300 uppercase tracking-[0.15em] ml-2">
+                      <svg viewBox="0 0 24 24" fill="none" class="w-4 h-4" stroke="currentColor" stroke-width="2.5">
+                        <rect x="3" y="4" width="18" height="16" rx="2"></rect>
+                        <path d="m3 8 9 6 9-6"></path>
+                      </svg>
+                      Email
+                    </label>
+                    <input type="email" name="email" [(ngModel)]="authEmail" required
+                      placeholder="la-tua@email.it"
+                      class="w-full bg-slate-950/70 border border-white/10 rounded-2xl px-6 py-4 text-white text-lg placeholder-slate-500 focus:outline-none focus:border-indigo-400/60 focus:ring-4 focus:ring-indigo-500/20 transition-all shadow-inner">
+                  </div>
+                }
+
+                <div class="space-y-2">
+                  <label class="flex items-center gap-2 text-xs font-black text-indigo-300 uppercase tracking-[0.15em] ml-2">
+                    <svg viewBox="0 0 24 24" fill="none" class="w-4 h-4" stroke="currentColor" stroke-width="2.5">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    </svg>
+                    Password
+                  </label>
+                  <input type="password" name="password" [(ngModel)]="authPassword" required
+                    placeholder="••••••••"
+                    class="w-full bg-slate-950/70 border border-white/10 rounded-2xl px-6 py-4 text-white text-lg placeholder-slate-500 focus:outline-none focus:border-indigo-400/60 focus:ring-4 focus:ring-indigo-500/20 transition-all shadow-inner">
+                </div>
+
+                @if (authError) {
+                  <div class="bg-rose-500/10 border border-rose-500/30 rounded-2xl p-4 backdrop-blur-sm">
+                    <p class="text-rose-300 text-sm font-bold text-center uppercase tracking-wide">{{ authError }}</p>
+                  </div>
+                }
+
+                <button type="submit" [disabled]="loadingAuth"
+                  class="relative w-full group overflow-hidden rounded-2xl shadow-[0_10px_40px_rgba(99,102,241,0.4)] hover:shadow-[0_15px_50px_rgba(99,102,241,0.5)] transition-all active:scale-[0.98] disabled:opacity-50 mt-6">
+                  <div class="absolute inset-0 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 transition-transform group-hover:scale-105"></div>
+                  <div class="absolute inset-0 bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 opacity-0 group-hover:opacity-100 transition-opacity blur-xl"></div>
+                  <span class="relative block text-white font-black py-5 text-lg uppercase tracking-[0.2em]">
+                    {{ loadingAuth ? 'Caricamento...' : (authMode === 'login' ? 'Accedi' : 'Registrati') }}
+                  </span>
+                </button>
+              </form>
+
+              <!-- Toggle Auth Mode -->
+              <div class="mt-8 text-center">
+                <button (click)="toggleAuthMode()" class="group inline-flex items-center gap-2 text-slate-400 hover:text-white text-sm font-bold uppercase tracking-widest transition-colors">
+                  <span>{{ authMode === 'login' ? 'Nuovo qui?' : 'Hai già un account?' }}</span>
+                  <svg viewBox="0 0 24 24" fill="none" class="w-4 h-4 group-hover:translate-x-1 transition-transform" stroke="currentColor" stroke-width="2.5">
+                    <path d="M5 12h14M12 5l7 7-7 7"></path>
+                  </svg>
+                </button>
+              </div>
+
+              <!-- Logout Section -->
+              @if (supabase.user()) {
+                 <div class="mt-8 pt-6 border-t border-white/10">
+                   <button (click)="supabase.signOut(); showAuth = false" 
+                     class="group w-full flex items-center justify-center gap-2 text-rose-400/80 hover:text-rose-300 text-sm font-bold uppercase tracking-widest transition-colors py-3 rounded-xl hover:bg-rose-500/10">
+                     <svg viewBox="0 0 24 24" fill="none" class="w-4 h-4" stroke="currentColor" stroke-width="2.5">
+                       <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"></path>
+                     </svg>
+                     Esci
+                   </button>
+                 </div>
+              }
+            </div>
+          </div>
+        </div>
+      }
 
       <!-- Animated Background with Floating Orbs -->
       <div class="absolute inset-0 bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 overflow-hidden -z-10">
@@ -143,48 +272,46 @@ import { PieceType } from '../logic/chess-types';
               </div>
             </button>
 
-            <!-- Marketplace Icon (Blocked) -->
-            <button disabled
+            <!-- Marketplace Icon -->
+            <button (click)="gameService.setView('marketplace')"
               class="group relative overflow-hidden aspect-square rounded-2xl bg-gradient-to-br from-purple-500/20 via-pink-500/10 to-purple-600/20 
-                     border border-purple-500/30 backdrop-blur-xl
-                     shadow-[0_0_30px_rgba(168,85,247,0.1)] opacity-60 cursor-not-allowed
+                     border border-purple-500/30 hover:border-purple-400/60 backdrop-blur-xl
+                     shadow-[0_0_30px_rgba(168,85,247,0.2)] hover:shadow-[0_0_50px_rgba(168,85,247,0.4)]
                      transition-all duration-300 flex items-center justify-center">
-              <div class="absolute top-2 right-2 px-2 py-0.5 bg-purple-500 text-white text-[8px] font-bold rounded-full uppercase tracking-wider z-20">
-                Soon
-              </div>
-              <div class="absolute inset-0 bg-gradient-to-br from-purple-400/0 to-pink-400/20 opacity-0 transition-opacity duration-500"></div>
+              <div class="absolute inset-0 bg-gradient-to-br from-purple-400/0 to-pink-400/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
               <div class="relative z-10 flex flex-col items-center gap-2">
                 <!-- Diamond Icon -->
-                <div class="w-16 h-16 md:w-20 md:h-20 grayscale opacity-50 transition-all duration-500">
-                  <svg viewBox="0 0 100 100" fill="currentColor" class="text-purple-400">
+                <div class="w-16 h-16 md:w-20 md:h-20 group-hover:scale-110 group-active:scale-95 transition-all duration-500">
+                  <svg viewBox="0 0 100 100" fill="currentColor" class="text-purple-400 drop-shadow-[0_0_20px_rgba(168,85,247,0.6)]">
                     <path d="M50 10 L70 30 L90 30 L70 70 L50 90 L30 70 L10 30 L30 30 Z"/>
                     <path d="M50 10 L70 30 L50 50 L30 30 Z" class="text-pink-300 opacity-60"/>
                   </svg>
                 </div>
-                <span class="text-purple-400/50 text-xs md:text-sm font-bold uppercase tracking-wider">Shop</span>
+                <span class="text-purple-400 text-xs md:text-sm font-bold uppercase tracking-wider">Shop</span>
               </div>
             </button>
           </div>
 
           <!-- Second Row: Career, Adventure, Online -->
           <div class="grid grid-cols-3 gap-3 md:gap-6 items-center">
-            <!-- Career Mode (Blocked) -->
-            <button disabled
+            <!-- Career Mode -->
+            <button (click)="openCareer()"
               class="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-orange-500/20 via-red-500/10 to-orange-600/20 
-                     border border-orange-500/30 backdrop-blur-xl
-                     shadow-[0_0_20px_rgba(249,115,22,0.1)] opacity-60 cursor-not-allowed
+                     border border-orange-500/30 hover:border-orange-400/60 backdrop-blur-xl
+                     shadow-[0_0_20px_rgba(249,115,22,0.2)] hover:shadow-[0_0_50px_rgba(249,115,22,0.4)]
                      transition-all duration-300 flex flex-col items-center justify-center py-4 px-2 md:h-28">
-              <div class="absolute top-2 right-2 px-1.5 py-0.5 bg-orange-500 text-white text-[7px] md:text-[8px] font-bold rounded-full uppercase tracking-wider z-20">
-                Soon
-              </div>
-              <div class="w-8 h-8 md:w-12 md:h-12 mb-2 grayscale opacity-50">
-                <svg viewBox="0 0 100 100" fill="currentColor" class="text-orange-400">
-                  <path d="M20 80 L30 80 L30 50 L20 50 Z M40 80 L50 80 L50 30 L40 30 Z M60 80 L70 80 L70 10 L60 10 Z"/>
-                  <path d="M10 90 L90 90 L90 95 L10 95 Z" fill="currentColor" opacity="0.5"/>
-                </svg>
-              </div>
-              <div class="text-center">
-                <div class="text-orange-400/50 font-bold text-[10px] md:text-sm uppercase tracking-wider">Carriera</div>
+              <div class="absolute inset-0 bg-gradient-to-br from-orange-400/0 to-red-400/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <div class="relative z-10 flex flex-col items-center gap-1">
+                <!-- Trophy Icon -->
+                <div class="w-8 h-8 md:w-12 md:h-12 mb-2 group-hover:scale-110 group-active:scale-95 transition-all duration-300">
+                  <svg viewBox="0 0 100 100" fill="currentColor" class="text-orange-400 drop-shadow-[0_0_15px_rgba(249,115,22,0.6)]">
+                    <path d="M30 20 L70 20 L70 40 Q70 60 50 60 Q30 60 30 40 Z"/>
+                    <path d="M30 40 L20 40 L20 30 L30 30 Z M70 40 L80 40 L80 30 L70 30 Z"/>
+                    <rect x="45" y="60" width="10" height="20"/>
+                    <rect x="35" y="80" width="30" height="5"/>
+                  </svg>
+                </div>
+                <div class="text-orange-400 font-bold text-[10px] md:text-sm uppercase tracking-wider">Carriera</div>
               </div>
             </button>
 
@@ -535,6 +662,33 @@ import { PieceType } from '../logic/chess-types';
       animation: float-orb linear infinite;
       pointer-events: none;
     }
+
+    @keyframes pulse-slow {
+      0%, 100% { opacity: 0.3; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.05); }
+    }
+
+    @keyframes pulse-subtle {
+      0%, 100% { opacity: 0.6; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.02); }
+    }
+
+    @keyframes gradient-shift {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.8; }
+    }
+
+    .animate-pulse-slow {
+      animation: pulse-slow 4s ease-in-out infinite;
+    }
+
+    .animate-pulse-subtle {
+      animation: pulse-subtle 3s ease-in-out infinite;
+    }
+
+    .animate-gradient-shift {
+      animation: gradient-shift 6s ease-in-out infinite;
+    }
     
     .orb::before {
       content: '';
@@ -631,12 +785,68 @@ import { PieceType } from '../logic/chess-types';
 })
 export class HomeViewComponent {
   gameService = inject(GameService);
+  supabase = inject(SupabaseService);
 
   @Input() showSetup = false;
   @Output() fileSelected = new EventEmitter<{ event: Event, type: string, colorSuffix?: string }>();
 
   showAIGameModeSelector = false;
   showLocalGameModeSelector = false;
+
+  // Auth State
+  showAuth = false;
+  authMode: 'login' | 'register' = 'login';
+  authNickname = '';
+  authEmail = '';
+  authPassword = '';
+  authError = '';
+  loadingAuth = false;
+
+  toggleAuth() {
+    this.showAuth = !this.showAuth;
+    this.authError = '';
+  }
+
+  toggleAuthMode() {
+    this.authMode = this.authMode === 'login' ? 'register' : 'login';
+    this.authError = '';
+  }
+
+  async handleAuth(e: Event) {
+    e.preventDefault();
+    this.loadingAuth = true;
+    this.authError = '';
+
+    try {
+      const response = this.authMode === 'login'
+        ? await this.supabase.signInWithNickname(this.authNickname, this.authPassword)
+        : await this.supabase.signUp(this.authEmail, this.authPassword, this.authNickname);
+
+      if (response.error) {
+        this.authError = response.error.message;
+      } else {
+        // Reset and close
+        this.showAuth = false;
+        this.authNickname = '';
+        this.authEmail = '';
+        this.authPassword = '';
+        this.authError = '';
+      }
+    } catch (err: any) {
+      this.authError = 'Errore imprevisto';
+    } finally {
+      this.loadingAuth = false;
+    }
+  }
+
+  openCareer() {
+    if (this.supabase.user()) {
+      this.gameService.setView('career');
+    } else {
+      this.toggleAuth();
+      this.authError = 'Registrazione obbligatoria per la Carriera';
+    }
+  }
 
   // Chess Pieces
   pieceTypes: { id: PieceType, label: string }[] = [
