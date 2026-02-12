@@ -250,7 +250,8 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = this.three.PCFSoftShadowMap;
     this.renderer.toneMapping = this.three.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.2;
+    // Increased exposure slightly for brightness
+    this.renderer.toneMappingExposure = 1.35; 
 
     this.controls = new OrbitControls.OrbitControls(this.camera, this.renderer.domElement);
     this.controls.enableDamping = true;
@@ -259,10 +260,13 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
     this.controls.minDistance = 4;
     this.controls.maxDistance = 20;
 
-    const ambientLight = new this.three.AmbientLight(0xffffff, 0.25); 
-    this.scene.add(ambientLight);
+    // 1. Hemisphere Light (Soft global fill - Sky vs Ground)
+    // Replaces/Augments Ambient for better 3D shape definition
+    const hemiLight = new this.three.HemisphereLight(0xffffff, 0x444444, 0.6); 
+    this.scene.add(hemiLight);
 
-    const dirLight = new this.three.DirectionalLight(0xfff0dd, 2.5); 
+    // 2. Main Directional Light (Sun/Key)
+    const dirLight = new this.three.DirectionalLight(0xfff0dd, 2.8); // Increased Intensity
     dirLight.position.set(5, 12, 5); 
     dirLight.castShadow = true;
     dirLight.shadow.mapSize.width = 4096;
@@ -279,12 +283,14 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
     
     this.scene.add(dirLight);
 
-    const fillLight = new this.three.DirectionalLight(0xb0c4de, 1.2);
-    fillLight.position.set(-5, 8, -5);
+    // 3. Fill Light (Opposite side to open up shadows on dark pieces)
+    const fillLight = new this.three.DirectionalLight(0xdbeafe, 1.5); // Cooler, softer
+    fillLight.position.set(-5, 6, -5);
     this.scene.add(fillLight);
 
-    const rimLight = new this.three.SpotLight(0x60a5fa, 2.0);
-    rimLight.position.set(0, 2, -10);
+    // 4. Rim Light (Backlight for edge definition)
+    const rimLight = new this.three.SpotLight(0x60a5fa, 3.0);
+    rimLight.position.set(0, 5, -8);
     rimLight.lookAt(0, 0, 0);
     this.scene.add(rimLight);
 
@@ -470,12 +476,14 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
   }
 
   private createPieceMaterial(colorHex: number, isSelected: boolean): any {
+     // Reduced roughness slightly for better highlights on dark pieces
+     // Reduced metalness for black pieces (managed via color logic mostly, but good defaults here)
      return new this.three.MeshPhysicalMaterial({
         color: colorHex,
-        roughness: 0.25,  
-        metalness: 0.15,  
-        clearcoat: 1.0,   
-        clearcoatRoughness: 0.15,
+        roughness: 0.2,   // Shinier
+        metalness: 0.1,   // Less metallic to avoid dark chrome look
+        clearcoat: 1.0,   // High polish
+        clearcoatRoughness: 0.1,
         emissive: isSelected ? 0xffd700 : 0x000000,
         emissiveIntensity: isSelected ? 0.4 : 0
      });
@@ -581,7 +589,8 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
                 material.emissiveIntensity = 0.4;
              }
         } else {
-             const color = piece.color === 'w' ? 0xffffff : 0x222222;
+             // Brighter "Black" for custom pieces too
+             const color = piece.color === 'w' ? 0xffffff : 0x2c2c2c;
              material = this.createPieceMaterial(color, isSelected);
         }
 
@@ -604,7 +613,8 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
 
   // --- CHECKERS DEFAULT ---
   private createCheckersPiece(piece: Piece, isSelected: boolean, style: string): any {
-      const color = piece.color === 'w' ? 0xfdf6e3 : 0x1a1a1a; 
+      // Color adjustment: 0x1a1a1a -> 0x2c2c2c (Dark Charcoal)
+      const color = piece.color === 'w' ? 0xfdf6e3 : 0x2c2c2c; 
       const material = this.createPieceMaterial(color, isSelected);
 
       const group = new this.three.Group();
@@ -643,7 +653,8 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
 
   // --- STYLE: MINIMAL ---
   private createMinimalPiece(piece: Piece, isSelected: boolean): any {
-    const color = piece.color === 'w' ? 0xffffff : 0x1e293b;
+    // 0x1e293b -> 0x334155 (Lighter Slate Blue)
+    const color = piece.color === 'w' ? 0xffffff : 0x334155;
     const material = this.createPieceMaterial(color, isSelected);
 
     let geometry;
@@ -687,7 +698,8 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
 
   // --- STYLE: CLASSIC ---
   private createClassicPiece(piece: Piece, isSelected: boolean): any {
-     const color = piece.color === 'w' ? 0xfdf6e3 : 0x1a1a1a; 
+     // Color adjustment: 0x1a1a1a -> 0x2c2c2c (Dark Charcoal)
+     const color = piece.color === 'w' ? 0xfdf6e3 : 0x2c2c2c; 
      const material = this.createPieceMaterial(color, isSelected);
 
      const group = new this.three.Group();
