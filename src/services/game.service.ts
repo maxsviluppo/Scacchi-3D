@@ -18,7 +18,7 @@ export class GameService {
   turn = signal<PieceColor>('w');
   selectedPos = signal<Position | null>(null);
   pieceStyle = signal<PieceStyle>('classic');
-  useOriginalTexture = signal<boolean>(false); // New Option
+  useOriginalTexture = signal<boolean>(false); 
   
   // Computed
   validMoves = computed(() => {
@@ -37,9 +37,7 @@ export class GameService {
 
   toggleOriginalTexture(value: boolean) {
     this.useOriginalTexture.set(value);
-    // Force re-render if style is custom
     if (this.pieceStyle() === 'custom') {
-       // Trigger effect in component
        this.pieceStyle.set('custom');
     }
   }
@@ -76,6 +74,15 @@ export class GameService {
   }
 
   async executeMove(from: Position, to: Position) {
+    // CRITICAL VALIDATION: Ensure the piece belongs to the current turn
+    const currentBoard = this.board();
+    const pieceToMove = currentBoard[from.row][from.col];
+    
+    if (!pieceToMove || pieceToMove.color !== this.turn()) {
+        console.warn('Attempted to move invalid piece or opponent piece');
+        return;
+    }
+
     const mode = this.gameMode();
 
     this.board.update(b => {
@@ -106,9 +113,10 @@ export class GameService {
     this.turn.set(nextTurn);
     this.gameStatus.set(`${nextTurn === 'w' ? 'Tocca al Bianco' : 'Tocca al Nero'}`);
 
-    // AI Logic (Only for Chess for now, Checkers is Local 2-player)
+    // AI Logic 
     if (mode === 'chess' && nextTurn === 'b') {
-      this.triggerAiMove();
+      // Use setTimeout to allow UI to update before AI freezes thread (though with async it's fine)
+      setTimeout(() => this.triggerAiMove(), 50);
     }
   }
 
@@ -116,25 +124,42 @@ export class GameService {
     this.isAiThinking.set(true);
     this.gameStatus.set('Gemini sta pensando...');
 
-    const fen = ChessUtils.boardToFEN(this.board(), 'b');
-    const uciMove = await this.aiService.getBestMove(fen);
+    try {
+      const fen = ChessUtils.boardToFEN(this.board(), 'b');
+      const uciMove = await this.aiService.getBestMove(fen);
 
-    if (uciMove) {
-      const fromStr = uciMove.substring(0, 2);
-      const toStr = uciMove.substring(2, 4);
-      
-      const from = this.uciToCoords(fromStr);
-      const to = this.uciToCoords(toStr);
+      if (uciMove) {
+        const fromStr = uciMove.substring(0, 2);
+        const toStr = uciMove.substring(2, 4);
+        
+        const from = this.uciToCoords(fromStr);
+        const to = this.uciToCoords(toStr);
 
-      if (from && to) {
-        this.executeMove(from, to);
+        if (from && to) {
+            // Validate that AI is actually moving a Black piece
+            const aiPiece = this.board()[from.row][from.col];
+            if (aiPiece && aiPiece.color === 'b') {
+                this.executeMove(from, to);
+            } else {
+                console.error('AI tried to move a White piece or empty square:', fromStr);
+                this.gameStatus.set('AI: Errore (Mossa illegale). Tocca a te.');
+                this.turn.set('w'); // Skip turn back to human to unblock
+            }
+        } else {
+          this.gameStatus.set('Errore AI: Coordinate non valide');
+          this.turn.set('w');
+        }
       } else {
-        this.gameStatus.set('Errore AI: Mossa invalida');
+        this.gameStatus.set('AI: Impossibile muovere (Resa?)');
+        this.turn.set('w');
       }
-    } else {
-      this.gameStatus.set('AI: Impossibile muovere');
+    } catch (e) {
+        console.error('AI Critical Error', e);
+        this.gameStatus.set('Errore Connessione AI');
+        this.turn.set('w'); // Ensure game is not stuck
+    } finally {
+        this.isAiThinking.set(false);
     }
-    this.isAiThinking.set(false);
   }
 
   uciToCoords(sq: string): Position | null {
@@ -142,6 +167,7 @@ export class GameService {
     const colMap: Record<string, number> = { 'a': 0, 'b': 1, 'c': 2, 'd': 3, 'e': 4, 'f': 5, 'g': 6, 'h': 7 };
     const col = colMap[sq[0]];
     const row = 8 - parseInt(sq[1]); 
+    if (isNaN(row) || col === undefined) return null;
     return { row, col };
   }
 
