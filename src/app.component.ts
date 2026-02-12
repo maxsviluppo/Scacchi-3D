@@ -19,8 +19,11 @@ import { PieceType, Position } from './logic/chess-types';
       </div>
 
       <!-- Views Overlays -->
-      @if (gameService.viewState() === 'home') {
-        <app-home-view></app-home-view>
+      @if (gameService.viewState() === 'home' || gameService.viewState() === 'settings') {
+        <app-home-view 
+          [showSetup]="gameService.viewState() === 'settings'"
+          (fileSelected)="onFileSelected($event.event, $event.type, $event.colorSuffix)">
+        </app-home-view>
       }
 
       @if (gameService.viewState() === 'game') {
@@ -30,19 +33,6 @@ import { PieceType, Position } from './logic/chess-types';
              class="group w-12 h-12 md:w-14 md:h-14 rounded-xl bg-slate-900/80 backdrop-blur-md border border-white/10 hover:border-indigo-400/50 text-white hover:bg-slate-800 transition-all flex items-center justify-center shadow-lg">
              <svg viewBox="0 0 100 100" fill="currentColor" class="w-6 h-6 md:w-7 md:h-7 text-slate-400 group-hover:text-indigo-400 transition-colors">
                <path d="M50 20 L20 45 L30 45 L30 80 L45 80 L45 60 L55 60 L55 80 L70 80 L70 45 L80 45 Z"/>
-             </svg>
-           </button>
-        </div>
-        
-        <div class="absolute top-6 right-6 z-40 flex gap-3">
-           <button (click)="showMenu = !showMenu" 
-             class="group w-12 h-12 md:w-14 md:h-14 rounded-xl bg-slate-900/80 backdrop-blur-md border border-white/10 hover:border-blue-400/50 text-white hover:bg-slate-800 transition-all flex items-center justify-center shadow-lg">
-             <svg viewBox="0 0 100 100" fill="currentColor" class="w-6 h-6 md:w-7 md:h-7 text-slate-400 group-hover:text-blue-400 group-hover:rotate-90 transition-all duration-500">
-               <path d="M50 30 A20 20 0 1 1 50 70 A20 20 0 1 1 50 30 M50 40 A10 10 0 1 0 50 60 A10 10 0 1 0 50 40"/>
-               <rect x="45" y="10" width="10" height="15" rx="2"/>
-               <rect x="45" y="75" width="10" height="15" rx="2"/>
-               <rect x="10" y="45" width="15" height="10" rx="2"/>
-               <rect x="75" y="45" width="15" height="10" rx="2"/>
              </svg>
            </button>
         </div>
@@ -85,15 +75,6 @@ import { PieceType, Position } from './logic/chess-types';
                   </div>
                 </div>
 
-                <!-- Custom Assets -->
-                <div>
-                  <label class="text-sm text-slate-400 mb-2 block uppercase tracking-widest font-bold">Modelli 3D Personalizzati</label>
-                  <button (click)="showAssets = true; showMenu = false" 
-                    class="w-full p-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 rounded-xl text-white font-bold transition-all shadow-lg">
-                    📦 Carica Pezzi Personalizzati
-                  </button>
-                  <p class="text-slate-500 text-xs mt-2">Importa file .stl o .glb per i tuoi pezzi</p>
-                </div>
 
                 <button (click)="showMenu = false" class="w-full py-4 bg-blue-600 rounded-2xl font-bold text-white shadow-lg hover:bg-blue-500 transition-all">
                   Conferma e Chiudi

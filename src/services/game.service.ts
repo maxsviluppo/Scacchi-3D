@@ -5,7 +5,7 @@ import { ChessUtils } from '../logic/chess-utils';
 import { AiService } from './ai.service';
 
 export type PieceStyle = 'minimal' | 'classic' | 'neon' | 'custom';
-export type AppView = 'home' | 'game' | 'settings' | 'admin' | 'marketplace';
+export type AppView = 'home' | 'game' | 'settings' | 'admin' | 'marketplace' | 'adventure' | 'career';
 export type PlayerMode = 'ai' | 'local' | 'online';
 
 @Injectable({
@@ -175,7 +175,7 @@ export class GameService {
     this.gameStatus.set(`${nextTurn === 'w' ? 'Tocca al Bianco' : 'Tocca al Nero'}`);
 
     // AI Trigger
-    if (mode === 'chess' && nextTurn === 'b') {
+    if (nextTurn === 'b' && this.playerMode() === 'ai') {
       setTimeout(() => this.triggerAiMove(), 700); // Slight delay to let animation start
     }
   }
@@ -199,7 +199,7 @@ export class GameService {
         return;
       }
 
-      const uciMove = await this.aiService.getBestMove(fen, legalMoves);
+      const uciMove = await this.aiService.getBestMove(fen, legalMoves, this.gameMode());
 
       let chosenMove = uciMove;
 

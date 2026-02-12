@@ -25,7 +25,7 @@ export class AiService {
     }
   }
 
-  async getBestMove(fen: string, validMoves: string[]): Promise<string | null> {
+  async getBestMove(fen: string, validMoves: string[], mode: 'chess' | 'checkers' = 'chess'): Promise<string | null> {
     // Safety check: if AI isn't initialized, return null immediately
     if (!this.ai) {
       console.warn('AiService: Chiamata saltata (Client non inizializzato/Manca API_KEY)');
@@ -42,8 +42,9 @@ export class AiService {
       // Prompt Constraint-Based:
       // Forniamo la lista esatta delle mosse valide generate dall'engine locale.
       // L'IA deve SOLO scegliere la migliore da questa lista.
+      const gameName = mode === 'chess' ? 'Chess' : 'Checkers (Dama)';
       const prompt = `
-      Context: Chess Game. You are playing BLACK.
+      Context: ${gameName} Game. You are playing BLACK.
       Current FEN: ${fen}
       
       ALLOWED MOVES LIST:

@@ -1,7 +1,8 @@
 
-import { Component, inject } from '@angular/core';
+import { Component, inject, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { GameService } from '../services/game.service';
+import { PieceType } from '../logic/chess-types';
 
 @Component({
   selector: 'app-home-view',
@@ -142,53 +143,91 @@ import { GameService } from '../services/game.service';
               </div>
             </button>
 
-            <!-- Marketplace Icon -->
-            <button (click)="gameService.setView('marketplace')" 
+            <!-- Marketplace Icon (Blocked) -->
+            <button disabled
               class="group relative overflow-hidden aspect-square rounded-2xl bg-gradient-to-br from-purple-500/20 via-pink-500/10 to-purple-600/20 
-                     border border-purple-500/30 hover:border-purple-400/60 backdrop-blur-xl
-                     shadow-[0_0_30px_rgba(168,85,247,0.2)] hover:shadow-[0_0_50px_rgba(168,85,247,0.4)] 
+                     border border-purple-500/30 backdrop-blur-xl
+                     shadow-[0_0_30px_rgba(168,85,247,0.1)] opacity-60 cursor-not-allowed
                      transition-all duration-300 flex items-center justify-center">
               <div class="absolute top-2 right-2 px-2 py-0.5 bg-purple-500 text-white text-[8px] font-bold rounded-full uppercase tracking-wider z-20">
                 Soon
               </div>
-              <div class="absolute inset-0 bg-gradient-to-br from-purple-400/0 to-pink-400/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <div class="absolute inset-0 bg-gradient-to-br from-purple-400/0 to-pink-400/20 opacity-0 transition-opacity duration-500"></div>
               <div class="relative z-10 flex flex-col items-center gap-2">
                 <!-- Diamond Icon -->
-                <div class="w-16 h-16 md:w-20 md:h-20 group-hover:rotate-12 group-active:scale-90 transition-all duration-500">
-                  <svg viewBox="0 0 100 100" fill="currentColor" class="text-purple-400 drop-shadow-[0_0_20px_rgba(168,85,247,0.6)]">
+                <div class="w-16 h-16 md:w-20 md:h-20 grayscale opacity-50 transition-all duration-500">
+                  <svg viewBox="0 0 100 100" fill="currentColor" class="text-purple-400">
                     <path d="M50 10 L70 30 L90 30 L70 70 L50 90 L30 70 L10 30 L30 30 Z"/>
                     <path d="M50 10 L70 30 L50 50 L30 30 Z" class="text-pink-300 opacity-60"/>
                   </svg>
                 </div>
-                <span class="text-purple-400 text-xs md:text-sm font-bold uppercase tracking-wider">Shop</span>
+                <span class="text-purple-400/50 text-xs md:text-sm font-bold uppercase tracking-wider">Shop</span>
               </div>
             </button>
           </div>
 
-          <!-- Second Row: Online Challenge (centered) -->
-          <div class="flex justify-center">
+          <!-- Second Row: Career, Adventure, Online -->
+          <div class="grid grid-cols-3 gap-3 md:gap-6 items-center">
+            <!-- Career Mode (Blocked) -->
             <button disabled
-              class="group relative overflow-hidden w-full max-w-md rounded-2xl bg-gradient-to-br from-emerald-500/20 via-teal-500/10 to-emerald-600/20 
-                     border border-emerald-500/30 backdrop-blur-xl
-                     shadow-[0_0_30px_rgba(16,185,129,0.2)] opacity-60 cursor-not-allowed
-                     transition-all duration-300 flex items-center justify-center gap-4 py-4 px-6">
-              <div class="absolute top-2 right-2 px-2 py-0.5 bg-emerald-500 text-white text-[8px] font-bold rounded-full uppercase tracking-wider z-20">
+              class="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-orange-500/20 via-red-500/10 to-orange-600/20 
+                     border border-orange-500/30 backdrop-blur-xl
+                     shadow-[0_0_20px_rgba(249,115,22,0.1)] opacity-60 cursor-not-allowed
+                     transition-all duration-300 flex flex-col items-center justify-center py-4 px-2 md:h-28">
+              <div class="absolute top-2 right-2 px-1.5 py-0.5 bg-orange-500 text-white text-[7px] md:text-[8px] font-bold rounded-full uppercase tracking-wider z-20">
                 Soon
               </div>
-              <div class="relative z-10 flex items-center gap-4">
-                <!-- Globe/Network Icon -->
-                <div class="w-12 h-12 md:w-14 md:h-14">
-                  <svg viewBox="0 0 100 100" fill="currentColor" class="text-emerald-400 drop-shadow-[0_0_20px_rgba(16,185,129,0.6)]">
-                    <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" stroke-width="4"/>
-                    <ellipse cx="50" cy="50" rx="15" ry="40" fill="none" stroke="currentColor" stroke-width="4"/>
-                    <line x1="10" y1="50" x2="90" y2="50" stroke="currentColor" stroke-width="4"/>
-                    <line x1="50" y1="10" x2="50" y2="90" stroke="currentColor" stroke-width="4"/>
-                  </svg>
-                </div>
-                <div class="text-left">
-                  <div class="text-emerald-400 font-bold text-base md:text-lg uppercase tracking-wider">Sfida Online</div>
-                  <div class="text-emerald-300/60 text-xs md:text-sm">Multiplayer globale</div>
-                </div>
+              <div class="w-8 h-8 md:w-12 md:h-12 mb-2 grayscale opacity-50">
+                <svg viewBox="0 0 100 100" fill="currentColor" class="text-orange-400">
+                  <path d="M20 80 L30 80 L30 50 L20 50 Z M40 80 L50 80 L50 30 L40 30 Z M60 80 L70 80 L70 10 L60 10 Z"/>
+                  <path d="M10 90 L90 90 L90 95 L10 95 Z" fill="currentColor" opacity="0.5"/>
+                </svg>
+              </div>
+              <div class="text-center">
+                <div class="text-orange-400/50 font-bold text-[10px] md:text-sm uppercase tracking-wider">Carriera</div>
+              </div>
+            </button>
+
+            <!-- Adventure Mode (Blocked) -->
+            <button disabled
+              class="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500/20 via-indigo-500/10 to-blue-600/20 
+                     border border-blue-500/30 backdrop-blur-xl
+                     shadow-[0_0_20px_rgba(59,130,246,0.1)] opacity-60 cursor-not-allowed
+                     transition-all duration-300 flex flex-col items-center justify-center py-4 px-2 md:h-28">
+              <div class="absolute top-2 right-2 px-1.5 py-0.5 bg-blue-500 text-white text-[7px] md:text-[8px] font-bold rounded-full uppercase tracking-wider z-20">
+                Soon
+              </div>
+              <div class="w-8 h-8 md:w-12 md:h-12 mb-2 grayscale opacity-50">
+                <svg viewBox="0 0 100 100" fill="currentColor" class="text-blue-400">
+                  <path d="M20 70 L50 20 L80 70 Z" fill="none" stroke="currentColor" stroke-width="5"/>
+                  <circle cx="50" cy="45" r="5"/>
+                  <path d="M10 80 Q50 60 90 80 L90 90 L10 90 Z" opacity="0.6"/>
+                </svg>
+              </div>
+              <div class="text-center">
+                <div class="text-blue-400/50 font-bold text-[10px] md:text-sm uppercase tracking-wider">Avventura</div>
+              </div>
+            </button>
+
+            <!-- Online Challenge -->
+            <button disabled 
+              class="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500/20 via-teal-500/10 to-emerald-600/20 
+                     border border-emerald-500/30 backdrop-blur-xl
+                     shadow-[0_0_20px_rgba(16,185,129,0.15)] opacity-60 cursor-not-allowed
+                     transition-all duration-300 flex flex-col items-center justify-center py-4 px-2 md:h-28">
+              <div class="absolute top-2 right-2 px-1.5 py-0.5 bg-emerald-500 text-white text-[7px] md:text-[8px] font-bold rounded-full uppercase tracking-wider z-20">
+                Soon
+              </div>
+              <div class="w-8 h-8 md:w-12 md:h-12 mb-2">
+                <svg viewBox="0 0 100 100" fill="currentColor" class="text-emerald-400">
+                  <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" stroke-width="4"/>
+                  <ellipse cx="50" cy="50" rx="15" ry="40" fill="none" stroke="currentColor" stroke-width="4"/>
+                  <line x1="10" y1="50" x2="90" y2="50" stroke="currentColor" stroke-width="4"/>
+                  <line x1="50" y1="10" x2="50" y2="90" stroke="currentColor" stroke-width="4"/>
+                </svg>
+              </div>
+              <div class="text-center">
+                <div class="text-emerald-400 font-bold text-[10px] md:text-sm uppercase tracking-wider">Online</div>
               </div>
             </button>
           </div>
@@ -204,6 +243,112 @@ import { GameService } from '../services/game.service';
           </svg>
         </button>
       </div>
+
+      <!-- Setup Modal -->
+      @if (showSetup) {
+        <div class="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 backdrop-blur-md animate-fade-in p-4"
+             (click)="gameService.setView('home')">
+          <div class="relative bg-gradient-to-br from-slate-900/98 to-slate-800/98 border-2 border-blue-500/30 rounded-3xl p-6 md:p-10 max-w-4xl w-full shadow-[0_0_80px_rgba(59,130,246,0.3)] overflow-y-auto max-h-[90vh]"
+               (click)="$event.stopPropagation()">
+            
+            <!-- Close Button -->
+            <button (click)="gameService.setView('home')" 
+              class="absolute top-4 right-4 w-10 h-10 rounded-full bg-slate-800/60 hover:bg-slate-700/80 border border-white/10 hover:border-red-400/50 transition-all flex items-center justify-center group">
+              <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="8" class="w-5 h-5 text-slate-400 group-hover:text-red-400 transition-colors">
+                <line x1="25" y1="25" x2="75" y2="75"/>
+                <line x1="75" y1="25" x2="25" y2="75"/>
+              </svg>
+            </button>
+
+            <h2 class="text-3xl md:text-4xl font-black text-center mb-10 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-300 to-blue-400">
+              CONFIGURAZIONE GIOCO
+            </h2>
+
+            <!-- Configuration Sections -->
+            <div class="space-y-10">
+              
+              <!-- SCACCHI ASSETS -->
+              <section>
+                <div class="flex items-center gap-3 mb-6">
+                  <div class="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400 border border-blue-500/30">
+                    <span class="font-bold">S</span>
+                  </div>
+                  <h3 class="text-xl font-bold text-white tracking-widest uppercase">Modelli Scacchi</h3>
+                </div>
+                
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+                  @for (type of pieceTypes; track type.id) {
+                    <div class="space-y-2">
+                       <label class="block text-[10px] text-slate-400 font-bold uppercase tracking-tighter text-center">{{type.label}}</label>
+                       <div class="flex flex-col gap-2">
+                          <button (click)="fileInputW.click()" 
+                                  class="w-full py-2 px-1 text-[10px] bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-white transition-all">
+                             Bianco
+                          </button>
+                          <button (click)="fileInputB.click()" 
+                                  class="w-full py-2 px-1 text-[10px] bg-slate-800/60 hover:bg-slate-700/60 border border-white/10 rounded-lg text-white transition-all">
+                             Nero
+                          </button>
+                          <input #fileInputW type="file" class="hidden" (change)="onFileSelected($event, type.id, 'w')" accept=".stl,.glb,.gltf">
+                          <input #fileInputB type="file" class="hidden" (change)="onFileSelected($event, type.id, 'b')" accept=".stl,.glb,.gltf">
+                       </div>
+                    </div>
+                  }
+                </div>
+              </section>
+
+              <!-- DAMA ASSETS -->
+              <section>
+                <div class="flex items-center gap-3 mb-6">
+                  <div class="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center text-purple-400 border border-purple-500/30">
+                    <span class="font-bold">D</span>
+                  </div>
+                  <h3 class="text-xl font-bold text-white tracking-widest uppercase">Modelli Dama</h3>
+                </div>
+                
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  @for (type of checkerTypes; track type.id) {
+                    <div class="space-y-2">
+                       <label class="block text-[10px] text-slate-400 font-bold uppercase tracking-tighter text-center">{{type.label}}</label>
+                       <div class="grid grid-cols-2 gap-2">
+                          <button (click)="cInputW.click()" 
+                                  class="w-full py-2 text-[10px] bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-white transition-all">
+                            Bianco
+                          </button>
+                          <button (click)="cInputB.click()" 
+                                  class="w-full py-2 text-[10px] bg-slate-800/60 hover:bg-slate-700/60 border border-white/10 rounded-lg text-white transition-all">
+                            Nero
+                          </button>
+                          <input #cInputW type="file" class="hidden" (change)="onFileSelected($event, type.id, 'w')" accept=".stl,.glb,.gltf">
+                          <input #cInputB type="file" class="hidden" (change)="onFileSelected($event, type.id, 'b')" accept=".stl,.glb,.gltf">
+                       </div>
+                    </div>
+                  }
+                  
+                  <!-- Board Asset -->
+                  <div class="space-y-2">
+                     <label class="block text-[10px] text-slate-400 font-bold uppercase tracking-tighter text-center">Tavoliere 3D</label>
+                     <button (click)="boardInput.click()" 
+                             class="w-full py-2 flex items-center justify-center gap-2 text-[10px] bg-gradient-to-r from-blue-600/40 to-indigo-600/40 hover:from-blue-500/50 hover:to-indigo-500/50 border border-blue-400/30 rounded-lg text-white transition-all">
+                        📦 Carica Scacchiera
+                     </button>
+                     <input #boardInput type="file" class="hidden" (change)="onFileSelected($event, 'board')" accept=".stl,.glb,.gltf">
+                  </div>
+                </div>
+              </section>
+
+              <!-- Reset Action -->
+              <div class="pt-6 border-t border-white/5 flex justify-center">
+                 <button (click)="gameService.setView('home')" 
+                   class="px-12 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:scale-105 active:scale-95 text-white font-black uppercase tracking-widest rounded-2xl shadow-[0_10px_40px_rgba(37,99,235,0.4)] transition-all">
+                    SALVA CONFIGURAZIONE
+                 </button>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      }
 
       <!-- AI Game Mode Selector Modal -->
       @if (showAIGameModeSelector) {
@@ -221,7 +366,7 @@ import { GameService } from '../services/game.service';
             </button>
 
             <h2 class="text-2xl md:text-3xl font-black text-center mb-6 md:mb-8 text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-amber-400">
-              Partita Locale
+              SFIDA CONTRO AI
             </h2>
             
             <div class="grid grid-cols-2 gap-4">
@@ -466,13 +611,33 @@ import { GameService } from '../services/game.service';
 })
 export class HomeViewComponent {
   gameService = inject(GameService);
+
+  @Input() showSetup = false;
+  @Output() fileSelected = new EventEmitter<{ event: Event, type: string, colorSuffix?: string }>();
+
   showAIGameModeSelector = false;
   showLocalGameModeSelector = false;
+
+  // Chess Pieces
+  pieceTypes: { id: PieceType, label: string }[] = [
+    { id: 'p', label: 'Pedone' },
+    { id: 'r', label: 'Torre' },
+    { id: 'n', label: 'Cavallo' },
+    { id: 'b', label: 'Alfiere' },
+    { id: 'q', label: 'Regina' },
+    { id: 'k', label: 'Re' },
+  ];
+
+  // Checker Pieces
+  checkerTypes: { id: PieceType, label: string }[] = [
+    { id: 'cm', label: 'Pedina' },
+    { id: 'ck', label: 'Dama' }
+  ];
 
   orbs = Array.from({ length: 8 }, (_, i) => ({
     x: Math.random() * 100,
     y: Math.random() * 100,
-    size: 40 + Math.random() * 60, // Reduced from 80-180 to 40-100
+    size: 40 + Math.random() * 60,
     duration: 15 + Math.random() * 25,
     delay: Math.random() * 10
   }));
@@ -485,5 +650,9 @@ export class HomeViewComponent {
   selectLocalGameMode(mode: 'chess' | 'checkers') {
     this.showLocalGameModeSelector = false;
     this.gameService.startGame(mode, 'local');
+  }
+
+  onFileSelected(event: Event, type: string, colorSuffix?: string) {
+    this.fileSelected.emit({ event, type, colorSuffix });
   }
 }
