@@ -6,25 +6,101 @@ import { Position, Piece, PieceType, PieceColor, LastMove } from '../logic/chess
 @Component({
   selector: 'app-chess-scene',
   template: `
-    <div class="relative w-full h-full">
-      <canvas #canvas class="block w-full h-full outline-none"></canvas>
+    <div class="relative w-full h-full" style="width: 100%; height: 100%; min-height: 200px;">
+      <!-- Animated Background with Light Points -->
+      <div class="absolute inset-0 bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 overflow-hidden">
+        <!-- Depth layers -->
+        <div class="absolute inset-0 bg-radial-gradient opacity-20"></div>
+        
+        <!-- Animated light points -->
+        @for (point of lightPoints; track $index) {
+          <div class="light-point" 
+               [style.left.%]="point.x" 
+               [style.top.%]="point.y" 
+               [style.width.px]="point.size"
+               [style.height.px]="point.size"
+               [style.animation-duration.s]="point.duration"
+               [style.animation-delay.s]="point.delay"></div>
+        }
+      </div>
+      
+      <canvas #canvas class="block w-full h-full outline-none relative z-10" style="display: block; width: 100%; height: 100%;"></canvas>
       @if (loading) {
-        <div class="absolute inset-0 flex items-center justify-center bg-slate-900 text-blue-200 font-mono z-10">
+        <div class="absolute inset-0 flex items-center justify-center bg-[#0f172a] text-blue-200 font-mono z-30" style="position: absolute; inset: 0; background: #0f172a; z-index: 30; display: flex; align-items: center; justify-center;">
           <div class="flex flex-col items-center gap-4">
-            <div class="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-            <span>Caricamento Studio 3D...</span>
+            <div class="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" style="width: 48px; height: 48px; border: 4px solid rgba(59,130,246,0.3); border-top-color: #3b82f6; border-radius: 50%;"></div>
+            <span style="margin-top: 10px;">Caricamento Studio 3D...</span>
           </div>
         </div>
       }
     </div>
   `,
-  standalone: true
+  standalone: true,
+  styles: [`
+    .light-point {
+      position: absolute;
+      border-radius: 50%;
+      background: radial-gradient(circle, 
+        rgba(139, 92, 246, 0.8) 0%,
+        rgba(99, 102, 241, 0.4) 40%,
+        transparent 70%
+      );
+      filter: blur(3px);
+      animation: float-light linear infinite;
+      pointer-events: none;
+    }
+    
+    @keyframes float-light {
+      0%, 100% { 
+        transform: translate(0, 0) scale(1);
+        opacity: 0.3;
+      }
+      25% { 
+        transform: translate(15px, -25px) scale(1.2);
+        opacity: 0.7;
+      }
+      50% { 
+        transform: translate(-10px, -50px) scale(0.8);
+        opacity: 0.2;
+      }
+      75% { 
+        transform: translate(-20px, -25px) scale(1.1);
+        opacity: 0.6;
+      }
+    }
+    
+    .bg-radial-gradient {
+      background: radial-gradient(ellipse at 50% 50%, 
+        rgba(99, 102, 241, 0.1) 0%,
+        transparent 60%
+      );
+      animation: pulse-radial 8s ease-in-out infinite;
+    }
+    
+    @keyframes pulse-radial {
+      0%, 100% { opacity: 0.2; }
+      50% { opacity: 0.4; }
+    }
+  `],
+  host: {
+    'class': 'block w-full h-full',
+    'style': 'display: block; width: 100%; height: 100%;'
+  }
 })
 export class ChessSceneComponent implements AfterViewInit, OnDestroy {
   @ViewChild('canvas') canvasRef!: ElementRef<HTMLCanvasElement>;
 
   gameService = inject(GameService);
   loading = true;
+
+  // Animated light points for background
+  lightPoints = Array.from({ length: 20 }, () => ({
+    x: Math.random() * 100,
+    y: Math.random() * 100,
+    size: 3 + Math.random() * 8,
+    duration: 10 + Math.random() * 20,
+    delay: Math.random() * 10
+  }));
 
   // Prevents animations while heavy assets are processing
   private isLoadingModel = false;
@@ -86,9 +162,35 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
   }
 
   async ngAfterViewInit() {
-    await this.initThree();
-    this.loading = false;
+    try {
+      await this.initThree();
+    } catch (err) {
+      console.error('Three.js Init Error:', err);
+    } finally {
+      this.loading = false;
+    }
+
+    // Trigger initial render
+    if (this.three) {
+      this.updatePieces(
+        this.gameService.board(),
+        this.gameService.selectedPos(),
+        this.gameService.pieceStyle(),
+        null
+      );
+      this.updateHighlights(this.gameService.validMoves(), this.gameService.selectedPos());
+    }
   }
+
+  private onResize = () => {
+    if (!this.three || !this.camera || !this.renderer) return;
+    const rect = this.canvasRef.nativeElement.getBoundingClientRect();
+    const w = rect.width || window.innerWidth;
+    const h = rect.height || window.innerHeight;
+    this.camera.aspect = w / h;
+    this.camera.updateProjectionMatrix();
+    this.renderer.setSize(w, h, true);
+  };
 
   async loadCustomModel(file: File, key: string) {
     if (!this.three) return;
@@ -247,13 +349,16 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
 
   ngOnDestroy() {
     cancelAnimationFrame(this.animationId);
+    window.removeEventListener('resize', this.onResize);
     if (this.renderer) {
       this.renderer.dispose();
     }
   }
 
   private async initThree() {
-    this.three = await import('three');
+    const THREE = await import('three');
+    this.three = THREE;
+
     const { OrbitControls } = await import('three/examples/jsm/controls/OrbitControls.js');
     const { STLLoader } = await import('three/examples/jsm/loaders/STLLoader.js');
     const { GLTFLoader } = await import('three/examples/jsm/loaders/GLTFLoader.js');
@@ -261,14 +366,23 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
     this.stlLoader = new STLLoader();
     this.gltfLoader = new GLTFLoader();
 
-    const width = this.canvasRef.nativeElement.clientWidth;
-    const height = this.canvasRef.nativeElement.clientHeight;
+    const rect = this.canvasRef.nativeElement.getBoundingClientRect();
+    let width = rect.width;
+    let height = rect.height;
+
+    // Fallback if dimensions are 0 (can happen if initial display is hidden or transitioning)
+    if (width === 0 || height === 0) {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      console.warn('Canvas dimensions are 0, falling back to window size:', width, height);
+    }
 
     this.scene = new this.three.Scene();
     this.scene.background = null;
 
     this.camera = new this.three.PerspectiveCamera(45, width / height, 0.1, 100);
-    this.camera.position.set(0, 10, 10);
+    this.camera.position.set(0, 12, 12); // Slightly further back
+    this.camera.lookAt(0, 0, 0);
 
     this.renderer = new this.three.WebGLRenderer({
       canvas: this.canvasRef.nativeElement,
@@ -276,7 +390,8 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
       alpha: true,
       powerPreference: "high-performance"
     });
-    this.renderer.setSize(width, height);
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderer.setSize(width, height, true); // Force style update
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = this.three.PCFSoftShadowMap;
     this.renderer.toneMapping = this.three.ACESFilmicToneMapping;
@@ -341,18 +456,14 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
 
     const animate = () => {
       this.animationId = requestAnimationFrame(animate);
-      this.controls.update();
-      this.renderer.render(this.scene, this.camera);
+      if (this.controls) this.controls.update();
+      if (this.renderer && this.scene && this.camera) {
+        this.renderer.render(this.scene, this.camera);
+      }
     };
     animate();
 
-    window.addEventListener('resize', () => {
-      const w = window.innerWidth;
-      const h = window.innerHeight;
-      this.camera.aspect = w / h;
-      this.camera.updateProjectionMatrix();
-      this.renderer.setSize(w, h);
-    });
+    window.addEventListener('resize', this.onResize);
   }
 
   // --- ANIMATION SYSTEM ---

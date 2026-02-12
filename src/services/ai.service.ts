@@ -6,20 +6,36 @@ import { GoogleGenAI } from '@google/genai';
   providedIn: 'root'
 })
 export class AiService {
-  private ai: GoogleGenAI;
+  private ai: GoogleGenAI | null = null;
   // Utilizziamo 'gemini-2.5-flash' per velocità ed efficienza
   private model = 'gemini-2.5-flash';
   private quotaExceeded = false;
 
   constructor() {
-    this.ai = new GoogleGenAI({ apiKey: process.env['API_KEY'] });
+    try {
+      const apiKey = (globalThis as any).process?.env?.['API_KEY'];
+      if (apiKey && apiKey !== '' && apiKey !== 'undefined') {
+        this.ai = new GoogleGenAI({ apiKey });
+        console.log('AiService: Gemini API inizializzata correttamente.');
+      } else {
+        console.warn('AiService: API_KEY mancante. L\'IA sarà disattivata (Fallback CPU).');
+      }
+    } catch (e) {
+      console.error('AiService: Errore durante l\'inizializzazione di GoogleGenAI:', e);
+    }
   }
 
   async getBestMove(fen: string, validMoves: string[]): Promise<string | null> {
+    // Safety check: if AI isn't initialized, return null immediately
+    if (!this.ai) {
+      console.warn('AiService: Chiamata saltata (Client non inizializzato/Manca API_KEY)');
+      return null;
+    }
+
     // Circuit Breaker: If we already hit the limit, don't try again.
     if (this.quotaExceeded) {
-        console.warn('AI Circuit Breaker: Skipping API call (Quota Exceeded).');
-        return null;
+      console.warn('AI Circuit Breaker: Skipping API call (Quota Exceeded).');
+      return null;
     }
 
     try {
@@ -54,30 +70,30 @@ export class AiService {
       if (!text) return null;
 
       const move = text.trim();
-      
+
       // Verifica se la mossa restituita è effettivamente nella lista
       if (validMoves.includes(move)) {
         return move;
       }
-      
+
       const cleanMove = move.replace(/[^a-z0-9]/g, '');
       if (validMoves.includes(cleanMove)) {
-          return cleanMove;
+        return cleanMove;
       }
 
       console.warn('AI returned move not in valid list:', move);
       return null;
     } catch (e: any) {
       // Handle Quota Limits Gracefully
-      const isQuota = e.status === 429 || 
-                      e.code === 429 || 
-                      (e.error && e.error.code === 429) || 
-                      (e.message && e.message.includes('429'));
+      const isQuota = e.status === 429 ||
+        e.code === 429 ||
+        (e.error && e.error.code === 429) ||
+        (e.message && e.message.includes('429'));
 
       if (isQuota) {
-          console.warn('Gemini API Quota Exceeded (429). Enabling Offline Fallback.');
-          this.quotaExceeded = true;
-          return null;
+        console.warn('Gemini API Quota Exceeded (429). Enabling Offline Fallback.');
+        this.quotaExceeded = true;
+        return null;
       }
 
       console.error('AI Error:', e);

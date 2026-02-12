@@ -1,29 +1,130 @@
-
 import { Component, inject, ViewChild } from '@angular/core';
 import { ChessSceneComponent } from './components/chess-scene.component';
+import { HomeViewComponent } from './components/home-view.component';
 import { GameService } from './services/game.service';
-import { PieceType } from './logic/chess-types';
+import { PieceType, Position } from './logic/chess-types';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [ChessSceneComponent],
-  templateUrl: './app.component.html',
+  imports: [ChessSceneComponent, HomeViewComponent],
+  template: `
+    <div class="h-screen w-full relative overflow-hidden bg-slate-950 main-container">
+      
+      <!-- 3D Background - Always active but can be blurred -->
+      <div class="absolute inset-0 transition-all duration-1000" 
+           [class.blur-xl]="gameService.viewState() !== 'game' && gameService.bgBlur()"
+           [class.scale-110]="gameService.viewState() !== 'game' && gameService.bgBlur()">
+        <app-chess-scene></app-chess-scene>
+      </div>
+
+      <!-- Views Overlays -->
+      @if (gameService.viewState() === 'home') {
+        <app-home-view></app-home-view>
+      }
+
+      @if (gameService.viewState() === 'game') {
+        <!-- Minimal UI for Game Mode -->
+        <div class="absolute top-6 left-6 z-40">
+           <button (click)="gameService.setView('home')" 
+             class="group w-12 h-12 md:w-14 md:h-14 rounded-xl bg-slate-900/80 backdrop-blur-md border border-white/10 hover:border-indigo-400/50 text-white hover:bg-slate-800 transition-all flex items-center justify-center shadow-lg">
+             <svg viewBox="0 0 100 100" fill="currentColor" class="w-6 h-6 md:w-7 md:h-7 text-slate-400 group-hover:text-indigo-400 transition-colors">
+               <path d="M50 20 L20 45 L30 45 L30 80 L45 80 L45 60 L55 60 L55 80 L70 80 L70 45 L80 45 Z"/>
+             </svg>
+           </button>
+        </div>
+        
+        <div class="absolute top-6 right-6 z-40 flex gap-3">
+           <button (click)="showMenu = !showMenu" 
+             class="group w-12 h-12 md:w-14 md:h-14 rounded-xl bg-slate-900/80 backdrop-blur-md border border-white/10 hover:border-blue-400/50 text-white hover:bg-slate-800 transition-all flex items-center justify-center shadow-lg">
+             <svg viewBox="0 0 100 100" fill="currentColor" class="w-6 h-6 md:w-7 md:h-7 text-slate-400 group-hover:text-blue-400 group-hover:rotate-90 transition-all duration-500">
+               <path d="M50 30 A20 20 0 1 1 50 70 A20 20 0 1 1 50 30 M50 40 A10 10 0 1 0 50 60 A10 10 0 1 0 50 40"/>
+               <rect x="45" y="10" width="10" height="15" rx="2"/>
+               <rect x="45" y="75" width="10" height="15" rx="2"/>
+               <rect x="10" y="45" width="15" height="10" rx="2"/>
+               <rect x="75" y="45" width="15" height="10" rx="2"/>
+             </svg>
+           </button>
+        </div>
+      }
+
+      <!-- Shared Components (Modals, etc.) -->
+      @if (showMenu) {
+        <div class="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-6">
+           <!-- Content of the previous menu ... -->
+           <div class="bg-slate-900 border border-white/10 rounded-3xl p-8 max-w-lg w-full">
+              <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">Impostazioni Partita</h2>
+                <button (click)="showMenu = false" class="text-slate-400">✕</button>
+              </div>
+              
+              <div class="space-y-6">
+                <!-- Piece Styles -->
+                <div>
+                  <label class="text-sm text-slate-400 mb-2 block uppercase tracking-widest font-bold">Stile Pezzi</label>
+                  <div class="grid grid-cols-2 gap-2">
+                    @for (s of ['classic', 'neon', 'minimal']; track s) {
+                      <button 
+                        (click)="gameService.pieceStyle.set(s)"
+                        [class.border-blue-500]="gameService.pieceStyle() === s"
+                        class="p-3 rounded-xl bg-slate-800 border-2 border-transparent transition-all capitalize text-white">
+                        {{s}}
+                      </button>
+                    }
+                  </div>
+                </div>
+
+                <!-- Visual Options -->
+                <div>
+                  <label class="text-sm text-slate-400 mb-2 block uppercase tracking-widest font-bold">Effetti Visivi</label>
+                  <div class="flex items-center justify-between p-4 bg-slate-800 rounded-xl">
+                    <span class="text-white">Sfocatura Sfondo Home</span>
+                    <input type="checkbox" [checked]="gameService.bgBlur()" 
+                           (change)="gameService.bgBlur.set(!gameService.bgBlur())"
+                           class="w-6 h-6 rounded border-white/10 bg-slate-700">
+                  </div>
+                </div>
+
+                <!-- Custom Assets -->
+                <div>
+                  <label class="text-sm text-slate-400 mb-2 block uppercase tracking-widest font-bold">Modelli 3D Personalizzati</label>
+                  <button (click)="showAssets = true; showMenu = false" 
+                    class="w-full p-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 rounded-xl text-white font-bold transition-all shadow-lg">
+                    📦 Carica Pezzi Personalizzati
+                  </button>
+                  <p class="text-slate-500 text-xs mt-2">Importa file .stl o .glb per i tuoi pezzi</p>
+                </div>
+
+                <button (click)="showMenu = false" class="w-full py-4 bg-blue-600 rounded-2xl font-bold text-white shadow-lg hover:bg-blue-500 transition-all">
+                  Conferma e Chiudi
+                </button>
+              </div>
+           </div>
+        </div>
+      }
+
+    </div>
+  `,
   styles: [`
-    @keyframes blob {
-      0% { transform: translate(0px, 0px) scale(1); }
-      33% { transform: translate(30px, -50px) scale(1.1); }
-      66% { transform: translate(-20px, 20px) scale(0.9); }
-      100% { transform: translate(0px, 0px) scale(1); }
-    }
-    @keyframes twinkle {
-      0%, 100% { opacity: 0.3; transform: scale(0.8); }
-      50% { opacity: 1; transform: scale(1.2); }
-    }
     @keyframes float-particle {
       0% { transform: translateY(0) translateX(0); }
       50% { transform: translateY(-20px) translateX(10px); }
       100% { transform: translateY(0) translateX(0); }
+    }
+    :host {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+      background: transparent;
+    }
+    .main-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 10;
+      background: radial-gradient(ellipse at top, #1e293b 0%, #0f172a 50%, #020617 100%);
     }
     .animate-blob {
       animation: blob 15s infinite alternate ease-in-out;
@@ -49,8 +150,12 @@ export class AppComponent {
   showAssets = false;
   showMenu = false;
 
+  constructor() {
+    // Component initialization
+  }
+
   // Chess Pieces
-  pieceTypes: {id: PieceType, label: string}[] = [
+  pieceTypes: { id: PieceType, label: string }[] = [
     { id: 'p', label: 'Pedone' },
     { id: 'r', label: 'Torre' },
     { id: 'n', label: 'Cavallo' },
@@ -60,11 +165,11 @@ export class AppComponent {
   ];
 
   // Checker Pieces
-  checkerTypes: {id: PieceType, label: string}[] = [
-      { id: 'cm', label: 'Pedina (Man)' },
-      { id: 'ck', label: 'Dama (King)' }
+  checkerTypes: { id: PieceType, label: string }[] = [
+    { id: 'cm', label: 'Pedina (Man)' },
+    { id: 'ck', label: 'Dama (King)' }
   ];
-  
+
   // Track status. Keys are now complex: 'p_w', 'p_b', 'board' etc.
   loadedStatus: Record<string, boolean> = {
     'board': false
@@ -81,7 +186,7 @@ export class AppComponent {
 
   getIconForType(type: PieceType): string {
     const icons: Record<string, string> = {
-        'p': '♟', 'r': '♜', 'n': '♞', 'b': '♝', 'q': '♛', 'k': '♚'
+      'p': '♟', 'r': '♜', 'n': '♞', 'b': '♝', 'q': '♛', 'k': '♚'
     };
     return icons[type] || '?';
   }
@@ -95,20 +200,20 @@ export class AppComponent {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files[0]) {
       const file = input.files[0];
-      
+
       // Construct the key for the scene loader
       // If board: key='board'
       // If piece with color: key='p_w' or 'p_b'
       // If generic (legacy fallback): key='p'
-      
+
       let key = type;
       if (type !== 'board' && colorSuffix) {
-          key = `${type}_${colorSuffix}`;
+        key = `${type}_${colorSuffix}`;
       }
 
       // Pass file to scene component to load
       this.scene.loadCustomModel(file, key);
-      
+
       // Update local status
       this.loadedStatus[key] = true;
 

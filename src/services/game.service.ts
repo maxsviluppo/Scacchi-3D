@@ -5,6 +5,8 @@ import { ChessUtils } from '../logic/chess-utils';
 import { AiService } from './ai.service';
 
 export type PieceStyle = 'minimal' | 'classic' | 'neon' | 'custom';
+export type AppView = 'home' | 'game' | 'settings' | 'admin' | 'marketplace';
+export type PlayerMode = 'ai' | 'local' | 'online';
 
 @Injectable({
   providedIn: 'root'
@@ -12,17 +14,22 @@ export type PieceStyle = 'minimal' | 'classic' | 'neon' | 'custom';
 export class GameService {
   private aiService = inject(AiService);
 
+  // App Navigation
+  viewState = signal<AppView>('home');
+
   // State Signals
   gameMode = signal<GameMode>('chess');
+  playerMode = signal<PlayerMode>('local');
   board = signal<Board>(ChessUtils.createInitialBoard('chess'));
   turn = signal<PieceColor>('w');
   selectedPos = signal<Position | null>(null);
   pieceStyle = signal<PieceStyle>('classic');
   useOriginalTexture = signal<boolean>(false);
-  
+  bgBlur = signal<boolean>(true);
+
   // Animation State
   lastMove = signal<LastMove | null>(null);
-  
+
   // Computed
   validMoves = computed(() => {
     const pos = this.selectedPos();
@@ -41,8 +48,19 @@ export class GameService {
   toggleOriginalTexture(value: boolean) {
     this.useOriginalTexture.set(value);
     if (this.pieceStyle() === 'custom') {
-       this.pieceStyle.set('custom');
+      this.pieceStyle.set('custom');
     }
+  }
+
+  setView(view: AppView) {
+    this.viewState.set(view);
+  }
+
+  startGame(mode: GameMode, playerMode: PlayerMode = 'local') {
+    this.gameMode.set(mode);
+    this.playerMode.set(playerMode);
+    this.resetGame();
+    this.viewState.set('game');
   }
 
   setGameMode(mode: GameMode) {
@@ -67,7 +85,7 @@ export class GameService {
     if (selected) {
       const moves = this.validMoves();
       const isMove = moves.some(m => m.row === pos.row && m.col === pos.col);
-      
+
       if (isMove) {
         this.executeMove(selected, pos);
       } else {
@@ -80,10 +98,10 @@ export class GameService {
     // CRITICAL VALIDATION
     const currentBoard = this.board();
     const pieceToMove = currentBoard[from.row][from.col];
-    
+
     if (!pieceToMove || pieceToMove.color !== this.turn()) {
-        console.warn('Attempted to move invalid piece');
-        return;
+      console.warn('Attempted to move invalid piece');
+      return;
     }
 
     const mode = this.gameMode();
@@ -93,36 +111,36 @@ export class GameService {
 
     // --- DETECTION LOGIC ---
     if (mode === 'checkers') {
-        // Checkers Capture (Jump over)
-        if (Math.abs(to.row - from.row) === 2) {
-            const midRow = (from.row + to.row) / 2;
-            const midCol = (from.col + to.col) / 2;
-            capturedPiece = currentBoard[midRow][midCol];
-            capturedPos = { row: midRow, col: midCol };
-            isJump = true;
-        } 
+      // Checkers Capture (Jump over)
+      if (Math.abs(to.row - from.row) === 2) {
+        const midRow = (from.row + to.row) / 2;
+        const midCol = (from.col + to.col) / 2;
+        capturedPiece = currentBoard[midRow][midCol];
+        capturedPos = { row: midRow, col: midCol };
+        isJump = true;
+      }
     } else {
-        // Chess Capture (Land on)
-        const target = currentBoard[to.row][to.col];
-        if (target) {
-            capturedPiece = target;
-            capturedPos = { ...to };
-            isJump = true; 
-        }
-        // Knight always jumps nicely
-        if (pieceToMove.type === 'n') {
-            isJump = true;
-        }
+      // Chess Capture (Land on)
+      const target = currentBoard[to.row][to.col];
+      if (target) {
+        capturedPiece = target;
+        capturedPos = { ...to };
+        isJump = true;
+      }
+      // Knight always jumps nicely
+      if (pieceToMove.type === 'n') {
+        isJump = true;
+      }
     }
 
     // Prepare Animation Data
     const moveData: LastMove = {
-        from,
-        to,
-        piece: pieceToMove,
-        capturedPiece,
-        capturedPos,
-        isJump
+      from,
+      to,
+      piece: pieceToMove,
+      capturedPiece,
+      capturedPos,
+      isJump
     };
 
     // Update Board State
@@ -132,15 +150,15 @@ export class GameService {
 
       // Handle Checkers Jump Removal
       if (capturedPos && mode === 'checkers') {
-          newBoard[capturedPos.row][capturedPos.col] = null;
+        newBoard[capturedPos.row][capturedPos.col] = null;
       }
 
       // Checkers Promotion
       if (mode === 'checkers' && movingPiece?.type === 'cm') {
-          if ((movingPiece.color === 'w' && to.row === 0) || (movingPiece.color === 'b' && to.row === 7)) {
-              movingPiece = { ...movingPiece, type: 'ck' };
-              moveData.piece = movingPiece; // Update animation reference
-          }
+        if ((movingPiece.color === 'w' && to.row === 0) || (movingPiece.color === 'b' && to.row === 7)) {
+          movingPiece = { ...movingPiece, type: 'ck' };
+          moveData.piece = movingPiece; // Update animation reference
+        }
       }
 
       newBoard[to.row][to.col] = movingPiece;
@@ -162,7 +180,12 @@ export class GameService {
     }
   }
 
-  async triggerAiMove() {
+  private async triggerAiMove() {
+    // Only trigger AI if we're in AI mode and it's black's turn
+    if (this.playerMode() !== 'ai' || this.turn() !== 'b') {
+      return;
+    }
+
     this.isAiThinking.set(true);
     this.gameStatus.set('Gemini sta pensando...');
 
@@ -171,61 +194,61 @@ export class GameService {
       const legalMoves = this.getAllLegalMoves('b');
 
       if (legalMoves.length === 0) {
-          this.gameStatus.set('Scacco Matto / Stallo! Partita finita.');
-          this.isAiThinking.set(false);
-          return;
+        this.gameStatus.set('Scacco Matto / Stallo! Partita finita.');
+        this.isAiThinking.set(false);
+        return;
       }
 
       const uciMove = await this.aiService.getBestMove(fen, legalMoves);
-      
+
       let chosenMove = uciMove;
 
       if (!chosenMove || !legalMoves.includes(chosenMove)) {
-         console.warn('AI unavailable. Using CPU Fallback.');
-         const randomIndex = Math.floor(Math.random() * legalMoves.length);
-         chosenMove = legalMoves[randomIndex];
-         this.gameStatus.set('CPU (Offline)');
+        console.warn('AI unavailable. Using CPU Fallback.');
+        const randomIndex = Math.floor(Math.random() * legalMoves.length);
+        chosenMove = legalMoves[randomIndex];
+        this.gameStatus.set('CPU (Offline)');
       }
 
       if (chosenMove) {
-          const from = this.uciToCoords(chosenMove.substring(0, 2));
-          const to = this.uciToCoords(chosenMove.substring(2, 4));
-          if (from && to) {
-              this.executeMove(from, to);
-          }
+        const from = this.uciToCoords(chosenMove.substring(0, 2));
+        const to = this.uciToCoords(chosenMove.substring(2, 4));
+        if (from && to) {
+          this.executeMove(from, to);
+        }
       }
 
     } catch (e) {
-        console.error('AI Critical Error', e);
-        const legalMoves = this.getAllLegalMoves('b');
-        if (legalMoves.length > 0) {
-            const fallback = legalMoves[Math.floor(Math.random() * legalMoves.length)];
-            const f = this.uciToCoords(fallback.substring(0,2));
-            const t = this.uciToCoords(fallback.substring(2,4));
-            if(f && t) this.executeMove(f, t);
-        } else {
-            this.handleAiError('Errore Fatale');
-        }
+      console.error('AI Critical Error', e);
+      const legalMoves = this.getAllLegalMoves('b');
+      if (legalMoves.length > 0) {
+        const fallback = legalMoves[Math.floor(Math.random() * legalMoves.length)];
+        const f = this.uciToCoords(fallback.substring(0, 2));
+        const t = this.uciToCoords(fallback.substring(2, 4));
+        if (f && t) this.executeMove(f, t);
+      } else {
+        this.handleAiError('Errore Fatale');
+      }
     } finally {
-        this.isAiThinking.set(false);
+      this.isAiThinking.set(false);
     }
   }
 
   getAllLegalMoves(color: PieceColor): string[] {
     const moves: string[] = [];
     const board = this.board();
-    const cols = ['a','b','c','d','e','f','g','h'];
-    
-    for(let r=0; r<8; r++) {
-      for(let c=0; c<8; c++) {
+    const cols = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+
+    for (let r = 0; r < 8; r++) {
+      for (let c = 0; c < 8; c++) {
         const piece = board[r][c];
-        if(piece && piece.color === color) {
-          const from: Position = {row: r, col: c};
+        if (piece && piece.color === color) {
+          const from: Position = { row: r, col: c };
           const valid = ChessUtils.getValidMoves(board, from, this.gameMode());
-          
+
           valid.forEach(to => {
-             const uci = `${cols[from.col]}${8 - from.row}${cols[to.col]}${8 - to.row}`;
-             moves.push(uci);
+            const uci = `${cols[from.col]}${8 - from.row}${cols[to.col]}${8 - to.row}`;
+            moves.push(uci);
           });
         }
       }
@@ -234,15 +257,15 @@ export class GameService {
   }
 
   private handleAiError(msg: string) {
-      this.gameStatus.set(`${msg} Tocca a te.`);
-      this.turn.set('w'); 
+    this.gameStatus.set(`${msg} Tocca a te.`);
+    this.turn.set('w');
   }
 
   uciToCoords(sq: string): Position | null {
     if (sq.length !== 2) return null;
     const colMap: Record<string, number> = { 'a': 0, 'b': 1, 'c': 2, 'd': 3, 'e': 4, 'f': 5, 'g': 6, 'h': 7 };
     const col = colMap[sq[0]];
-    const row = 8 - parseInt(sq[1]); 
+    const row = 8 - parseInt(sq[1]);
     if (isNaN(row) || col === undefined) return null;
     return { row, col };
   }
