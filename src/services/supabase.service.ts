@@ -162,4 +162,84 @@ export class SupabaseService {
         if (!userId) return;
         await this.supabase.from('career_progress').update({ current_game_state: null }).eq('user_id', userId);
     }
+
+    // --- ASSETS / SETUP LOGIC ---
+
+    /**
+     * Updates the user's profile with the new asset URL for a specific type.
+     * @param assetType e.g., 'board', 'p_w', 'k_b'
+     * @param url The public URL of the asset (uploaded or from library)
+     */
+    async saveUserAssetPreference(assetType: string, url: string) {
+        const userId = this.user()?.id;
+        if (!userId) return;
+
+        // Fetch current assets to merge
+        const { data: profile } = await this.client
+            .from('profiles')
+            .select('active_assets')
+            .eq('id', userId)
+            .single();
+
+        const currentAssets = profile?.active_assets || {};
+
+        // Update specific asset
+        currentAssets[assetType] = url;
+
+        // Save back
+        const { error } = await this.client
+            .from('profiles')
+            .update({ active_assets: currentAssets })
+            .eq('id', userId);
+
+        if (error) {
+            console.error('Error saving asset preference:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Retrieves the user's active assets configuration.
+     */
+    async getUserAssetPreferences() {
+        const userId = this.user()?.id;
+        if (!userId) return {};
+
+        const { data } = await this.client
+            .from('profiles')
+            .select('active_assets')
+            .eq('id', userId)
+            .single();
+
+        return data?.active_assets || {};
+    }
+
+    /**
+     * Uploads a file to the 'custom_assets' bucket and returns the public URL.
+     */
+    async uploadCustomAssetFile(file: File, assetType: string): Promise<string> {
+        const userId = this.user()?.id;
+        if (!userId) throw new Error('User not logged in');
+
+        // Path: userId/assetType.ext (Overwrite existing)
+        const fileExt = file.name.split('.').pop() || 'glb';
+        const filePath = `${userId}/${assetType}.${fileExt}`;
+
+        const { error: uploadError } = await this.client.storage
+            .from('custom_assets')
+            .upload(filePath, file, { upsert: true });
+
+        if (uploadError) {
+            if (uploadError.message.includes('Bucket not found')) {
+                throw new Error("Manca il bucket 'custom_assets'. Crealo su Supabase.");
+            }
+            throw uploadError;
+        }
+
+        const { data } = this.client.storage
+            .from('custom_assets')
+            .getPublicUrl(filePath);
+
+        return data.publicUrl;
+    }
 }

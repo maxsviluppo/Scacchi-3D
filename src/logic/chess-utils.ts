@@ -46,6 +46,7 @@ export class ChessUtils {
 
     const moves: Position[] = [];
 
+    // --- CHECKERS LOGIC ---
     if (mode === 'checkers') {
       const piece = board[pos.row][pos.col];
       if (!piece) return [];
@@ -54,39 +55,30 @@ export class ChessUtils {
         (piece.color === 'w' ? [[-1, -1], [-1, 1]] : [[1, -1], [1, 1]]);
 
       // --- 1. Find Captures (Jumps) ---
-      let hasCapture = false;
       const jumps: Position[] = [];
-
       for (const [dr, dc] of dirs) {
         let r = pos.row + dr;
         let c = pos.col + dc;
 
-        // Checkers King: Can fly over multiple empty squares (International rules) 
-        // BUT Italian Checkers: King moves 1 step but captures ANY distance? 
-        // NO: Standard Italian Checkers (Dama Italiana), King moves 1 step like Man, but captures backwards.
-        // Wait, standard Italian is 8x8. King moves 1 step.
-        // Let's stick to standard 8x8 Italian Dama: King moves 1 step.
-
-        // Capture Logic
+        // Capture Logic (Jump over enemy)
         const jr = pos.row + dr * 2;
         const jc = pos.col + dc * 2;
 
         if (this.isValidPos({ row: jr, col: jc }) && board[jr][jc] === null) {
-          const mid = board[pos.row + dr][pos.col + dc];
+          const mid = board[r][c];
           if (mid && mid.color !== piece.color) {
             // Italian Checkers Rule: Man cannot capture King
             if (piece.type === 'cm' && mid.type === 'ck') continue;
 
             jumps.push({ row: jr, col: jc });
-            hasCapture = true;
           }
         }
       }
 
-      if (hasCapture) return jumps; // Mandatory Capture: Return only jumps if available
+      // If this piece has jumps, return only jumps (local mandatory rule will be enforced globally later)
+      if (jumps.length > 0) return jumps;
 
-      // --- 2. Simple Moves (only if no capture found GLOBALLY? handled in legalMoves) ---
-      // Here we return simple moves, filtering is done in getLegalMoves
+      // --- 2. Simple Moves ---
       for (const [dr, dc] of dirs) {
         const sr = pos.row + dr;
         const sc = pos.col + dc;

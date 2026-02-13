@@ -29,6 +29,9 @@ export class GameService {
   useOriginalTexture = signal<boolean>(false);
   bgBlur = signal<boolean>(true);
 
+  // Custom Assets
+  customMeshUrls: Record<string, string> = {};
+
   // Career State
   careerLevel = signal<number>(1);
   careerPoints = signal<number>(0);

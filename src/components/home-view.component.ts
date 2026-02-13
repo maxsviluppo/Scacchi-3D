@@ -1,5 +1,6 @@
 
-import { Component, inject, Input, Output, EventEmitter, signal } from '@angular/core';
+
+import { Component, inject, Input, Output, EventEmitter, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { GameService } from '../services/game.service';
@@ -501,91 +502,173 @@ import { ImageUtils } from '../utils/image-utils';
               <button (click)="showSetup = false" class="text-slate-400 hover:text-white p-2 text-xl transition-colors">✕</button>
             </div>
 
+
+            <!-- Navigation Tabs -->
+            <div class="flex border-b border-white/10 px-8">
+              <button (click)="setupTab = 'upload'" class="px-6 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all"
+                [class.border-blue-500]="setupTab === 'upload'" [class.text-white]="setupTab === 'upload'"
+                [class.border-transparent]="setupTab !== 'upload'" [class.text-slate-500]="setupTab !== 'upload'">
+                Carica Tuoi File
+              </button>
+              <button (click)="setupTab = 'library'" class="px-6 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all"
+                [class.border-purple-500]="setupTab === 'library'" [class.text-white]="setupTab === 'library'"
+                [class.border-transparent]="setupTab !== 'library'" [class.text-slate-500]="setupTab !== 'library'">
+                Libreria Premium
+              </button>
+            </div>
+
             <!-- Content -->
-            <div class="p-8 overflow-y-auto custom-scrollbar bg-transparent space-y-10">
-              <!-- Board Setup -->
-              <div class="bg-indigo-900/10 border border-white/5 rounded-[2rem] p-8 space-y-6">
-                <div class="flex items-center gap-6">
-                  <div class="w-14 h-14 rounded-2xl bg-slate-800/50 flex items-center justify-center border border-white/10">
-                    <svg viewBox="0 0 24 24" fill="currentColor" class="w-8 h-8 text-slate-400">
-                      <rect x="2" y="2" width="20" height="20" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
-                      <rect x="2" y="2" width="5" height="5"/>
-                      <rect x="12" y="2" width="5" height="5"/>
-                      <rect x="7" y="7" width="5" height="5"/>
-                      <rect x="17" y="7" width="5" height="5"/>
-                      <rect x="2" y="12" width="5" height="5"/>
-                      <rect x="12" y="12" width="5" height="5"/>
-                      <rect x="7" y="17" width="5" height="5"/>
-                      <rect x="17" y="17" width="5" height="5"/>
-                    </svg>
-                  </div>
-                  <div class="flex-1">
-                    <h4 class="text-xl font-black text-white uppercase tracking-tight">Scacchiera 3D</h4>
-                    <p class="text-[10px] text-indigo-400 font-bold uppercase tracking-widest mt-1">
-                      {{ loadedStatus['board'] ? 'Stato: Caricato OK' : 'Stato: Modello Standard' }}
-                    </p>
-                  </div>
-                </div>
-
-                <label class="cursor-pointer block">
-                  <span class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-black uppercase text-center py-4 rounded-xl border border-white/10 transition-all block shadow-lg">
-                    Carica file STL / GLB / GLTF
-                  </span>
-                  <input type="file" accept=".stl,.glb,.gltf" class="hidden" (change)="onFileSelected($event, 'board')">
-                </label>
-              </div>
-
-              <!-- Chess Pieces -->
-              <div>
-                <h4 class="text-sm font-black text-blue-400 uppercase tracking-widest mb-6 border-b border-blue-500/30 pb-3">Set Scacchi Premium</h4>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  @for (type of pieceTypes; track type.id) {
-                    <div class="bg-white/5 border border-white/5 rounded-2xl p-4 flex flex-col gap-4 group hover:border-blue-500/30 transition-all">
-                      <div class="flex items-center gap-4">
-                        <div class="w-10 h-10 rounded-lg bg-black/40 flex items-center justify-center text-xl text-slate-400 border border-white/5">
-                          {{ getIconForType(type.id) }}
+            <div class="p-8 overflow-y-auto custom-scrollbar bg-transparent flex-1">
+              
+              <!-- UPLOAD TAB -->
+              @if (setupTab === 'upload') {
+                  <div class="space-y-10 animate-fade-in">
+                    <!-- Board Setup -->
+                    <div class="bg-indigo-900/10 border border-white/5 rounded-[2rem] p-8 space-y-6">
+                        <div class="flex items-center gap-6">
+                        <div class="w-14 h-14 rounded-2xl bg-slate-800/50 flex items-center justify-center border border-white/10">
+                            <svg viewBox="0 0 24 24" fill="currentColor" class="w-8 h-8 text-slate-400">
+                            <rect x="2" y="2" width="20" height="20" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
+                            <rect x="2" y="2" width="5" height="5"/>
+                            <rect x="12" y="2" width="5" height="5"/>
+                            <rect x="7" y="7" width="5" height="5"/>
+                            <rect x="17" y="7" width="5" height="5"/>
+                            <rect x="2" y="12" width="5" height="5"/>
+                            <rect x="12" y="12" width="5" height="5"/>
+                            <rect x="7" y="17" width="5" height="5"/>
+                            <rect x="17" y="17" width="5" height="5"/>
+                            </svg>
                         </div>
-                        <h4 class="text-base font-black text-white uppercase">{{ type.label }}</h4>
-                      </div>
-                      <div class="grid grid-cols-2 gap-3">
-                        <label class="cursor-pointer bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-black uppercase text-center py-3 rounded-xl border border-white/10 transition-all">
-                          {{ loadedStatus[type.id + '_w'] ? 'BIANCO OK' : 'CARICA BIANCO' }}
-                          <input type="file" accept=".stl,.glb,.gltf" class="hidden" (change)="onFileSelected($event, type.id, 'w')">
-                        </label>
-                        <label class="cursor-pointer bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-black uppercase text-center py-3 rounded-xl border border-white/10 transition-all">
-                          {{ loadedStatus[type.id + '_b'] ? 'NERO OK' : 'CARICA NERO' }}
-                          <input type="file" accept=".stl,.glb,.gltf" class="hidden" (change)="onFileSelected($event, type.id, 'b')">
-                        </label>
-                      </div>
-                    </div>
-                  }
-                </div>
-              </div>
+                        <div class="flex-1">
+                            <h4 class="text-xl font-black text-white uppercase tracking-tight">Scacchiera 3D</h4>
+                            <p class="text-[10px] text-indigo-400 font-bold uppercase tracking-widest mt-1">
+                            {{ loadedStatus['board'] ? 'Stato: Caricato OK' : 'Stato: Modello Standard' }}
+                            </p>
+                        </div>
+                        </div>
 
-              <!-- Checkers Pieces -->
-              <div>
-                <h4 class="text-sm font-black text-emerald-400 uppercase tracking-widest mb-6 border-b border-emerald-500/30 pb-3">Set Dama Premium</h4>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  @for (type of checkerTypes; track type.id) {
-                    <div class="bg-white/5 border border-white/5 rounded-2xl p-4 flex flex-col gap-4 group hover:border-emerald-500/30 transition-all">
-                      <div class="flex items-center gap-4">
-                        <div class="w-10 h-10 rounded-lg bg-black/40 flex items-center justify-center text-xl text-emerald-500 border border-white/5">◎</div>
-                        <h4 class="text-base font-black text-white uppercase">{{ type.label }}</h4>
-                      </div>
-                      <div class="grid grid-cols-2 gap-3">
-                        <label class="cursor-pointer bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-black uppercase text-center py-3 rounded-xl border border-white/10 transition-all">
-                          {{ loadedStatus[type.id + '_w'] ? 'BIANCO OK' : 'CARICA BIANCO' }}
-                          <input type="file" accept=".stl,.glb,.gltf" class="hidden" (change)="onFileSelected($event, type.id, 'w')">
+                        <label class="cursor-pointer block">
+                        <span class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-black uppercase text-center py-4 rounded-xl border border-white/10 transition-all block shadow-lg">
+                            Carica file STL / GLB / GLTF
+                        </span>
+                        <input type="file" accept=".stl,.glb,.gltf" class="hidden" (change)="onFileSelected($event, 'board')">
                         </label>
-                        <label class="cursor-pointer bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-black uppercase text-center py-3 rounded-xl border border-white/10 transition-all">
-                          {{ loadedStatus[type.id + '_b'] ? 'NERO OK' : 'CARICA NERO' }}
-                          <input type="file" accept=".stl,.glb,.gltf" class="hidden" (change)="onFileSelected($event, type.id, 'b')">
-                        </label>
-                      </div>
                     </div>
-                  }
+
+                    <!-- Chess Pieces -->
+                    <div>
+                        <h4 class="text-sm font-black text-blue-400 uppercase tracking-widest mb-6 border-b border-blue-500/30 pb-3">Set Scacchi Custom</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        @for (type of pieceTypes; track type.id) {
+                            <div class="bg-white/5 border border-white/5 rounded-2xl p-4 flex flex-col gap-4 group hover:border-blue-500/30 transition-all">
+                            <div class="flex items-center gap-4">
+                                <div class="w-10 h-10 rounded-lg bg-black/40 flex items-center justify-center text-xl text-slate-400 border border-white/5">
+                                {{ getIconForType(type.id) }}
+                                </div>
+                                <h4 class="text-base font-black text-white uppercase">{{ type.label }}</h4>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <label class="cursor-pointer bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-black uppercase text-center py-3 rounded-xl border border-white/10 transition-all">
+                                {{ loadedStatus[type.id + '_w'] ? 'BIANCO OK' : 'CARICA BIANCO' }}
+                                <input type="file" accept=".stl,.glb,.gltf" class="hidden" (change)="onFileSelected($event, type.id, 'w')">
+                                </label>
+                                <label class="cursor-pointer bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-black uppercase text-center py-3 rounded-xl border border-white/10 transition-all">
+                                {{ loadedStatus[type.id + '_b'] ? 'NERO OK' : 'CARICA NERO' }}
+                                <input type="file" accept=".stl,.glb,.gltf" class="hidden" (change)="onFileSelected($event, type.id, 'b')">
+                                </label>
+                            </div>
+                            </div>
+                        }
+                        </div>
+                    </div>
+
+                    <!-- Checkers Pieces -->
+                    <div>
+                        <h4 class="text-sm font-black text-emerald-400 uppercase tracking-widest mb-6 border-b border-emerald-500/30 pb-3">Set Dama Custom</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        @for (type of checkerTypes; track type.id) {
+                            <div class="bg-white/5 border border-white/5 rounded-2xl p-4 flex flex-col gap-4 group hover:border-emerald-500/30 transition-all">
+                            <div class="flex items-center gap-4">
+                                <div class="w-10 h-10 rounded-lg bg-black/40 flex items-center justify-center text-xl text-emerald-500 border border-white/5">◎</div>
+                                <h4 class="text-base font-black text-white uppercase">{{ type.label }}</h4>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <label class="cursor-pointer bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-black uppercase text-center py-3 rounded-xl border border-white/10 transition-all">
+                                {{ loadedStatus[type.id + '_w'] ? 'BIANCO OK' : 'CARICA BIANCO' }}
+                                <input type="file" accept=".stl,.glb,.gltf" class="hidden" (change)="onFileSelected($event, type.id, 'w')">
+                                </label>
+                                <label class="cursor-pointer bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-black uppercase text-center py-3 rounded-xl border border-white/10 transition-all">
+                                {{ loadedStatus[type.id + '_b'] ? 'NERO OK' : 'CARICA NERO' }}
+                                <input type="file" accept=".stl,.glb,.gltf" class="hidden" (change)="onFileSelected($event, type.id, 'b')">
+                                </label>
+                            </div>
+                            </div>
+                        }
+                        </div>
+                    </div>
+                  </div>
+              }
+
+              <!-- LIBRARY TAB -->
+              @if (setupTab === 'library') {
+                <div class="space-y-8 animate-fade-in">
+                    
+                    <!-- Featured Sets -->
+                    <div>
+                        <h4 class="text-sm font-black text-purple-400 uppercase tracking-widest mb-4">Set Completi (Scacchi)</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Example Item 1 -->
+                            <div class="bg-gradient-to-br from-slate-800 to-slate-900 border border-white/10 rounded-2xl p-1 overflow-hidden group">
+                                <div class="relative h-32 bg-slate-950/50 rounded-xl overflow-hidden mb-3 flex items-center justify-center">
+                                    <span class="text-4xl">🏰</span> <!-- Placeholder for preview image -->
+                                    <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                        <button (click)="selectLibrarySet('classic_ivory')" class="px-4 py-2 bg-white text-black font-black uppercase text-xs rounded-full tracking-wider transform translate-y-2 group-hover:translate-y-0 transition-all">Usa Questo</button>
+                                    </div>
+                                </div>
+                                <div class="px-3 pb-3">
+                                    <h5 class="text-white font-bold uppercase text-sm">Classic Ivory</h5>
+                                    <p class="text-xs text-slate-500 mt-1">Stile classico pregiato</p>
+                                </div>
+                            </div>
+
+                            <!-- Example Item 2 -->
+                            <div class="bg-gradient-to-br from-slate-800 to-slate-900 border border-purple-500/30 rounded-2xl p-1 overflow-hidden group shadow-[0_0_20px_rgba(168,85,247,0.15)]">
+                                <div class="relative h-32 bg-slate-950/50 rounded-xl overflow-hidden mb-3 flex items-center justify-center">
+                                    <span class="text-4xl">🔮</span>
+                                    <div class="absolute top-2 right-2 bg-purple-500 text-white text-[10px] font-black px-2 py-1 rounded-full uppercase tracking-wider">Premium</div>
+                                    <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                        <button (click)="selectLibrarySet('neon_cyber')" class="px-4 py-2 bg-purple-500 text-white font-black uppercase text-xs rounded-full tracking-wider transform translate-y-2 group-hover:translate-y-0 transition-all">Sblocca</button>
+                                    </div>
+                                </div>
+                                <div class="px-3 pb-3">
+                                    <h5 class="text-white font-bold uppercase text-sm">Neon Cyber</h5>
+                                    <p class="text-xs text-slate-500 mt-1">Stile futuristico luminoso</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Boards -->
+                     <div>
+                        <h4 class="text-sm font-black text-cyan-400 uppercase tracking-widest mb-4">Scacchiere</h4>
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                             <div class="bg-slate-800/50 border border-white/5 rounded-xl p-3 flex flex-col items-center gap-2 cursor-pointer hover:bg-slate-700/50 transition-all" (click)="selectLibrarySet('board_wood')">
+                                <div class="w-12 h-12 rounded bg-[#5c4033]"></div>
+                                <span class="text-[10px] font-bold text-white uppercase">Legno</span>
+                             </div>
+                             <div class="bg-slate-800/50 border border-white/5 rounded-xl p-3 flex flex-col items-center gap-2 cursor-pointer hover:bg-slate-700/50 transition-all" (click)="selectLibrarySet('board_marble')">
+                                <div class="w-12 h-12 rounded bg-slate-300"></div>
+                                <span class="text-[10px] font-bold text-white uppercase">Marmo</span>
+                             </div>
+                             <div class="bg-slate-800/50 border border-white/5 rounded-xl p-3 flex flex-col items-center gap-2 cursor-pointer hover:bg-slate-700/50 transition-all" (click)="selectLibrarySet('board_glass')">
+                                <div class="w-12 h-12 rounded bg-cyan-900/40 border border-cyan-500/30"></div>
+                                <span class="text-[10px] font-bold text-white uppercase">Vetro</span>
+                             </div>
+                        </div>
+                     </div>
+
                 </div>
-              </div>
+              }
             </div>
 
             <!-- Footer -->
@@ -626,7 +709,7 @@ import { ImageUtils } from '../utils/image-utils';
     .animate-pulse-subtle { animation: pulse-subtle 3s ease-in-out infinite; }
   `]
 })
-export class HomeViewComponent {
+export class HomeViewComponent implements OnInit {
   gameService = inject(GameService);
   supabase = inject(SupabaseService);
 
@@ -911,12 +994,118 @@ export class HomeViewComponent {
     this.gameService.startGame(mode, 'local');
   }
 
-  onFileSelected(event: Event, type: string, colorSuffix?: string) {
+
+  async ngOnInit() {
+    if (this.supabase.user()) {
+      await this.supabase.loadUserProfile();
+    }
+    await this.loadUserStats();
+    await this.loadUserAssets();
+  }
+
+  async loadUserAssets() {
+    if (!this.supabase.user()) return;
+    try {
+      const assets = await this.supabase.getUserAssetPreferences();
+      if (assets) {
+        Object.keys(assets).forEach(key => {
+          this.gameService.customMeshUrls[key] = assets[key];
+          this.loadedStatus[key] = true;
+        });
+        console.log('✅ Custom Assets Loaded:', assets);
+      }
+    } catch (e) {
+      console.error('Error loading custom assets:', e);
+    }
+  }
+
+  // Setup Tab State
+  setupTab: 'upload' | 'library' = 'upload';
+
+  async selectLibrarySet(setId: string) {
+    if (!this.supabase.user()) {
+      alert('Devi accedere per salvare le preferenze!');
+      return;
+    }
+
+    // Mock Library URLs - In production these would come from the DB/Storage
+    const libraryAssets: Record<string, any> = {
+      'board_wood': 'https://xxvlfbozkveeydritfeo.supabase.co/storage/v1/object/public/library/board_wood.glb',
+      'board_marble': 'https://xxvlfbozkveeydritfeo.supabase.co/storage/v1/object/public/library/board_marble.glb',
+      'board_glass': 'https://xxvlfbozkveeydritfeo.supabase.co/storage/v1/object/public/library/board_glass.glb',
+      'classic_ivory': {
+        'p_w': 'https://xxvlfbozkveeydritfeo.supabase.co/storage/v1/object/public/library/ivory_pawn_w.glb',
+        'n_w': 'https://xxvlfbozkveeydritfeo.supabase.co/storage/v1/object/public/library/ivory_knight_w.glb',
+        // Add other pieces as needed
+      },
+      'neon_cyber': 'LOCKED'
+    };
+
+    if (setId === 'neon_cyber') {
+      alert('Questo set è bloccato (Premium). Acquistalo nello Shop!');
+      return;
+    }
+
+    try {
+      const asset = libraryAssets[setId];
+
+      if (typeof asset === 'string') {
+        // Single Asset (Board)
+        await this.supabase.saveUserAssetPreference('board', asset);
+        this.gameService.customMeshUrls['board'] = asset;
+        this.loadedStatus['board'] = true;
+        alert('Scacchiera applicata e salvata!');
+      } else if (typeof asset === 'object') {
+        // Full Set
+        for (const [key, url] of Object.entries(asset)) {
+          await this.supabase.saveUserAssetPreference(key, url as string);
+          this.gameService.customMeshUrls[key] = url as string;
+          this.loadedStatus[key] = true;
+        }
+        alert('Set applicato con successo!');
+      }
+    } catch (e: any) {
+      console.error('Library Error', e);
+      alert('Errore applicazione asset: ' + e.message);
+    }
+  }
+
+  async onFileSelected(event: Event, type: string, colorSuffix?: string) {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || !input.files[0]) return;
+    const file = input.files[0];
+
+    // Construct key (e.g., 'board', 'p_w', 'k_b')
     let key = type;
     if (type !== 'board' && colorSuffix) {
       key = `${type}_${colorSuffix}`;
     }
-    this.loadedStatus[key] = true;
-    this.fileSelected.emit({ event, type, colorSuffix });
+
+    try {
+      const userId = this.supabase.user()?.id;
+
+      // If user is logged in, upload and save to profile
+      if (userId) {
+        alert('Caricamento in corso... attendi.');
+        const publicUrl = await this.supabase.uploadCustomAssetFile(file, key);
+        await this.supabase.saveUserAssetPreference(key, publicUrl);
+
+        // Update Game Service
+        this.gameService.customMeshUrls[key] = publicUrl;
+        this.loadedStatus[key] = true;
+
+        alert(`Modello 3D per ${key} caricato e salvato con successo!`);
+      } else {
+        // Fallback for Guest (Local only, not persistent)
+        const objectUrl = URL.createObjectURL(file);
+        this.gameService.customMeshUrls[key] = objectUrl;
+        this.loadedStatus[key] = true;
+        alert(`Modello caricato (Sessione Ospite). Accedi per salvarlo.`);
+      }
+
+    } catch (error: any) {
+      console.error('Asset Upload Error:', error);
+      alert(`Errore caricamento: ${error.message}`);
+    }
   }
 }
