@@ -41,7 +41,7 @@ export class GameService {
   validMoves = computed(() => {
     const pos = this.selectedPos();
     if (!pos) return [];
-    return ChessUtils.getLegalMoves(this.board(), pos, this.gameMode());
+    return ChessUtils.getLegalMoves(this.board(), pos, this.gameMode(), this.lastMove());
   });
 
   isAiThinking = signal(false);
@@ -72,6 +72,11 @@ export class GameService {
     }
     this.resetGame();
     this.viewState.set('game');
+
+    // Track real game start in DB if user is logged in
+    if (this.supabase.user()) {
+      this.supabase.trackGamePlayed();
+    }
   }
 
   setGameMode(mode: GameMode) {
@@ -148,7 +153,7 @@ export class GameService {
     const moveData: LastMove = {
       from,
       to,
-      piece: pieceToMove,
+      piece: { ...pieceToMove },
       capturedPiece,
       capturedPos,
       isJump
@@ -157,19 +162,46 @@ export class GameService {
     // Update Board State
     this.board.update(b => {
       const newBoard = b.map(row => [...row]);
-      let movingPiece = newBoard[from.row][from.col];
+      movingPiece.hasMoved = true;
+
+      // --- EN PASSANT EXECUTION ---
+      if (movingPiece.type === 'p' && !capturedPiece && to.col !== from.col) {
+        // This is an en passant capture
+        const captureRow = from.row;
+        const captureCol = to.col;
+        newBoard[captureRow][captureCol] = null;
+      }
+
+      // --- CASTLING EXECUTION ---
+      if (movingPiece.type === 'k' && Math.abs(to.col - from.col) === 2) {
+        const isKingside = to.col === 6;
+        const rookCol = isKingside ? 7 : 0;
+        const rookDestCol = isKingside ? 5 : 3;
+        const rook = { ...newBoard[from.row][rookCol]! };
+        rook.hasMoved = true;
+        newBoard[from.row][rookDestCol] = rook;
+        newBoard[from.row][rookCol] = null;
+      }
+
+      // --- PROMOTION (Chess: Pawn to Queen) ---
+      if (mode === 'chess' && movingPiece.type === 'p') {
+        if ((movingPiece.color === 'w' && to.row === 0) || (movingPiece.color === 'b' && to.row === 7)) {
+          movingPiece.type = 'q';
+          moveData.piece = { ...movingPiece };
+        }
+      }
+
+      // --- PROMOTION (Checkers: Man to King) ---
+      if (mode === 'checkers' && movingPiece?.type === 'cm') {
+        if ((movingPiece.color === 'w' && to.row === 0) || (movingPiece.color === 'b' && to.row === 7)) {
+          movingPiece.type = 'ck';
+          moveData.piece = { ...movingPiece };
+        }
+      }
 
       // Handle Checkers Jump Removal
       if (capturedPos && mode === 'checkers') {
         newBoard[capturedPos.row][capturedPos.col] = null;
-      }
-
-      // Checkers Promotion
-      if (mode === 'checkers' && movingPiece?.type === 'cm') {
-        if ((movingPiece.color === 'w' && to.row === 0) || (movingPiece.color === 'b' && to.row === 7)) {
-          movingPiece = { ...movingPiece, type: 'ck' };
-          moveData.piece = movingPiece; // Update animation reference
-        }
       }
 
       newBoard[to.row][to.col] = movingPiece;
@@ -254,39 +286,41 @@ export class GameService {
   }
 
   private async triggerAiMove() {
-    // Only trigger AI if we're in AI or Career mode and it's black's turn
-    if ((this.playerMode() !== 'ai' && this.playerMode() !== 'career') || this.turn() !== 'b') {
-      return;
-    }
+    if (this.turn() !== 'b') return;
 
     this.isAiThinking.set(true);
     this.gameStatus.set('Gemini sta pensando...');
 
     try {
       const fen = ChessUtils.boardToFEN(this.board(), 'b');
-      const legalMoves = this.getAllLegalMoves('b');
+      const legalMoves = ChessUtils.getAllUciMoves(this.board(), 'b', this.gameMode());
 
       if (legalMoves.length === 0) {
-        this.gameStatus.set('Scacco Matto / Stallo! Partita finita.');
+        this.gameStatus.set('Partita finita. Nessuna mossa legale.');
         this.isAiThinking.set(false);
         return;
       }
 
-      const level = this.playerMode() === 'career' ? this.careerLevel() : 50; // Default to 50 for normal AI matches
-      const uciMove = await this.aiService.getBestMove(fen, legalMoves, this.gameMode(), level);
+      const level = this.playerMode() === 'career' ? this.careerLevel() : 50;
+      let chosenMove = await this.aiService.getBestMove(fen, legalMoves, this.gameMode(), level);
 
-      let chosenMove = uciMove;
+      // --- FALLBACK 1: LOCAL MINIMAX ENGINE ---
+      if (!chosenMove) {
+        console.warn('Gemini Offline. Utilizzo Motore Locale (Minimax + PST)...');
+        this.gameStatus.set('Calcolo mossa locale...');
+        const depth = level < 30 ? 2 : (level < 70 ? 3 : 4);
+        chosenMove = ChessUtils.getBestMoveLocal(this.board(), this.gameMode(), depth, 'b');
+      }
 
+      // --- FALLBACK 2: RANDOM PREVENT CRASH ---
       if (!chosenMove || !legalMoves.includes(chosenMove)) {
-        console.warn('AI unavailable. Using CPU Fallback.');
-        const randomIndex = Math.floor(Math.random() * legalMoves.length);
-        chosenMove = legalMoves[randomIndex];
-        this.gameStatus.set('CPU (Offline)');
+        console.warn('Motore Locale Fallito. Fallback Random.');
+        chosenMove = legalMoves[Math.floor(Math.random() * legalMoves.length)];
       }
 
       if (chosenMove) {
-        const from = this.uciToCoords(chosenMove.substring(0, 2));
-        const to = this.uciToCoords(chosenMove.substring(2, 4));
+        const from = ChessUtils.uciToCoords(chosenMove.substring(0, 2));
+        const to = ChessUtils.uciToCoords(chosenMove.substring(2, 4));
         if (from && to) {
           this.executeMove(from, to);
         }
@@ -294,15 +328,8 @@ export class GameService {
 
     } catch (e) {
       console.error('AI Critical Error', e);
-      const legalMoves = this.getAllLegalMoves('b');
-      if (legalMoves.length > 0) {
-        const fallback = legalMoves[Math.floor(Math.random() * legalMoves.length)];
-        const f = this.uciToCoords(fallback.substring(0, 2));
-        const t = this.uciToCoords(fallback.substring(2, 4));
-        if (f && t) this.executeMove(f, t);
-      } else {
-        this.handleAiError('Errore Fatale');
-      }
+      this.gameStatus.set('Errore IA. Tocca a te.');
+      this.turn.set('w');
     } finally {
       this.isAiThinking.set(false);
     }

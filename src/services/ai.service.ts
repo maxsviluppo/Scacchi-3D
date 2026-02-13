@@ -26,55 +26,106 @@ export class AiService {
   }
 
   async getBestMove(fen: string, validMoves: string[], mode: 'chess' | 'checkers' = 'chess', level: number = 1): Promise<string | null> {
-    // Safety check: if AI isn't initialized, return null immediately
     if (!this.ai) {
-      console.warn('AiService: Chiamata saltata (Client non inizializzato/Manca API_KEY)');
+      console.warn('AiService: AI non inizializzata.');
       return null;
     }
 
-    // Circuit Breaker: If we already hit the limit, don't try again.
-    if (this.quotaExceeded) {
-      console.warn('AI Circuit Breaker: Skipping API call (Quota Exceeded).');
-      return null;
-    }
+    if (this.quotaExceeded) return null;
 
     try {
-      // Dynamic difficulty configuration
-      let difficultyContext = '';
-      let temperature = 0.1;
+      // Configuration based on User's Training Prompt
+      let elo = 800 + (level * 15);
+      let depth = Math.floor(1 + (level / 10));
+      let errorRate = level < 30 ? 20 - (level / 2) : 0;
 
-      if (level <= 20) {
-        difficultyContext = 'You are a beginner. Play casually and sometimes make sub-optimal moves to allow the user to learn.';
-        temperature = 0.7;
-      } else if (level <= 50) {
-        difficultyContext = 'You are an intermediate player. Play solidly but not aggressively.';
-        temperature = 0.4;
-      } else if (level <= 80) {
-        difficultyContext = 'You are an advanced player. Play tactically and prioritize capturing opponent pieces.';
-        temperature = 0.2;
+      let behavior = '';
+      if (level <= 30) {
+        behavior = 'Principiante (800-1200 ELO). A volte ignori minacce immediate. Profondità di calcolo limitata.';
+      } else if (level <= 70) {
+        behavior = 'Intermedio (1400-1700 ELO). Giochi in modo solido, usi algoritmi di potatura per scartare rami inefficienti.';
       } else {
-        difficultyContext = 'You are a Grandmaster. Play with maximum precision, brutal tactics, and absolute efficiency.';
-        temperature = 0.05;
+        behavior = 'Grandmaster (2000+ ELO). Precisione assoluta, tattiche brutali, efficienza massima.';
       }
 
-      const gameName = mode === 'chess' ? 'Chess' : 'Checkers (Dama)';
-      const prompt = `
-      Context: ${gameName} Game. You are an expert player playing BLACK.
-      Level: ${level} (1-100). ${difficultyContext}
-      Current FEN: ${fen}
+      const prompt = mode === 'chess' ? `
+      RUOLO: Agisci come un esperto Gran Maestro e arbitro internazionale FIDE.
+      MODALITÀ: SCACCHI. Giochi con il NERO.
       
-      ALLOWED MOVES LIST (in UCI format):
-      [${validMoves.join(', ')}]
+      STATO ATTUALE:
+      FEN: ${fen}
+      MOSSE LEGALI DISPONIBILI (UCI): [${validMoves.join(', ')}]
+      LIVELLO DIFFICOLTÀ: ${level}/100 (Circa ${elo} ELO).
+      COMPORTAMENTO ATTESO: ${behavior}
       
-      Objective:
-      1. Prioritize capturing opponent pieces if it gives you a tactical advantage.
-      2. Protect your pieces from being captured.
-      3. Aim for checkmate (Chess) or clearing the board (Checkers).
-      4. Select the absolute best move for Black from the ALLOWED MOVES LIST above according to your indicated skill level.
+      REGOLE E LOGICA:
+      - Obiettivo: Scacco Matto (Re sotto attacco e nessuna mossa legale).
+      - Obblighi: Vietato lo scacco autoinflitto. Se sei in scacco, DEVI uscirne.
+      - Mosse Speciali: Gestisci Arrocco, En Passant e Promozione se disponibili nella lista delle mosse legali.
       
-      Output Rules:
-      1. Return ONLY the move string (e.g. "e7e5").
-      2. No explanations, no extra text.
+      FUNZIONE DI VALUTAZIONE (Euristiche):
+      Usa questo punteggio per valutare le mosse:
+      - Pedone: 1 punto (+0.5 se passato).
+      - Cavallo: 3 punti (Evita i bordi: "Knight on the rim is dim").
+      - Alfiere: 3.25 punti (+0.5 per la coppia).
+      - Torre: 5 punti (+0.25 su colonne aperte).
+      - Donna: 9 punti (Non esporla troppo presto).
+      - Re: Infinito (Proteggilo in apertura, rendilo attivo nel finale).
+      
+      STRATEGIA DI APERTURA:
+      1. Controllo del Centro (d4, d5, e4, e5).
+      2. Sviluppo Rapido (Cavalli e Alfieri prima della Donna).
+      3. Sicurezza del Re (Arrocca entro le prime 12 mosse).
+      4. Evita doppi movimenti inutili.
+
+      ISTRUZIONE OPERATIVA:
+      1. Analizza la lista delle MOSSE LEGALI.
+      2. Valuta la migliore mossa per il NERO considerando il vantaggio materiale e posizionale.
+      3. Restituisci ESCLUSIVAMENTE la stringa della mossa scelta (es: "e7e5").
+      
+      IMPORTANTE:
+      - Non scrivere spiegazioni.
+      - Non aggiungere testo extra.
+      - La mossa DEVE essere inclusa nella lista delle MOSSE LEGALI sopra citata.
+      ${errorRate > 0 ? `NOTA: Hai una probabilità del ${errorRate}% di scegliere una mossa non ottimale per simulare un errore umano.` : ''}
+      ` : `
+      RUOLO: Sei un esperto giocatore di Dama Italiana e un motore di calcolo logico.
+      MODALITÀ: DAMA (Italian Checkers). Giochi con il NERO (Pedine in alto, muovono verso il basso).
+      
+      STATO ATTUALE:
+      FEN: ${fen}
+      MOSSE LEGALI DISPONIBILI: [${validMoves.join(', ')}]
+      LIVELLO DIFFICOLTÀ: ${level}/100.
+      
+      REGOLE CRITICHE (Dama Italiana):
+      1. Movimento: Diagonale, solo avanti per le pedine (Man).
+      2. Presa Obbligatoria: Se puoi catturare, DEVI farlo. Non sono ammesse mosse semplici se esiste una presa.
+      3. Dama (King): Si muove e mangia in ogni direzione (avanti/indietro).
+      4. Restrizioni di Presa: La pedina semplice NON può mangiare la Dama.
+      5. Gerarchia di Presa:
+         - Mangia dove c'è il maggior numero di pezzi.
+         - A parità di numero, mangia con il pezzo più importante (Dama).
+         - A parità di tutto, mangia le Dame avversarie prima delle pedine.
+
+      PROCESSO DI RAGIONAMENTO (Interno):
+      - Ci sono prese obbligatorie per il NERO? Se sì, DEVI sceglierne una.
+      - Qual è la mossa che porta più vicino alla promozione o controlla il centro?
+      - Proteggi i tuoi pezzi, non lasciarli in presa senza motivo.
+
+      ESEMPI DI RIFERIMENTO (Few-Shot):
+      Input: Turno: B, Stato: [G1:B, F2:E, H2:E] -> Output: "g1f2" (Sviluppo verso il centro)
+      Input: Turno: W, Stato: [C3:W, D4:B, E5:E] -> Output: "c3e5" (Cattura obbligatoria)
+      Input: Turno: W, Stato: [G7:W, H8:E] -> Output: "g7h8" (Promozione a Dama)
+
+      ISTRUZIONE OPERATIVA:
+      1. Analizza la lista delle MOSSE LEGALI.
+      2. Scegli la mossa migliore rispettando ASSOLUTAMENTE le regole di presa obbligatoria.
+      3. Restituisci ESCLUSIVAMENTE la stringa della mossa scelta (es: "c3d4" o "c3e5").
+      
+      IMPORTANTE:
+      - Non scrivere spiegazioni.
+      - Non aggiungere testo extra.
+      - La mossa DEVE essere inclusa nella lista delle MOSSE LEGALI sopra citata.
       `;
 
       const response = await this.ai.models.generateContent({
@@ -82,41 +133,29 @@ export class AiService {
         contents: prompt,
         config: {
           thinkingConfig: { thinkingBudget: 0 },
-          temperature: temperature,
+          temperature: level < 40 ? 0.7 : 0.1,
         }
       });
 
       const text = response.text;
       if (!text) return null;
 
-      const move = text.trim();
+      const move = text.trim().toLowerCase();
 
-      // Verifica se la mossa restituita è effettivamente nella lista
-      if (validMoves.includes(move)) {
-        return move;
-      }
+      // Validazione mossa
+      if (validMoves.includes(move)) return move;
 
+      // Fallback: pulizia caratteri speciali
       const cleanMove = move.replace(/[^a-z0-9]/g, '');
-      if (validMoves.includes(cleanMove)) {
-        return cleanMove;
-      }
+      if (validMoves.includes(cleanMove)) return cleanMove;
 
-      console.warn('AI returned move not in valid list:', move);
+      console.warn('AI ha restituito una mossa non valida:', move);
       return null;
     } catch (e: any) {
-      // Handle Quota Limits Gracefully
-      const isQuota = e.status === 429 ||
-        e.code === 429 ||
-        (e.error && e.error.code === 429) ||
-        (e.message && e.message.includes('429'));
-
-      if (isQuota) {
-        console.warn('Gemini API Quota Exceeded (429). Enabling Offline Fallback.');
+      if (e.status === 429) {
         this.quotaExceeded = true;
-        return null;
+        console.warn('Quota API esaurita.');
       }
-
-      console.error('AI Error:', e);
       return null;
     }
   }

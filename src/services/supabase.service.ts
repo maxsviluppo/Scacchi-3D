@@ -139,7 +139,20 @@ export class SupabaseService {
             user_id: userId,
             [levelKey]: newLevel,
             total_points: (current.total_points || 0) + pointsEarned,
+            games_played: (current.games_played || 0) + 1,
+            games_won: (current.games_won || 0) + 1,
             current_game_state: null, // Clear saved game upon level completion
+            updated_at: new Date().toISOString()
+        });
+    }
+
+    async trackGamePlayed() {
+        const userId = this.user()?.id;
+        if (!userId) return;
+        const current = await this.getCareerProgress();
+        await this.supabase.from('career_progress').upsert({
+            user_id: userId,
+            games_played: (current.games_played || 0) + 1,
             updated_at: new Date().toISOString()
         });
     }

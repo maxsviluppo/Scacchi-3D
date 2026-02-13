@@ -36,10 +36,9 @@ import { PieceType } from '../logic/chess-types';
             <h1 class="text-4xl sm:text-6xl md:text-7xl font-black uppercase tracking-tighter bg-gradient-to-r from-yellow-400 via-yellow-500 to-amber-600 text-transparent bg-clip-text drop-shadow-[0_0_30px_rgba(251,191,36,0.5)] animate-pulse-subtle">
               THE KING
             </h1>
-            
             @if (supabase.user() && supabase.username()) {
-              <div class="mt-4 animate-fade-in flex flex-col items-center">
-                <p class="text-[12px] md:text-[14px] font-black text-orange-400 uppercase tracking-[0.3em] bg-slate-950/60 backdrop-blur-md px-4 py-1.5 rounded-full border border-orange-500/20 shadow-[0_0_20px_rgba(249,115,22,0.1)]">
+              <div class="mt-2 animate-fade-in">
+                <p class="text-[10px] md:text-[11px] font-black text-orange-400/80 uppercase tracking-[0.4em]">
                   {{ supabase.username() }}
                 </p>
               </div>
@@ -49,14 +48,24 @@ import { PieceType } from '../logic/chess-types';
         
         <!-- Account/Login Button -->
         <button (click)="supabase.user() ? openAccountManager() : toggleAuth()" 
-          class="relative flex items-center justify-center w-12 h-12 rounded-full bg-slate-800/40 backdrop-blur-md border border-white/10 hover:border-indigo-400/40 transition-all group shadow-2xl">
-          <div [class.shadow-[0_0_25px_rgba(99,102,241,0.6)]]="supabase.user()"
-               [class.border-indigo-400/50]="supabase.user()"
-               class="w-full h-full rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center p-2 transition-all duration-500 group-hover:scale-105 border border-transparent overflow-hidden">
+          class="relative flex items-center justify-center w-12 h-12 rounded-full backdrop-blur-md border transition-all group shadow-2xl"
+          [class.bg-indigo-500/20]="supabase.user()"
+          [class.border-indigo-400/50]="supabase.user()"
+          [class.bg-slate-800/40]="!supabase.user()"
+          [class.border-white/10]="!supabase.user()">
+          
+          <div class="w-full h-full rounded-full flex items-center justify-center p-2 transition-all duration-500 group-hover:scale-105 border border-transparent overflow-hidden"
+               [class.bg-gradient-to-br]="supabase.user()"
+               [class.from-indigo-500]="supabase.user()"
+               [class.to-purple-600]="supabase.user()"
+               [class.shadow-[0_0_30px_rgba(99,102,241,0.8)]]="supabase.user()"
+               [class.bg-slate-700/50]="!supabase.user()"
+               [class.opacity-40]="!supabase.user()">
+               
             @if (supabase.user() && supabase.avatarUrl()) {
               <img [src]="supabase.avatarUrl()" alt="Avatar" class="w-full h-full object-cover rounded-full">
             } @else {
-              <svg viewBox="0 0 100 100" fill="white" class="w-full h-full drop-shadow-md">
+              <svg viewBox="0 0 100 100" [attr.fill]="supabase.user() ? 'white' : '#64748b'" class="w-full h-full drop-shadow-md">
                 <circle cx="50" cy="35" r="20"/>
                 <path d="M20 80 Q50 60 80 80 L80 90 L20 90 Z"/>
               </svg>
@@ -144,23 +153,28 @@ import { PieceType } from '../logic/chess-types';
             </div>
           </button>
 
-          <!-- Adventure Mode Card -->
-          <button (click)="openAdventure()"
-            class="group relative overflow-hidden bg-slate-900/40 backdrop-blur-2xl border border-white/5 hover:border-emerald-500/30 rounded-[2rem] p-6 md:p-8 transition-all hover:scale-[1.02] shadow-2xl">
-            <div class="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-            <div class="relative flex flex-col items-center text-center gap-4">
-              <div class="w-16 h-16 rounded-2xl bg-emerald-500/20 flex items-center justify-center border border-emerald-500/20 group-hover:bg-emerald-500/30 transition-all">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-8 h-8 text-emerald-400">
-                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                  <polyline points="9 22 9 12 15 12 15 22"></polyline>
-                </svg>
-              </div>
-              <div>
-                <h2 class="text-2xl font-black text-white uppercase tracking-tighter">Avventura</h2>
-                <p class="text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em] mt-1">Missioni Epiche</p>
+          <!-- Adventure Mode Card (Soon) -->
+          <div class="relative group">
+            <div class="absolute inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm rounded-[2rem] opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none">
+              <div class="px-6 py-2 bg-emerald-500 rounded-full shadow-[0_0_30px_rgba(16,185,129,0.4)]">
+                <span class="text-white font-black uppercase text-sm tracking-[0.2em]">Soon</span>
               </div>
             </div>
-          </button>
+            <button class="w-full relative overflow-hidden bg-slate-900/20 backdrop-blur-2xl border border-white/5 rounded-[2rem] p-6 md:p-8 transition-all opacity-40 cursor-not-allowed">
+              <div class="relative flex flex-col items-center text-center gap-4">
+                <div class="w-16 h-16 rounded-2xl bg-emerald-500/20 flex items-center justify-center border border-emerald-500/20 group-hover:bg-emerald-500/30 transition-all">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-8 h-8 text-emerald-400">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                  </svg>
+                </div>
+                <div>
+                  <h2 class="text-2xl font-black text-slate-400 uppercase tracking-tighter">Avventura</h2>
+                  <p class="text-slate-600 text-[10px] font-bold uppercase tracking-[0.2em] mt-1">Missioni Epiche</p>
+                </div>
+              </div>
+            </button>
+          </div>
 
           <!-- Online Challenge Card (Soon) -->
           <div class="relative group">
@@ -299,18 +313,29 @@ import { PieceType } from '../logic/chess-types';
                       </div>
                     }
                   </div>
-                  <label class="absolute bottom-0 right-0 w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center cursor-pointer shadow-lg hover:bg-indigo-500 transition-all">
-                    📷<input type="file" class="hidden" accept="image/*" (change)="onProfilePhotoSelected($event)">
+                  <label class="absolute bottom-0 right-0 w-11 h-11 rounded-2xl bg-indigo-600 flex items-center justify-center cursor-pointer shadow-[0_0_20px_rgba(79,70,229,0.5)] hover:bg-indigo-500 hover:scale-110 transition-all active:scale-90 border-2 border-slate-900 group-hover:rotate-12">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="white" class="w-6 h-6">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15a2.25 2.25 0 0 0 2.25-2.25V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z" />
+                    </svg>
+                    <input type="file" class="hidden" accept="image/*" (change)="onProfilePhotoSelected($event)">
                   </label>
                 </div>
                 
                 <div class="text-center md:text-left">
-                  <h2 class="text-4xl md:text-5xl font-black text-white uppercase tracking-tighter">{{ supabase.username() }}</h2>
-                  <p class="text-indigo-400 font-bold uppercase tracking-widest text-xs mt-1">{{ supabase.user()?.email }}</p>
+                  <div class="inline-block px-4 py-1.5 bg-indigo-500/10 border border-indigo-500/20 rounded-full mb-3 shadow-[0_0_15px_rgba(99,102,241,0.2)]">
+                    <p class="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] animate-pulse">
+                      {{ supabase.username() }}
+                    </p>
+                  </div>
+                  <h2 class="text-5xl md:text-6xl font-black text-white uppercase tracking-tighter drop-shadow-[0_0_15px_rgba(255,255,255,0.2)] mb-1">
+                    {{ supabase.username() }}
+                  </h2>
+                  <p class="text-slate-400 font-bold uppercase tracking-[0.2em] text-[10px] opacity-70">{{ supabase.user()?.email }}</p>
                   
-                  <div class="flex gap-3 mt-6 justify-center md:justify-start">
+                  <div class="flex gap-3 mt-8 justify-center md:justify-start">
                     @if (supabase.avatarUrl()) {
-                      <button (click)="deleteProfilePhoto()" class="px-4 py-2 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-500/20 transition-all">Elimina Foto</button>
+                      <button (click)="deleteProfilePhoto()" class="px-5 py-2.5 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-500/20 transition-all shadow-lg active:scale-95">Rimuovi Avatar</button>
                     }
                   </div>
                 </div>
@@ -463,19 +488,34 @@ import { PieceType } from '../logic/chess-types';
 
             <!-- Content -->
             <div class="p-8 overflow-y-auto custom-scrollbar bg-transparent space-y-10">
-              <!-- Board -->
-              <div class="bg-indigo-900/20 border border-indigo-500/20 rounded-[2rem] p-6 flex items-center justify-between group hover:bg-indigo-900/30 transition-colors">
+              <!-- Board Setup -->
+              <div class="bg-indigo-900/10 border border-white/5 rounded-[2rem] p-8 space-y-6">
                 <div class="flex items-center gap-6">
-                  <div class="w-14 h-14 rounded-2xl bg-indigo-500/20 flex items-center justify-center text-3xl shadow-inner text-indigo-200 border border-indigo-500/20">🗺️</div>
-                  <div>
-                    <h4 class="text-lg font-black text-white uppercase">Scacchiera (Tavolo)</h4>
-                    <span class="text-[10px] text-indigo-400 font-bold uppercase tracking-widest block mt-1">
-                      {{ loadedStatus['board'] ? 'Stato: Caricato' : 'Stato: Default' }}
-                    </span>
+                  <div class="w-14 h-14 rounded-2xl bg-slate-800/50 flex items-center justify-center border border-white/10">
+                    <svg viewBox="0 0 24 24" fill="currentColor" class="w-8 h-8 text-slate-400">
+                      <rect x="2" y="2" width="20" height="20" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
+                      <rect x="2" y="2" width="5" height="5"/>
+                      <rect x="12" y="2" width="5" height="5"/>
+                      <rect x="7" y="7" width="5" height="5"/>
+                      <rect x="17" y="7" width="5" height="5"/>
+                      <rect x="2" y="12" width="5" height="5"/>
+                      <rect x="12" y="12" width="5" height="5"/>
+                      <rect x="7" y="17" width="5" height="5"/>
+                      <rect x="17" y="17" width="5" height="5"/>
+                    </svg>
+                  </div>
+                  <div class="flex-1">
+                    <h4 class="text-xl font-black text-white uppercase tracking-tight">Scacchiera 3D</h4>
+                    <p class="text-[10px] text-indigo-400 font-bold uppercase tracking-widest mt-1">
+                      {{ loadedStatus['board'] ? 'Stato: Caricato OK' : 'Stato: Modello Standard' }}
+                    </p>
                   </div>
                 </div>
-                <label class="cursor-pointer relative overflow-hidden group/btn">
-                  <span class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black uppercase tracking-widest py-3 px-6 rounded-xl shadow-lg transition-all block">Carica STL/GLB</span>
+
+                <label class="cursor-pointer block">
+                  <span class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-black uppercase text-center py-4 rounded-xl border border-white/10 transition-all block shadow-lg">
+                    Carica file STL / GLB / GLTF
+                  </span>
                   <input type="file" accept=".stl,.glb,.gltf" class="hidden" (change)="onFileSelected($event, 'board')">
                 </label>
               </div>
@@ -613,18 +653,9 @@ export class HomeViewComponent {
     gamesWon: 0,
     winRate: 0,
     totalPoints: 0,
-    achievements: [
-      { id: 1, icon: '👑', name: 'Primo Re', date: '2023-01-15' },
-      { id: 2, icon: '🌟', name: 'Veterano', date: '2023-03-20' },
-    ],
-    purchases: [
-      { id: 1, name: 'Set Scacchi "Galassia"', date: '2023-02-10', price: '9.99' },
-      { id: 2, name: 'Scacchiera "Antica"', date: '2023-04-01', price: '4.99' },
-    ],
-    downloads: [
-      { id: 1, name: 'Set Scacchi "Classico"', date: '2023-01-05' },
-      { id: 2, name: 'Scacchiera "Legno"', date: '2023-02-28' },
-    ]
+    achievements: [],
+    purchases: [],
+    downloads: []
   };
 
   getIconForType(type: string): string {
@@ -675,15 +706,25 @@ export class HomeViewComponent {
       if (response.error) {
         this.authError = response.error.message;
       } else {
+        // Immediate feedback and close modal
         this.showAuth = false;
+        const name = this.authNickname;
+
         this.authNickname = '';
         this.authEmail = '';
         this.authPassword = '';
         this.authError = '';
-        await this.supabase.loadUserProfile();
+
+        // Refresh profile in background
+        this.supabase.loadUserProfile().then(() => {
+          console.log('Profile loaded for:', name);
+        });
+
+        alert(`Benvenuto, ${name}! Accesso effettuato con successo. ✨`);
       }
     } catch (err: any) {
-      this.authError = 'Errore imprevisto';
+      this.authError = 'Errore imprevisto durante l\'autenticazione';
+      console.error('Auth Error:', err);
     } finally {
       this.loadingAuth = false;
     }
@@ -721,13 +762,27 @@ export class HomeViewComponent {
     try {
       const userId = this.supabase.user()?.id;
       if (!userId) return;
+
       const progress = await this.supabase.getCareerProgress();
       if (progress) {
         this.userStats.totalPoints = progress.total_points || 0;
+        // Map real results from the database if they exist
+        // Note: these fields might need to be added to your career_progress table
+        this.userStats.gamesPlayed = progress.games_played || 0;
+        this.userStats.gamesWon = progress.games_won || 0;
+
+        if (this.userStats.gamesPlayed > 0) {
+          this.userStats.winRate = Number(((this.userStats.gamesWon / this.userStats.gamesPlayed) * 100).toFixed(1));
+        } else {
+          this.userStats.winRate = 0;
+        }
+      } else {
+        // Defaults for new users
+        this.userStats.gamesPlayed = 0;
+        this.userStats.gamesWon = 0;
+        this.userStats.winRate = 0;
+        this.userStats.totalPoints = 0;
       }
-      this.userStats.gamesPlayed = 42;
-      this.userStats.gamesWon = 28;
-      this.userStats.winRate = 66.7;
     } catch (error) {
       console.error('Error loading stats:', error);
     }
@@ -744,14 +799,27 @@ export class HomeViewComponent {
     try {
       const fileExt = file.name.split('.').pop();
       const fileName = `${userId}-${Date.now()}.${fileExt}`;
-      const filePath = `avatars/${fileName}`;
-      const { error: uploadError } = await this.supabase.client.storage.from('user-assets').upload(filePath, file);
-      if (uploadError) throw uploadError;
-      const { data } = this.supabase.client.storage.from('user-assets').getPublicUrl(filePath);
+      const filePath = `${fileName}`; // Removed subfolder for simplicity
+
+      // Try 'avatars' bucket first, then fallback to 'user-assets'
+      let uploadResult = await this.supabase.client.storage.from('avatars').upload(filePath, file);
+
+      if (uploadResult.error) {
+        console.warn('Avatars bucket failed, trying user-assets...');
+        uploadResult = await this.supabase.client.storage.from('user-assets').upload(filePath, file);
+      }
+
+      if (uploadResult.error) throw uploadResult.error;
+
+      const bucket = uploadResult.data?.fullPath.split('/')[0] || 'avatars';
+      const { data } = this.supabase.client.storage.from(bucket).getPublicUrl(filePath);
+
       await this.supabase.client.from('profiles').update({ avatar_url: data.publicUrl }).eq('id', userId);
       await this.supabase.loadUserProfile();
+      alert('Foto profilo aggiornata con successo! ✨');
     } catch (error: any) {
-      alert('Errore caricamento foto');
+      console.error('Upload error:', error);
+      alert(`Errore: ${error.message || 'Non è stato possibile caricare la foto. Verificare i permessi della memoria storage.'}`);
     } finally {
       this.uploadingPhoto = false;
     }

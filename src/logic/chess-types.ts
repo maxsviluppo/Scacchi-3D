@@ -8,6 +8,7 @@ export type PieceColor = 'w' | 'b';
 export interface Piece {
   type: PieceType;
   color: PieceColor;
+  hasMoved?: boolean;
 }
 
 export type Board = (Piece | null)[][];
