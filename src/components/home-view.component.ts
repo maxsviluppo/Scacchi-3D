@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { GameService } from '../services/game.service';
 import { SupabaseService } from '../services/supabase.service';
 import { PieceType } from '../logic/chess-types';
+import { ImageUtils } from '../utils/image-utils';
 
 @Component({
   selector: 'app-home-view',
@@ -322,15 +323,29 @@ import { PieceType } from '../logic/chess-types';
                   </label>
                 </div>
                 
-                <div class="text-center md:text-left">
+                <div class="text-center md:text-left relative group">
                   <div class="inline-block px-4 py-1.5 bg-indigo-500/10 border border-indigo-500/20 rounded-full mb-3 shadow-[0_0_15px_rgba(99,102,241,0.2)]">
                     <p class="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] animate-pulse">
                       {{ supabase.username() }}
                     </p>
                   </div>
-                  <h2 class="text-5xl md:text-6xl font-black text-white uppercase tracking-tighter drop-shadow-[0_0_15px_rgba(255,255,255,0.2)] mb-1">
-                    {{ supabase.username() }}
-                  </h2>
+                  
+                  <!-- Editable Nickname -->
+                  <div class="relative">
+                    @if (isEditingName) {
+                      <input type="text" [(ngModel)]="tempNickname" (blur)="saveNickname()" (keydown.enter)="saveNickname()"
+                        class="text-5xl md:text-6xl font-black text-white uppercase tracking-tighter bg-transparent border-b-2 border-indigo-500 focus:outline-none w-full text-center md:text-left mb-1"
+                        autoFocus>
+                      <p class="text-xs text-indigo-400 mt-1">Premi Invio per salvare</p>
+                    } @else {
+                      <h2 (dblclick)="startEditingName()" 
+                        class="text-5xl md:text-6xl font-black text-white uppercase tracking-tighter drop-shadow-[0_0_15px_rgba(255,255,255,0.2)] mb-1 cursor-pointer hover:text-indigo-200 transition-colors"
+                        title="Doppio click per modificare">
+                        {{ supabase.username() }}
+                      </h2>
+                    }
+                  </div>
+
                   <p class="text-slate-400 font-bold uppercase tracking-[0.2em] text-[10px] opacity-70">{{ supabase.user()?.email }}</p>
                   
                   <div class="flex gap-3 mt-8 justify-center md:justify-start">
@@ -648,6 +663,9 @@ export class HomeViewComponent {
   loadedStatus: Record<string, boolean> = {};
 
   // User Stats (mock data for now)
+  isEditingName = false;
+  tempNickname = '';
+
   userStats = {
     gamesPlayed: 0,
     gamesWon: 0,
@@ -699,28 +717,34 @@ export class HomeViewComponent {
     this.authError = '';
 
     try {
-      const response = this.authMode === 'login'
-        ? await this.supabase.signInWithNickname(this.authNickname, this.authPassword)
-        : await this.supabase.signUp(this.authEmail, this.authPassword, this.authNickname);
+      let error: any = null;
+      let data: any = null;
 
-      if (response.error) {
-        this.authError = response.error.message;
+      if (this.authMode === 'login') {
+        const res = await this.supabase.signInWithNickname(this.authNickname, this.authPassword);
+        error = res.error;
+        data = res.data;
       } else {
-        // Immediate feedback and close modal
-        this.showAuth = false;
-        const name = this.authNickname;
+        const res = await this.supabase.signUp(this.authEmail, this.authPassword, this.authNickname);
+        error = res.error;
+        data = res.data;
+      }
 
+      if (error) {
+        this.authError = error.message;
+      } else {
+        // Success Logic
+        this.showAuth = false;
+
+        // Reset Form
         this.authNickname = '';
         this.authEmail = '';
         this.authPassword = '';
         this.authError = '';
 
-        // Refresh profile in background
-        this.supabase.loadUserProfile().then(() => {
-          console.log('Profile loaded for:', name);
-        });
-
-        alert(`Benvenuto, ${name}! Accesso effettuato con successo. ✨`);
+        // Load Profile & Stats
+        await this.supabase.loadUserProfile();
+        await this.loadUserStats();
       }
     } catch (err: any) {
       this.authError = 'Errore imprevisto durante l\'autenticazione';
@@ -797,32 +821,73 @@ export class HomeViewComponent {
 
     this.uploadingPhoto = true;
     try {
-      const fileExt = file.name.split('.').pop();
+      // 1. Client-side compression/resize (Matches Number-main logic)
+      const base64Image = await ImageUtils.processAvatarImage(file);
+
+      // 2. Upload to Storage (Bucket 'avatars')
+      // convert base64 to blob for upload
+      const response = await fetch(base64Image);
+      const blob = await response.blob();
+      const fileExt = file.name.split('.').pop() || 'jpg';
       const fileName = `${userId}-${Date.now()}.${fileExt}`;
-      const filePath = `${fileName}`; // Removed subfolder for simplicity
+      const filePath = `${fileName}`;
 
-      // Try 'avatars' bucket first, then fallback to 'user-assets'
-      let uploadResult = await this.supabase.client.storage.from('avatars').upload(filePath, file);
+      const { data, error } = await this.supabase.client.storage
+        .from('avatars')
+        .upload(filePath, blob, {
+          contentType: 'image/jpeg',
+          upsert: true
+        });
 
-      if (uploadResult.error) {
-        console.warn('Avatars bucket failed, trying user-assets...');
-        uploadResult = await this.supabase.client.storage.from('user-assets').upload(filePath, file);
+      if (error) {
+        if (error.message.includes('Bucket not found')) {
+          throw new Error("Manca il bucket 'avatars' su Supabase. Crealo come Pubblico.");
+        }
+        throw error;
       }
 
-      if (uploadResult.error) throw uploadResult.error;
+      // 3. Get Public URL
+      const { data: urlData } = this.supabase.client.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
 
-      const bucket = uploadResult.data?.fullPath.split('/')[0] || 'avatars';
-      const { data } = this.supabase.client.storage.from(bucket).getPublicUrl(filePath);
+      // 4. Update Profile
+      await this.supabase.client.from('profiles')
+        .update({ avatar_url: urlData.publicUrl })
+        .eq('id', userId);
 
-      await this.supabase.client.from('profiles').update({ avatar_url: data.publicUrl }).eq('id', userId);
       await this.supabase.loadUserProfile();
-      alert('Foto profilo aggiornata con successo! ✨');
+      alert('Foto aggiornata con successo! ✨');
+
     } catch (error: any) {
-      console.error('Upload error:', error);
-      alert(`Errore: ${error.message || 'Non è stato possibile caricare la foto. Verificare i permessi della memoria storage.'}`);
+      console.error('Upload Error:', error);
+      alert(`Impossibile caricare la foto: ${error.message}`);
     } finally {
       this.uploadingPhoto = false;
     }
+  }
+
+  startEditingName() {
+    this.tempNickname = this.supabase.username() || '';
+    this.isEditingName = true;
+  }
+
+  async saveNickname() {
+    if (!this.tempNickname.trim()) {
+      this.isEditingName = false;
+      return;
+    }
+    try {
+      const userId = this.supabase.user()?.id;
+      if (userId) {
+        await this.supabase.client.from('profiles').update({ username: this.tempNickname }).eq('id', userId);
+        // Manually update local signal to reflect change immediately
+        this.supabase.username.set(this.tempNickname);
+      }
+    } catch (e) {
+      console.error('Error saving name', e);
+    }
+    this.isEditingName = false;
   }
 
   async deleteProfilePhoto() {
