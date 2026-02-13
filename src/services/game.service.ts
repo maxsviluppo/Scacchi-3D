@@ -162,6 +162,7 @@ export class GameService {
     // Update Board State
     this.board.update(b => {
       const newBoard = b.map(row => [...row]);
+      let movingPiece = { ...newBoard[from.row][from.col]! };
       movingPiece.hasMoved = true;
 
       // --- EN PASSANT EXECUTION ---
@@ -362,14 +363,6 @@ export class GameService {
     this.turn.set('w');
   }
 
-  uciToCoords(sq: string): Position | null {
-    if (sq.length !== 2) return null;
-    const colMap: Record<string, number> = { 'a': 0, 'b': 1, 'c': 2, 'd': 3, 'e': 4, 'f': 5, 'g': 6, 'h': 7 };
-    const col = colMap[sq[0]];
-    const row = 8 - parseInt(sq[1]);
-    if (isNaN(row) || col === undefined) return null;
-    return { row, col };
-  }
 
   resetGame() {
     this.board.set(ChessUtils.createInitialBoard(this.gameMode()));

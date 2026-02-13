@@ -458,4 +458,30 @@ export class ChessUtils {
     if (isNaN(row) || col === undefined) return null;
     return { row, col };
   }
+
+  static boardToFEN(board: Board, turn: PieceColor): string {
+    let fen = '';
+    for (let r = 0; r < 8; r++) {
+      let empty = 0;
+      for (let c = 0; c < 8; c++) {
+        const p = board[r][c];
+        if (p) {
+          if (empty > 0) {
+            fen += empty;
+            empty = 0;
+          }
+          let char = p.type;
+          if (char === 'ck') char = 'k';
+          if (char === 'cm') char = 'p';
+          fen += p.color === 'w' ? char.toUpperCase() : char.toLowerCase();
+        } else {
+          empty++;
+        }
+      }
+      if (empty > 0) fen += empty;
+      if (r < 7) fen += '/';
+    }
+    fen += ` ${turn} - - 0 1`;
+    return fen;
+  }
 }
