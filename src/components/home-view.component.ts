@@ -671,10 +671,7 @@ import { ImageUtils } from '../utils/image-utils';
               }
             </div>
 
-            <!-- Footer -->
-            <div class="p-6 border-t border-white/10 bg-black/20 flex justify-end">
-              <button (click)="showSetup = false" class="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white text-sm font-black uppercase tracking-widest rounded-xl shadow-lg transition-all active:scale-95">Salva & Chiudi</button>
-            </div>
+            <!-- Footer removed: changes are automatic -->
           </div>
         </div>
       }
@@ -825,9 +822,10 @@ export class HomeViewComponent implements OnInit {
         this.authPassword = '';
         this.authError = '';
 
-        // Load Profile & Stats
+        // Load Profile, Stats & Assets
         await this.supabase.loadUserProfile();
         await this.loadUserStats();
+        await this.loadUserAssets();
       }
     } catch (err: any) {
       this.authError = 'Errore imprevisto durante l\'autenticazione';
@@ -1008,10 +1006,24 @@ export class HomeViewComponent implements OnInit {
     try {
       const assets = await this.supabase.getUserAssetPreferences();
       if (assets) {
-        Object.keys(assets).forEach(key => {
-          this.gameService.customMeshUrls[key] = assets[key];
-          this.loadedStatus[key] = true;
+        let hasCustomPieces = false;
+
+        // Update the signal with new object reference to trigger effects
+        this.gameService.customMeshUrls.update(current => {
+          const updated = { ...current };
+          Object.keys(assets).forEach(key => {
+            updated[key] = assets[key];
+            this.loadedStatus[key] = true;
+            if (key !== 'board') hasCustomPieces = true;
+          });
+          return updated;
         });
+
+        // Auto-switch to custom style if we have custom pieces
+        if (hasCustomPieces && this.gameService.pieceStyle() !== 'custom') {
+          this.gameService.setPieceStyle('custom');
+        }
+
         console.log('✅ Custom Assets Loaded:', assets);
       }
     } catch (e) {
@@ -1052,17 +1064,20 @@ export class HomeViewComponent implements OnInit {
       if (typeof asset === 'string') {
         // Single Asset (Board)
         await this.supabase.saveUserAssetPreference('board', asset);
-        this.gameService.customMeshUrls['board'] = asset;
+        this.gameService.customMeshUrls.update(current => ({ ...current, 'board': asset }));
         this.loadedStatus['board'] = true;
-        alert('Scacchiera applicata e salvata!');
       } else if (typeof asset === 'object') {
-        // Full Set
+        // Custom Assets (Signal for reactivity)
+        // The following line was part of the instruction but is a class property declaration, not a statement within a method.
+        // It has been moved to GameService as per the overall instruction.
+        // customMeshUrls = signal<Record<string, string>>({});
+        const updates: Record<string, string> = {};
         for (const [key, url] of Object.entries(asset)) {
           await this.supabase.saveUserAssetPreference(key, url as string);
-          this.gameService.customMeshUrls[key] = url as string;
+          updates[key] = url as string;
           this.loadedStatus[key] = true;
         }
-        alert('Set applicato con successo!');
+        this.gameService.customMeshUrls.update(current => ({ ...current, ...updates }));
       }
     } catch (e: any) {
       console.error('Library Error', e);
@@ -1086,21 +1101,29 @@ export class HomeViewComponent implements OnInit {
 
       // If user is logged in, upload and save to profile
       if (userId) {
-        alert('Caricamento in corso... attendi.');
         const publicUrl = await this.supabase.uploadCustomAssetFile(file, key);
         await this.supabase.saveUserAssetPreference(key, publicUrl);
 
-        // Update Game Service
-        this.gameService.customMeshUrls[key] = publicUrl;
+        // Update Game Service Signal
+        this.gameService.customMeshUrls.update(current => ({ ...current, [key]: publicUrl }));
         this.loadedStatus[key] = true;
 
-        alert(`Modello 3D per ${key} caricato e salvato con successo!`);
+        if (type !== 'board') {
+          this.gameService.setPieceStyle('custom');
+        }
+
+        this.fileSelected.emit({ event, type, colorSuffix });
       } else {
         // Fallback for Guest (Local only, not persistent)
         const objectUrl = URL.createObjectURL(file);
-        this.gameService.customMeshUrls[key] = objectUrl;
+        this.gameService.customMeshUrls.update(current => ({ ...current, [key]: objectUrl }));
         this.loadedStatus[key] = true;
-        alert(`Modello caricato (Sessione Ospite). Accedi per salvarlo.`);
+
+        if (type !== 'board') {
+          this.gameService.setPieceStyle('custom');
+        }
+
+        this.fileSelected.emit({ event, type, colorSuffix });
       }
 
     } catch (error: any) {

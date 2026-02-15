@@ -40,7 +40,7 @@ export class ChessUtils {
     return pos.row >= 0 && pos.row < 8 && pos.col >= 0 && pos.col < 8;
   }
 
-  static getValidMoves(board: Board, pos: Position, mode: GameMode = 'chess', lastMove: any = null): Position[] {
+  static getValidMoves(board: Board, pos: Position, mode: GameMode = 'chess', lastMove: any = null, checkCastling = true): Position[] {
     const piece = board[pos.row][pos.col];
     if (!piece) return [];
 
@@ -163,7 +163,7 @@ export class ChessUtils {
       }
 
       // --- CASTLING (ARROCCO) ---
-      if (piece.type === 'k' && !piece.hasMoved && !this.isKingInCheck(board, piece.color)) {
+      if (checkCastling && piece.type === 'k' && !piece.hasMoved && !this.isKingInCheck(board, piece.color)) {
         // Kingside
         const rookK = board[pos.row][7];
         if (rookK && rookK.type === 'r' && !rookK.hasMoved && !board[pos.row][5] && !board[pos.row][6]) {
@@ -246,7 +246,7 @@ export class ChessUtils {
       for (let c = 0; c < 8; c++) {
         const p = board[r][c];
         if (p && p.color === opponentColor) {
-          const attacks = this.getValidMoves(board, { row: r, col: c }, 'chess');
+          const attacks = this.getValidMoves(board, { row: r, col: c }, 'chess', null, false);
           if (attacks.some(m => m.row === pos.row && m.col === pos.col)) {
             return true;
           }

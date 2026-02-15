@@ -29,8 +29,8 @@ export class GameService {
   useOriginalTexture = signal<boolean>(false);
   bgBlur = signal<boolean>(true);
 
-  // Custom Assets
-  customMeshUrls: Record<string, string> = {};
+  // Custom Assets (Signal for reactivity)
+  customMeshUrls = signal<Record<string, string>>({});
 
   // Career State
   careerLevel = signal<number>(1);

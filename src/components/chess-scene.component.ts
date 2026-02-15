@@ -139,6 +139,15 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
       const useOriginal = this.gameService.useOriginalTexture();
 
       if (this.three && this.scene) {
+        // ALWAYS check for new custom URLs to load them into cache
+        // Track the signal!
+        const customUrls = this.gameService.customMeshUrls();
+        Object.keys(customUrls).forEach(key => {
+          if (!this.customCache.has(key) && key !== 'board_last_loaded') {
+            this.loadCustomModelFromUrl(customUrls[key], key);
+          }
+        });
+
         // Always verify if we are in a safe state to render
         if (!this.isLoadingModel) {
 
@@ -192,6 +201,36 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
     this.renderer.setSize(w, h, true);
   };
 
+  async loadCustomModelFromUrl(url: string, key: string) {
+    if (!this.three || !url) return;
+
+    // Prevent double loading
+    if (this.customCache.has(key) || this.isLoadingModel) return;
+
+    this.isLoadingModel = true;
+    try {
+      const isGLB = url.toLowerCase().includes('.glb') || url.toLowerCase().includes('.gltf');
+      const isSTL = url.toLowerCase().includes('.stl');
+
+      let result: any = null;
+      if (isSTL) {
+        const geo = await this.loadSTL(url);
+        result = { geometry: geo, material: null };
+      } else if (isGLB) {
+        result = await this.loadGLTF(url);
+      }
+
+      if (result && result.geometry) {
+        this.processAndCacheGeometry(result.geometry, result.material, key);
+      }
+    } catch (e) {
+      console.error('Failed to load Model from URL:', url, e);
+    } finally {
+      this.isLoadingModel = false;
+      this.forceRedraw();
+    }
+  }
+
   async loadCustomModel(file: File, key: string) {
     if (!this.three) return;
 
@@ -213,112 +252,119 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
 
       if (!result || !result.geometry) throw new Error("No geometry found");
 
-      const geometry = result.geometry;
-      // Normalization logic
-      geometry.center();
-      geometry.computeBoundingBox();
-      let size = new this.three.Vector3();
-      geometry.boundingBox!.getSize(size);
-
-      if (key !== 'board') {
-        if (size.z > size.y * 1.2 && size.z > size.x) {
-          geometry.rotateX(-Math.PI / 2);
-        } else if (size.x > size.y * 1.2 && size.x > size.z) {
-          geometry.rotateZ(-Math.PI / 2);
-        }
-
-        geometry.computeBoundingBox();
-        geometry.center();
-
-        const positions = geometry.attributes.position.array;
-        const box = geometry.boundingBox!;
-        const height = box.max.y - box.min.y;
-        const bottomThreshold = box.min.y + (height * 0.2);
-        const topThreshold = box.max.y - (height * 0.2);
-
-        let maxRadiusBottom = 0;
-        let maxRadiusTop = 0;
-
-        for (let i = 0; i < positions.length; i += 3) {
-          const x = positions[i];
-          const y = positions[i + 1];
-          const z = positions[i + 2];
-          const radiusSq = x * x + z * z;
-
-          if (y < bottomThreshold) {
-            maxRadiusBottom = Math.max(maxRadiusBottom, radiusSq);
-          } else if (y > topThreshold) {
-            maxRadiusTop = Math.max(maxRadiusTop, radiusSq);
-          }
-        }
-
-        if (maxRadiusTop > maxRadiusBottom * 1.2) {
-          geometry.rotateX(Math.PI);
-          geometry.center();
-        }
-
-        if (key.includes('n')) {
-          geometry.rotateY(-Math.PI / 2);
-          geometry.computeBoundingBox();
-          geometry.center();
-        }
-      }
-
-      geometry.computeBoundingBox();
-      const finalBox = geometry.boundingBox!;
-      const finalSize = new this.three.Vector3();
-      finalBox.getSize(finalSize);
-
-      if (key === 'board') {
-        const maxDim = Math.max(finalSize.x, finalSize.z);
-        const targetSize = 12.0;
-        const scaleFactor = targetSize / maxDim;
-        geometry.scale(scaleFactor, scaleFactor, scaleFactor);
-
-        geometry.computeBoundingBox();
-        const newBox = geometry.boundingBox!;
-        const offset = -0.05 - newBox.max.y;
-        geometry.translate(0, offset, 0);
-        geometry.computeVertexNormals();
-        this.customBoardGeometry = geometry;
-        this.createBoard();
-
-      } else {
-        const maxBaseDim = Math.max(finalSize.x, finalSize.z);
-        const targetSize = 0.70;
-        let scaleFactor = targetSize / maxBaseDim;
-
-        geometry.scale(scaleFactor, scaleFactor, scaleFactor);
-        geometry.computeBoundingBox();
-        const newBox = geometry.boundingBox!;
-
-        const lift = -newBox.min.y;
-        geometry.translate(0, lift, 0);
-        geometry.computeVertexNormals();
-
-        this.customCache.set(key, { geometry, material: result.material });
-
-        if (this.gameService.pieceStyle() === 'custom') {
-          this.gameService.setPieceStyle('custom');
-        }
-      }
+      this.processAndCacheGeometry(result.geometry, result.material, key);
 
     } catch (e) {
       console.error('Failed to load Model', e);
     } finally {
-      URL.revokeObjectURL(url);
+      if (url.startsWith('blob:')) {
+        URL.revokeObjectURL(url);
+      }
 
       // END LOCK
       this.isLoadingModel = false;
-
-      // Force immediate redraw to show new model
-      this.updatePieces(
-        this.gameService.board(),
-        this.gameService.selectedPos(),
-        this.gameService.pieceStyle(),
-        null
-      );
+      this.forceRedraw();
     }
+  }
+
+  private processAndCacheGeometry(geometry: any, material: any, key: string) {
+    // Normalization logic
+    geometry.center();
+    geometry.computeBoundingBox();
+    let size = new this.three.Vector3();
+    geometry.boundingBox!.getSize(size);
+
+    if (key !== 'board') {
+      if (size.z > size.y * 1.2 && size.z > size.x) {
+        geometry.rotateX(-Math.PI / 2);
+      } else if (size.x > size.y * 1.2 && size.x > size.z) {
+        geometry.rotateZ(-Math.PI / 2);
+      }
+
+      geometry.computeBoundingBox();
+      geometry.center();
+
+      const positions = geometry.attributes.position.array;
+      const box = geometry.boundingBox!;
+      const height = box.max.y - box.min.y;
+      const bottomThreshold = box.min.y + (height * 0.2);
+      const topThreshold = box.max.y - (height * 0.2);
+
+      let maxRadiusBottom = 0;
+      let maxRadiusTop = 0;
+
+      for (let i = 0; i < positions.length; i += 3) {
+        const x = positions[i];
+        const y = positions[i + 1];
+        const z = positions[i + 2];
+        const radiusSq = x * x + z * z;
+
+        if (y < bottomThreshold) {
+          maxRadiusBottom = Math.max(maxRadiusBottom, radiusSq);
+        } else if (y > topThreshold) {
+          maxRadiusTop = Math.max(maxRadiusTop, radiusSq);
+        }
+      }
+
+      if (maxRadiusTop > maxRadiusBottom * 1.2) {
+        geometry.rotateX(Math.PI);
+        geometry.center();
+      }
+
+      if (key.includes('n')) {
+        geometry.rotateY(-Math.PI / 2);
+        geometry.computeBoundingBox();
+        geometry.center();
+      }
+    }
+
+    geometry.computeBoundingBox();
+    const finalBox = geometry.boundingBox!;
+    const finalSize = new this.three.Vector3();
+    finalBox.getSize(finalSize);
+
+    if (key === 'board') {
+      const maxDim = Math.max(finalSize.x, finalSize.z);
+      const targetSize = 12.0;
+      const scaleFactor = targetSize / maxDim;
+      geometry.scale(scaleFactor, scaleFactor, scaleFactor);
+
+      geometry.computeBoundingBox();
+      const newBox = geometry.boundingBox!;
+      const offset = -0.05 - newBox.max.y;
+      geometry.translate(0, offset, 0);
+      geometry.computeVertexNormals();
+      this.customBoardGeometry = geometry;
+      this.createBoard();
+
+    } else {
+      const maxBaseDim = Math.max(finalSize.x, finalSize.z);
+      const targetSize = 0.70;
+      let scaleFactor = targetSize / maxBaseDim;
+
+      geometry.scale(scaleFactor, scaleFactor, scaleFactor);
+      geometry.computeBoundingBox();
+      const newBox = geometry.boundingBox!;
+
+      const lift = -newBox.min.y;
+      geometry.translate(0, lift, 0);
+      geometry.computeVertexNormals();
+
+      this.customCache.set(key, { geometry, material: material });
+
+      if (this.gameService.pieceStyle() === 'custom') {
+        this.gameService.setPieceStyle('custom');
+      }
+    }
+  }
+
+  private forceRedraw() {
+    this.updatePieces(
+      this.gameService.board(),
+      this.gameService.selectedPos(),
+      this.gameService.pieceStyle(),
+      null
+    );
   }
 
   private loadSTL(url: string): Promise<any> {
