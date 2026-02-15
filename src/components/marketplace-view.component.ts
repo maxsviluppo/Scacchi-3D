@@ -228,6 +228,7 @@ export class MarketplaceViewComponent implements OnInit {
     if (kit === 'default') {
       this.gameService.pieceStyle.set('classic');
       this.gameService.customMeshUrls.set({});
+      this.saveUserPreference('default');
       alert('Kit Classic v1 Attivato! 👑');
     } else if (typeof kit !== 'string') {
       if (kit.price_eur > 0) {
@@ -254,11 +255,13 @@ export class MarketplaceViewComponent implements OnInit {
 
     // Only works if profile has the column, fails gracefully otherwise
     try {
-      await this.supabase.client.from('profiles').update({
+      const { error } = await this.supabase.client.from('profiles').update({
         current_kit_id: kitId
       }).eq('id', user.id);
+
+      if (error) console.error('Error saving kit preference:', error);
     } catch (e) {
-      // silent fail
+      console.warn('Could not persist kit preference', e);
     }
   }
 }

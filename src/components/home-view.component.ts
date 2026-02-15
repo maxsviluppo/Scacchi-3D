@@ -48,40 +48,35 @@ import { ImageUtils } from '../utils/image-utils';
           </div>
         </div>
         
-        <!-- Account/Login Button -->
-        <div class="flex flex-col items-center gap-1.5 group/auth">
-          <button (click)="supabase.user() ? openAccountManager() : toggleAuth()" 
-            class="relative flex items-center justify-center w-12 h-12 rounded-full backdrop-blur-md border transition-all group shadow-2xl"
-            [class.bg-indigo-500/20]="supabase.user()"
-            [class.border-indigo-400/50]="supabase.user()"
-            [class.bg-slate-800/40]="!supabase.user()"
-            [class.border-white/10]="!supabase.user()">
-            
-            <div class="w-full h-full rounded-full flex items-center justify-center p-2 transition-all duration-500 group-hover:scale-105 border border-transparent overflow-hidden"
-                 [class.bg-gradient-to-br]="supabase.user()"
-                 [class.from-indigo-500]="supabase.user()"
-                 [class.to-purple-600]="supabase.user()"
-                 [class.shadow-[0_0_30px_rgba(99,102,241,0.8)]]="supabase.user()"
-                 [class.bg-slate-700/50]="!supabase.user()"
-                 [class.opacity-40]="!supabase.user()">
-                 
-              @if (supabase.user() && supabase.avatarUrl()) {
-                <img [src]="supabase.avatarUrl()" alt="Avatar" class="w-full h-full object-cover rounded-full">
-              } @else {
-                <svg viewBox="0 0 100 100" [attr.fill]="supabase.user() ? 'white' : '#64748b'" class="w-full h-full drop-shadow-md">
-                  <circle cx="50" cy="35" r="20"/>
-                  <path d="M20 80 Q50 60 80 80 L80 90 L20 90 Z"/>
-                </svg>
-              }
-            </div>
-          </button>
+        <!-- Switch Profile Button -->
+        <!-- Profile Icon (Yellow Gradient) -->
+        <button (click)="supabase.user() ? openAccountManager() : toggleAuth()" 
+          class="relative flex items-center justify-center w-12 h-12 rounded-full backdrop-blur-md border border-white/10 shadow-[0_0_15px_rgba(234,179,8,0.2)] hover:shadow-[0_0_25px_rgba(234,179,8,0.4)] hover:scale-105 active:scale-95 transition-all group overflow-hidden bg-slate-900/40">
           
-          @if (supabase.user() && supabase.username()) {
-            <span class="text-[9px] font-black text-indigo-400 uppercase tracking-[0.2em] opacity-0 group-hover/auth:opacity-100 transition-opacity duration-300">
-              {{ supabase.username() }}
-            </span>
+          <!-- Gradient Background (Subtle) -->
+          <div class="absolute inset-0 bg-gradient-to-br from-yellow-500/10 to-amber-600/5 opacity-50 group-hover:opacity-100 transition-opacity"></div>
+          
+          @if (supabase.user() && supabase.avatarUrl()) {
+             <!-- User Avatar with Gold Border -->
+            <div class="w-full h-full p-[2px] rounded-full bg-gradient-to-r from-yellow-400 via-yellow-500 to-amber-600 animate-pulse-subtle">
+               <img [src]="supabase.avatarUrl()" class="w-full h-full object-cover rounded-full border border-black/50">
+            </div>
+          } @else {
+            <!-- Default Icon with Gold Gradient -->
+            <div class="w-full h-full flex items-center justify-center rounded-full group-hover:bg-white/5 transition-colors">
+              <svg viewBox="0 0 24 24" class="w-6 h-6 drop-shadow-md">
+                <defs>
+                  <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:#facc15;stop-opacity:1" /> <!-- yellow-400 -->
+                    <stop offset="50%" style="stop-color:#eab308;stop-opacity:1" /> <!-- yellow-500 -->
+                    <stop offset="100%" style="stop-color:#d97706;stop-opacity:1" /> <!-- amber-600 -->
+                  </linearGradient>
+                </defs>
+                <path fill="url(#goldGradient)" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
+              </svg>
+            </div>
           }
-        </div>
+        </button>
       </div>
 
       <!-- Main Navigation Grid -->
@@ -126,23 +121,7 @@ import { ImageUtils } from '../utils/image-utils';
             </div>
           </button>
 
-          <!-- Setup Card -->
-          <button (click)="showSetup = true"
-            class="group relative overflow-hidden bg-slate-900/40 backdrop-blur-2xl border border-white/5 hover:border-cyan-500/30 rounded-[2rem] p-6 md:p-8 transition-all hover:scale-[1.02] shadow-2xl">
-            <div class="absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-            <div class="relative flex flex-col items-center text-center gap-4">
-              <div class="w-16 h-16 rounded-2xl bg-cyan-500/20 flex items-center justify-center border border-cyan-500/20 group-hover:bg-cyan-500/30 transition-all">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-8 h-8 text-cyan-400">
-                  <path d="M12 20h9"></path>
-                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
-                </svg>
-              </div>
-              <div>
-                <h2 class="text-2xl font-black text-white uppercase tracking-tighter">Setup</h2>
-                <p class="text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em] mt-1">Modelli 3D</p>
-              </div>
-            </div>
-          </button>
+          <!-- setup was here -->
 
           <!-- Career Mode Card -->
           <button (click)="openCareer()"
@@ -210,6 +189,24 @@ import { ImageUtils } from '../utils/image-utils';
               </div>
             </button>
           </div>
+
+          <!-- Setup Card -->
+          <button (click)="showSetup = true"
+            class="group relative overflow-hidden bg-slate-900/40 backdrop-blur-2xl border border-white/5 hover:border-cyan-500/30 rounded-[2rem] p-6 md:p-8 transition-all hover:scale-[1.02] shadow-2xl">
+            <div class="absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <div class="relative flex flex-col items-center text-center gap-4">
+              <div class="w-16 h-16 rounded-2xl bg-cyan-500/20 flex items-center justify-center border border-cyan-500/20 group-hover:bg-cyan-500/30 transition-all">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-8 h-8 text-cyan-400">
+                  <path d="M12 20h9"></path>
+                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                </svg>
+              </div>
+              <div>
+                <h2 class="text-2xl font-black text-white uppercase tracking-tighter">Setup</h2>
+                <p class="text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em] mt-1">Modelli 3D</p>
+              </div>
+            </div>
+          </button>
 
           <!-- Shop/Marketplace Card -->
           <button (click)="gameService.setView('marketplace')"
@@ -306,157 +303,192 @@ import { ImageUtils } from '../utils/image-utils';
 
       <!-- Account Manager Modal -->
       @if (showAccountManager) {
-        <div class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/98 backdrop-blur-2xl p-4 animate-fade-in"
+        <div class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/90 backdrop-blur-md p-4 animate-fade-in"
              (click)="showAccountManager = false">
-          <div class="relative bg-slate-900/80 backdrop-blur-3xl border border-white/10 rounded-[3rem] max-w-2xl w-full max-h-[90vh] shadow-[0_0_120px_rgba(99,102,241,0.25)] overflow-hidden flex flex-col"
+          
+          <div class="relative bg-slate-900/90 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] max-w-2xl w-full max-h-[90vh] shadow-[0_0_80px_rgba(0,0,0,0.6)] overflow-hidden flex flex-col"
                (click)="$event.stopPropagation()">
             
+            <!-- Close Button -->
             <button (click)="showAccountManager = false" 
-              class="absolute top-6 right-6 z-50 w-10 h-10 rounded-full bg-slate-800/80 flex items-center justify-center text-white border border-white/10 hover:border-red-500/50 transition-all">✕</button>
+              class="absolute top-6 right-6 z-50 w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-white border border-white/10 transition-all active:scale-95">
+              ✕
+            </button>
             
-            <div class="p-8 md:p-12 overflow-y-auto custom-scrollbar relative z-10">
-              <div class="flex flex-col md:flex-row items-center gap-8 mb-10 pb-10 border-b border-white/5">
-                <div class="relative group">
-                  <div class="w-32 h-32 rounded-full overflow-hidden border-4 border-indigo-500/30 shadow-2xl bg-slate-800">
+            <div class="p-8 md:p-10 overflow-y-auto custom-scrollbar relative z-10">
+              
+              <!-- HEADER: Icon Left + Name Right -->
+              <div class="flex flex-row items-center gap-6 mb-10 pb-8 border-b border-white/5">
+                
+                <!-- 1. Profile Icon (Left) -->
+                <div class="relative group shrink-0">
+                  <div class="w-20 h-20 rounded-full overflow-hidden border-2 border-amber-500/30 shadow-[0_0_30px_rgba(245,158,11,0.2)] bg-black/40 flex items-center justify-center relative">
+                    <!-- Gradient Background -->
+                    <div class="absolute inset-0 bg-gradient-to-br from-amber-500/10 to-orange-600/10 opacity-60"></div>
+
                     @if (supabase.avatarUrl()) {
-                      <img [src]="supabase.avatarUrl()" class="w-full h-full object-cover">
+                        <div class="w-full h-full p-[2px] rounded-full bg-gradient-to-r from-amber-300 via-amber-500 to-orange-500 animate-pulse-subtle">
+                           <img [src]="supabase.avatarUrl()" class="w-full h-full object-cover rounded-full border border-black/80">
+                        </div>
                     } @else {
-                      <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-indigo-600 to-purple-600">
-                        <svg viewBox="0 0 100 100" fill="white" class="w-20 h-20">
-                          <circle cx="50" cy="35" r="20"/>
-                          <path d="M20 80 Q50 60 80 80 L80 90 L20 90 Z"/>
-                        </svg>
-                      </div>
+                        <div class="w-full h-full flex items-center justify-center rounded-full">
+                          <svg viewBox="0 0 24 24" class="w-10 h-10 drop-shadow-md">
+                            <defs>
+                              <linearGradient id="goldGradientUser" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#fcd34d;stop-opacity:1" /> <!-- amber-300 -->
+                                <stop offset="50%" style="stop-color:#f59e0b;stop-opacity:1" /> <!-- amber-500 -->
+                                <stop offset="100%" style="stop-color:#d97706;stop-opacity:1" /> <!-- amber-600 -->
+                              </linearGradient>
+                            </defs>
+                            <path fill="url(#goldGradientUser)" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
+                          </svg>
+                        </div>
                     }
                   </div>
-                  <label class="absolute bottom-0 right-0 w-11 h-11 rounded-2xl bg-indigo-600 flex items-center justify-center cursor-pointer shadow-[0_0_20px_rgba(79,70,229,0.5)] hover:bg-indigo-500 hover:scale-110 transition-all active:scale-90 border-2 border-slate-900 group-hover:rotate-12">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="white" class="w-6 h-6">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15a2.25 2.25 0 0 0 2.25-2.25V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" />
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z" />
-                    </svg>
-                    <input type="file" class="hidden" accept="image/*" (change)="onProfilePhotoSelected($event)">
+                  
+                  <!-- Edit Photo Prompt (Hover) -->
+                  <label class="absolute -bottom-1 -right-1 w-8 h-8 bg-slate-800 rounded-full border border-white/10 flex items-center justify-center cursor-pointer shadow-lg hover:bg-slate-700 transition-colors">
+                     <span class="text-xs">📷</span>
+                     <input type="file" class="hidden" accept="image/*" (change)="onProfilePhotoSelected($event)">
                   </label>
                 </div>
                 
-                <div class="text-center md:text-left relative group">
-                  <!-- Removed redundant badge -->
-                  
-                  <!-- Editable Nickname -->
-                  <div class="relative">
-                    @if (isEditingName) {
+                <!-- 2. Name & Status (Right) -->
+                <div class="flex-1 flex flex-col justify-center">
+                  <!-- Name -->
+                  <div class="relative group/name w-full">
+                     @if (isEditingName) {
                       <input type="text" [(ngModel)]="tempNickname" (blur)="saveNickname()" (keydown.enter)="saveNickname()"
-                        class="text-5xl md:text-6xl font-black text-white uppercase tracking-tighter bg-transparent border-b-2 border-indigo-500 focus:outline-none w-full text-center md:text-left mb-1"
+                        class="text-3xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400 uppercase tracking-tighter bg-transparent border-b border-amber-500/50 focus:outline-none w-full mb-1"
                         autoFocus>
-                      <p class="text-xs text-indigo-400 mt-1">Premi Invio per salvare</p>
+                      <p class="text-[9px] text-amber-500/80 mt-1 uppercase font-bold tracking-widest">Premi Invio per salvare</p>
                     } @else {
                       <h2 (dblclick)="startEditingName()" 
-                        class="text-5xl md:text-6xl font-black text-white uppercase tracking-tighter drop-shadow-[0_0_15px_rgba(255,255,255,0.2)] mb-1 cursor-pointer hover:text-indigo-200 transition-colors"
+                        class="text-3xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-200 to-slate-400 uppercase tracking-tighter drop-shadow-md cursor-pointer hover:via-amber-200 transition-all truncate"
                         title="Doppio click per modificare">
-                        {{ supabase.username() }}
+                        {{ supabase.username() || 'GIOCATORE 1' }}
                       </h2>
                     }
                   </div>
-
-                  <p class="text-indigo-400/60 font-black uppercase tracking-[0.2em] text-[10px]">{{ supabase.username() }}</p>
                   
-                  <div class="flex gap-3 mt-8 justify-center md:justify-start">
-                    @if (supabase.avatarUrl()) {
-                      <button (click)="deleteProfilePhoto()" class="px-5 py-2.5 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-500/20 transition-all shadow-lg active:scale-95">Rimuovi Avatar</button>
+                  <!-- Status / Email -->
+                  <div class="flex items-center gap-2 mt-1">
+                    <div class="px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-[9px] font-black text-emerald-400 uppercase tracking-widest">
+                        Online
+                    </div>
+                    @if (supabase.user()?.email) {
+                        <span class="text-[10px] font-bold text-slate-500 tracking-wider truncate max-w-[200px]">{{ supabase.user()?.email }}</span>
+                    }
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- STATS GRID -->
+              <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+                <!-- Games -->
+                <div class="bg-indigo-900/10 border border-indigo-500/20 p-4 rounded-2xl relative overflow-hidden group hover:bg-indigo-900/20 transition-all">
+                  <div class="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  <p class="text-[9px] text-indigo-300 font-black uppercase tracking-widest mb-1 relative z-10">Partite</p>
+                  <p class="text-3xl font-black text-white relative z-10">{{ userStats.gamesPlayed }}</p>
+                  <span class="absolute -bottom-4 -right-2 text-6xl text-indigo-500/10 group-hover:text-indigo-500/20 transition-all select-none">♟</span>
+                </div>
+                
+                <!-- Wins -->
+                <div class="bg-emerald-900/10 border border-emerald-500/20 p-4 rounded-2xl relative overflow-hidden group hover:bg-emerald-900/20 transition-all">
+                   <div class="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                   <p class="text-[9px] text-emerald-300 font-black uppercase tracking-widest mb-1 relative z-10">Vittorie</p>
+                   <p class="text-3xl font-black text-white relative z-10">{{ userStats.gamesWon }}</p>
+                   <span class="absolute -bottom-4 -right-2 text-6xl text-emerald-500/10 group-hover:text-emerald-500/20 transition-all select-none">♛</span>
+                </div>
+                
+                <!-- Rate -->
+                <div class="bg-violet-900/10 border border-violet-500/20 p-4 rounded-2xl relative overflow-hidden group hover:bg-violet-900/20 transition-all">
+                   <div class="absolute inset-0 bg-gradient-to-br from-violet-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                   <p class="text-[9px] text-violet-300 font-black uppercase tracking-widest mb-1 relative z-10">Win Rate</p>
+                   <p class="text-3xl font-black text-white relative z-10">{{ userStats.winRate }}%</p>
+                   <span class="absolute -bottom-4 -right-2 text-6xl text-violet-500/10 group-hover:text-violet-500/20 transition-all select-none">📈</span>
+                </div>
+                
+                <!-- Points -->
+                <div class="bg-amber-900/10 border border-amber-500/20 p-4 rounded-2xl relative overflow-hidden group hover:bg-amber-900/20 transition-all">
+                   <div class="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                   <p class="text-[9px] text-amber-300 font-black uppercase tracking-widest mb-1 relative z-10">Punti</p>
+                   <p class="text-3xl font-black text-white relative z-10">{{ userStats.totalPoints }}</p>
+                   <span class="absolute -bottom-4 -right-2 text-6xl text-amber-500/10 group-hover:text-amber-500/20 transition-all select-none">★</span>
+                </div>
+              </div>
+
+              <!-- LIST SECTIONS -->
+              <div class="space-y-8">
+                
+                <!-- Achievements -->
+                <div>
+                  <h3 class="flex items-center gap-2 mb-3 px-1">
+                    <span class="text-lg">🏆</span>
+                    <span class="text-xs font-black text-slate-300 uppercase tracking-widest">Premi & Medaglie</span>
+                  </h3>
+                  
+                  <div class="bg-black/20 border border-white/5 rounded-2xl p-2 max-h-40 overflow-y-auto custom-scrollbar">
+                    @if (userStats.achievements.length > 0) {
+                        @for (achievement of userStats.achievements; track achievement.id) {
+                        <div class="flex items-center gap-4 p-3 bg-slate-800/50 rounded-xl mb-1 last:mb-0 hover:bg-slate-800 transition-colors">
+                            <span class="text-2xl">{{ achievement.icon }}</span>
+                            <div class="flex-1">
+                            <p class="text-xs font-bold text-white uppercase">{{ achievement.name }}</p>
+                            <p class="text-[9px] text-slate-500">{{ achievement.date }}</p>
+                            </div>
+                        </div>
+                        }
+                    } @else {
+                        <div class="flex flex-col items-center justify-center py-6 gap-2 opacity-50">
+                            <span class="text-3xl grayscale opacity-50">🏆</span>
+                            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Nessun premio ancora conquistato</p>
+                        </div>
+                    }
+                  </div>
+                </div>
+
+                <!-- Purchases -->
+                <div>
+                  <h3 class="flex items-center gap-2 mb-3 px-1">
+                    <span class="text-lg">💳</span>
+                    <span class="text-xs font-black text-slate-300 uppercase tracking-widest">Storico Acquisti</span>
+                  </h3>
+                  
+                  <div class="bg-black/20 border border-white/5 rounded-2xl p-2 max-h-40 overflow-y-auto custom-scrollbar">
+                    @if (userStats.purchases.length > 0) {
+                        @for (purchase of userStats.purchases; track purchase.id) {
+                        <div class="flex items-center justify-between p-3 bg-slate-800/50 rounded-xl mb-1 last:mb-0 hover:bg-slate-800 transition-colors">
+                            <div>
+                            <p class="text-xs font-bold text-white uppercase">{{ purchase.name }}</p>
+                            <p class="text-[9px] text-slate-500">{{ purchase.date }}</p>
+                            </div>
+                            <p class="text-xs font-black text-emerald-400">€{{ purchase.price }}</p>
+                        </div>
+                        }
+                    } @else {
+                        <div class="flex flex-col items-center justify-center py-6 gap-2 opacity-50">
+                            <span class="text-3xl grayscale opacity-50">💳</span>
+                            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Nessun acquisto effettuato</p>
+                        </div>
                     }
                   </div>
                 </div>
               </div>
 
-              <!-- Stats Grid -->
-              <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                <div class="bg-white/5 border border-white/5 p-6 rounded-2xl text-center">
-                  <p class="text-[10px] text-slate-500 font-black uppercase tracking-widest mb-1">Partite</p>
-                  <p class="text-3xl font-black text-white">{{ userStats.gamesPlayed }}</p>
-                </div>
-                <div class="bg-white/5 border border-white/5 p-6 rounded-2xl text-center">
-                  <p class="text-[10px] text-slate-500 font-black uppercase tracking-widest mb-1">Vinte</p>
-                  <p class="text-3xl font-black text-green-400">{{ userStats.gamesWon }}</p>
-                </div>
-                <div class="bg-white/5 border border-white/5 p-6 rounded-2xl text-center">
-                  <p class="text-[10px] text-slate-500 font-black uppercase tracking-widest mb-1">Win Rate</p>
-                  <p class="text-3xl font-black text-indigo-400">{{ userStats.winRate }}%</p>
-                </div>
-                <div class="bg-white/5 border border-white/5 p-6 rounded-2xl text-center">
-                  <p class="text-[10px] text-slate-500 font-black uppercase tracking-widest mb-1">Punti</p>
-                  <p class="text-3xl font-black text-yellow-500">{{ userStats.totalPoints }}</p>
-                </div>
+              <!-- Footer Actions -->
+              <div class="mt-10 pt-6 border-t border-white/5 flex flex-col items-center">
+                 <button (click)="logout()" 
+                    class="w-full py-4 relative group overflow-hidden rounded-xl bg-slate-800/50 border border-rose-500/30 hover:border-rose-500/60 transition-all">
+                    <div class="absolute inset-0 bg-gradient-to-r from-rose-500/10 via-rose-500/5 to-rose-500/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <span class="relative z-10 text-xs font-black text-rose-400 uppercase tracking-[0.25em] group-hover:text-rose-300 transition-colors">
+                        Disconnetti Account
+                    </span>
+                 </button>
+                 <p class="text-[9px] text-slate-600 mt-4 font-mono">ID: {{supabase.user()?.id}}</p>
               </div>
 
-              <!-- Achievements Section -->
-              <div class="mb-8">
-                <h3 class="text-xl font-black text-white uppercase tracking-tighter mb-4 flex items-center gap-2">
-                  <span class="text-2xl">🏆</span> Premi Conquistati
-                </h3>
-                <div class="bg-white/5 border border-white/5 rounded-2xl p-4 max-h-48 overflow-y-auto custom-scrollbar">
-                  @if (userStats.achievements.length > 0) {
-                    @for (achievement of userStats.achievements; track achievement.id) {
-                      <div class="flex items-center gap-4 p-3 bg-slate-800/50 rounded-xl mb-2 last:mb-0">
-                        <span class="text-3xl">{{ achievement.icon }}</span>
-                        <div class="flex-1">
-                          <p class="text-sm font-bold text-white">{{ achievement.name }}</p>
-                          <p class="text-[10px] text-slate-400">{{ achievement.date }}</p>
-                        </div>
-                      </div>
-                    }
-                  } @else {
-                    <p class="text-slate-500 text-sm text-center py-4">Nessun premio ancora conquistato</p>
-                  }
-                </div>
-              </div>
-
-              <!-- Purchases Section -->
-              <div class="mb-8">
-                <h3 class="text-xl font-black text-white uppercase tracking-tighter mb-4 flex items-center gap-2">
-                  <span class="text-2xl">💳</span> Acquisti Effettuati
-                </h3>
-                <div class="bg-white/5 border border-white/5 rounded-2xl p-4 max-h-48 overflow-y-auto custom-scrollbar">
-                  @if (userStats.purchases.length > 0) {
-                    @for (purchase of userStats.purchases; track purchase.id) {
-                      <div class="flex items-center justify-between p-3 bg-slate-800/50 rounded-xl mb-2 last:mb-0">
-                        <div>
-                          <p class="text-sm font-bold text-white">{{ purchase.name }}</p>
-                          <p class="text-[10px] text-slate-400">{{ purchase.date }}</p>
-                        </div>
-                        <p class="text-sm font-black text-green-400">€{{ purchase.price }}</p>
-                      </div>
-                    }
-                  } @else {
-                    <p class="text-slate-500 text-sm text-center py-4">Nessun acquisto effettuato</p>
-                  }
-                </div>
-              </div>
-
-              <!-- Free Downloads Section -->
-              <div class="mb-8">
-                <h3 class="text-xl font-black text-white uppercase tracking-tighter mb-4 flex items-center gap-2">
-                  <span class="text-2xl">📦</span> Download Gratuiti
-                </h3>
-                <div class="bg-white/5 border border-white/5 rounded-2xl p-4 max-h-48 overflow-y-auto custom-scrollbar">
-                  @if (userStats.downloads.length > 0) {
-                    @for (download of userStats.downloads; track download.id) {
-                      <div class="flex items-center justify-between p-3 bg-slate-800/50 rounded-xl mb-2 last:mb-0">
-                        <div>
-                          <p class="text-sm font-bold text-white">{{ download.name }}</p>
-                          <p class="text-[10px] text-slate-400">{{ download.date }}</p>
-                        </div>
-                        <span class="text-xs font-black text-indigo-400 bg-indigo-500/10 px-2 py-1 rounded-full">GRATIS</span>
-                      </div>
-                    }
-                  } @else {
-                    <p class="text-slate-500 text-sm text-center py-4">Nessun download gratuito</p>
-                  }
-                </div>
-              </div>
-
-              <button (click)="logout()" 
-                class="w-full py-5 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-2xl font-black uppercase tracking-[0.2em] hover:bg-rose-500/20 transition-all shadow-xl">
-                Esci dall'Account
-              </button>
             </div>
           </div>
         </div>
@@ -1019,7 +1051,9 @@ export class HomeViewComponent implements OnInit {
         .eq('id', userId);
 
       await this.supabase.loadUserProfile();
-      alert('Foto aggiornata con successo! ✨');
+
+      // Removed alert as per request
+      // alert('Foto aggiornata con successo! ✨');
 
     } catch (error: any) {
       console.error('Upload Error:', error);
@@ -1032,6 +1066,35 @@ export class HomeViewComponent implements OnInit {
   startEditingName() {
     this.tempNickname = this.supabase.username() || '';
     this.isEditingName = true;
+  }
+
+  async debugFetchProfile() {
+    const uid = this.supabase.user()?.id;
+    if (!uid) {
+      alert('ID Utente non trovato (L\'utente sembra non essere loggato).');
+      return;
+    }
+
+    console.log('DEBUG: Tentativo fetch profilo per UID:', uid);
+
+    const { data, error } = await this.supabase.client
+      .from('profiles')
+      .select('*')
+      .eq('id', uid)
+      .maybeSingle();
+
+    if (error) {
+      console.error('DEBUG: Errore query profiles:', error);
+      alert('ERRORE QUERY: ' + error.message);
+    } else if (data) {
+      console.log('DEBUG: Profilo trovato:', data);
+      alert(`PROFILO TROVATO!\nUsername: ${data.username}\nNickname: ${data.nickname}\nID: ${data.id}`);
+      // Force update local signal
+      if (data.username) this.supabase.username.set(data.username);
+    } else {
+      console.warn('DEBUG: Profilo non trovato nella tabella.');
+      alert('NESSUN PROFILO TROVATO NEL DATABASE per questo ID.');
+    }
   }
 
   async saveNickname() {

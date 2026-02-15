@@ -38,8 +38,16 @@ export class SupabaseService {
             this.avatarUrl.set(null);
             return;
         }
-        const { data } = await this.supabase.from('profiles').select('username, avatar_url').eq('id', uid).maybeSingle();
-        this.username.set(data?.username ?? null);
+        // Fetch nickname as well
+        const { data } = await this.supabase.from('profiles')
+            .select('username, nickname, avatar_url')
+            .eq('id', uid)
+            .maybeSingle();
+
+        console.log('SupabaseService: Profilo recuperato:', data); // LOG PER DEBUG
+
+        // Prioritize nickname if available, otherwise username
+        this.username.set(data?.nickname || data?.username || null);
         this.avatarUrl.set(data?.avatar_url ?? null);
     }
 

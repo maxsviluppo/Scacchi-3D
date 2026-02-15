@@ -58,10 +58,35 @@ export class GameService {
   }
 
   async loadUserAssets() {
-    if (!this.supabase.user()) return;
+    const user = this.supabase.user();
+    if (!user) return;
 
     try {
-      const assets = await this.supabase.getUserAssetPreferences();
+      // 1. Check for Full Kit
+      const { data: profile } = await this.supabase.client
+        .from('profiles')
+        .select('current_kit_id, active_assets')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (profile?.current_kit_id && profile.current_kit_id !== 'default') {
+        // Load Kit Assets
+        const { data: kit } = await this.supabase.client
+          .from('asset_collections')
+          .select('*')
+          .eq('id', profile.current_kit_id)
+          .maybeSingle();
+
+        if (kit && kit.assets) {
+          console.log('📦 Loading Kit:', kit.name);
+          this.customMeshUrls.set(kit.assets);
+          this.setPieceStyle('custom');
+          return; // Stop here if kit is loaded (overrides individual assets)
+        }
+      }
+
+      // 2. Fallback to Individual Assets (Legacy/Manual Mix)
+      const assets = profile?.active_assets || {};
       if (assets && Object.keys(assets).length > 0) {
         let hasCustomPieces = false;
 
