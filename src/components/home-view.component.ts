@@ -49,31 +49,39 @@ import { ImageUtils } from '../utils/image-utils';
         </div>
         
         <!-- Account/Login Button -->
-        <button (click)="supabase.user() ? openAccountManager() : toggleAuth()" 
-          class="relative flex items-center justify-center w-12 h-12 rounded-full backdrop-blur-md border transition-all group shadow-2xl"
-          [class.bg-indigo-500/20]="supabase.user()"
-          [class.border-indigo-400/50]="supabase.user()"
-          [class.bg-slate-800/40]="!supabase.user()"
-          [class.border-white/10]="!supabase.user()">
+        <div class="flex flex-col items-center gap-1.5 group/auth">
+          <button (click)="supabase.user() ? openAccountManager() : toggleAuth()" 
+            class="relative flex items-center justify-center w-12 h-12 rounded-full backdrop-blur-md border transition-all group shadow-2xl"
+            [class.bg-indigo-500/20]="supabase.user()"
+            [class.border-indigo-400/50]="supabase.user()"
+            [class.bg-slate-800/40]="!supabase.user()"
+            [class.border-white/10]="!supabase.user()">
+            
+            <div class="w-full h-full rounded-full flex items-center justify-center p-2 transition-all duration-500 group-hover:scale-105 border border-transparent overflow-hidden"
+                 [class.bg-gradient-to-br]="supabase.user()"
+                 [class.from-indigo-500]="supabase.user()"
+                 [class.to-purple-600]="supabase.user()"
+                 [class.shadow-[0_0_30px_rgba(99,102,241,0.8)]]="supabase.user()"
+                 [class.bg-slate-700/50]="!supabase.user()"
+                 [class.opacity-40]="!supabase.user()">
+                 
+              @if (supabase.user() && supabase.avatarUrl()) {
+                <img [src]="supabase.avatarUrl()" alt="Avatar" class="w-full h-full object-cover rounded-full">
+              } @else {
+                <svg viewBox="0 0 100 100" [attr.fill]="supabase.user() ? 'white' : '#64748b'" class="w-full h-full drop-shadow-md">
+                  <circle cx="50" cy="35" r="20"/>
+                  <path d="M20 80 Q50 60 80 80 L80 90 L20 90 Z"/>
+                </svg>
+              }
+            </div>
+          </button>
           
-          <div class="w-full h-full rounded-full flex items-center justify-center p-2 transition-all duration-500 group-hover:scale-105 border border-transparent overflow-hidden"
-               [class.bg-gradient-to-br]="supabase.user()"
-               [class.from-indigo-500]="supabase.user()"
-               [class.to-purple-600]="supabase.user()"
-               [class.shadow-[0_0_30px_rgba(99,102,241,0.8)]]="supabase.user()"
-               [class.bg-slate-700/50]="!supabase.user()"
-               [class.opacity-40]="!supabase.user()">
-               
-            @if (supabase.user() && supabase.avatarUrl()) {
-              <img [src]="supabase.avatarUrl()" alt="Avatar" class="w-full h-full object-cover rounded-full">
-            } @else {
-              <svg viewBox="0 0 100 100" [attr.fill]="supabase.user() ? 'white' : '#64748b'" class="w-full h-full drop-shadow-md">
-                <circle cx="50" cy="35" r="20"/>
-                <path d="M20 80 Q50 60 80 80 L80 90 L20 90 Z"/>
-              </svg>
-            }
-          </div>
-        </button>
+          @if (supabase.user() && supabase.username()) {
+            <span class="text-[9px] font-black text-indigo-400/60 uppercase tracking-[0.2em] opacity-0 group-hover/auth:opacity-100 transition-opacity duration-300">
+              {{ supabase.username() }}
+            </span>
+          }
+        </div>
       </div>
 
       <!-- Main Navigation Grid -->
@@ -269,7 +277,11 @@ import { ImageUtils } from '../utils/image-utils';
                 </div>
 
                 @if (authError) {
-                  <p class="text-rose-400 text-sm font-bold text-center uppercase tracking-wide bg-rose-500/10 py-3 rounded-xl border border-rose-500/20">{{ authError }}</p>
+                  <p class="text-rose-400 text-sm font-bold text-center uppercase tracking-wide bg-rose-500/10 py-3 rounded-xl border border-rose-500/20 shadow-lg animate-fade-in px-4">{{ authError }}</p>
+                }
+
+                @if (authSuccess) {
+                  <p class="text-emerald-400 text-sm font-bold text-center uppercase tracking-wide bg-emerald-500/10 py-3 rounded-xl border border-emerald-500/20 shadow-lg animate-fade-in px-4">{{ authSuccess }}</p>
                 }
 
                 <button type="submit" [disabled]="loadingAuth"
@@ -325,11 +337,7 @@ import { ImageUtils } from '../utils/image-utils';
                 </div>
                 
                 <div class="text-center md:text-left relative group">
-                  <div class="inline-block px-4 py-1.5 bg-indigo-500/10 border border-indigo-500/20 rounded-full mb-3 shadow-[0_0_15px_rgba(99,102,241,0.2)]">
-                    <p class="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] animate-pulse">
-                      {{ supabase.username() }}
-                    </p>
-                  </div>
+                  <!-- Removed redundant badge -->
                   
                   <!-- Editable Nickname -->
                   <div class="relative">
@@ -347,7 +355,7 @@ import { ImageUtils } from '../utils/image-utils';
                     }
                   </div>
 
-                  <p class="text-slate-400 font-bold uppercase tracking-[0.2em] text-[10px] opacity-70">{{ supabase.user()?.email }}</p>
+                  <p class="text-indigo-400/60 font-black uppercase tracking-[0.2em] text-[10px]">{{ supabase.username() }}</p>
                   
                   <div class="flex gap-3 mt-8 justify-center md:justify-start">
                     @if (supabase.avatarUrl()) {
@@ -443,7 +451,7 @@ import { ImageUtils } from '../utils/image-utils';
                 </div>
               </div>
 
-              <button (click)="supabase.signOut(); showAccountManager = false" 
+              <button (click)="logout()" 
                 class="w-full py-5 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-2xl font-black uppercase tracking-[0.2em] hover:bg-rose-500/20 transition-all shadow-xl">
                 Esci dall'Account
               </button>
@@ -724,6 +732,7 @@ export class HomeViewComponent implements OnInit {
   authEmail = '';
   authPassword = '';
   authError = '';
+  authSuccess = '';
   loadingAuth = false;
   uploadingPhoto = false; // Already present, but ensuring it's here
 
@@ -784,55 +793,96 @@ export class HomeViewComponent implements OnInit {
   toggleAuth() {
     this.showAuth = !this.showAuth;
     this.authError = '';
+    this.authSuccess = '';
   }
 
   toggleAuthMode() {
     this.authMode = this.authMode === 'login' ? 'register' : 'login';
     this.authError = '';
+    this.authSuccess = '';
   }
 
   async handleAuth(e: Event) {
     e.preventDefault();
     this.loadingAuth = true;
     this.authError = '';
+    this.authSuccess = ''; // Assicurati di avere questa proprietà nel componente
+    console.log('HomeView: Inizio procedura auth', this.authMode);
 
     try {
-      let error: any = null;
-      let data: any = null;
+      let res: any = null;
 
       if (this.authMode === 'login') {
-        const res = await this.supabase.signInWithNickname(this.authNickname, this.authPassword);
-        error = res.error;
-        data = res.data;
+        res = await this.supabase.authService.signIn(this.authNickname, this.authPassword);
       } else {
-        const res = await this.supabase.signUp(this.authEmail, this.authPassword, this.authNickname);
-        error = res.error;
-        data = res.data;
+        // Registrazione
+        res = await this.supabase.authService.signUp(this.authEmail, this.authPassword, this.authNickname);
       }
+
+      const { data, error } = res;
 
       if (error) {
-        this.authError = error.message;
+        console.error('HomeView: Errore durante auth:', error);
+        let msg = error.message || 'Si è verificato un errore.';
+
+        // Traduzioni errori stile Number-main
+        if (msg.includes('Invalid login credentials')) {
+          msg = 'Credenziali non valide. Verifica nickname e password.';
+        } else if (msg.includes('User already registered')) {
+          msg = 'Email già registrata. Prova ad accedere!';
+        } else if (msg.includes('Password should be at least')) {
+          msg = 'La password deve avere almeno 6 caratteri.';
+        } else if (msg.includes('Email not confirmed')) {
+          msg = 'Email non confermata. Controlla la tua posta elettronica.';
+        } else if (msg.includes('Nickname già in uso')) {
+          msg = 'Questo nickname è già stato preso. Scegline un altro!';
+        }
+
+        this.authError = msg;
       } else {
-        // Success Logic
-        this.showAuth = false;
+        // Successo
+        if (this.authMode === 'register' && !data?.session) {
+          this.authSuccess = 'Account creato! Ti abbiamo inviato un\'email di conferma. Clicca sul link per attivare l\'account.';
+          this.authError = '';
+        } else {
+          // Login o registrazione con auto-conferma
+          this.showAuth = false;
 
-        // Reset Form
-        this.authNickname = '';
-        this.authEmail = '';
-        this.authPassword = '';
-        this.authError = '';
+          // Caricamento profilo e dati
+          await this.supabase.loadUserProfile();
+          await this.loadUserStats();
+          await this.loadUserAssets();
 
-        // Load Profile, Stats & Assets
-        await this.supabase.loadUserProfile();
-        await this.loadUserStats();
-        await this.loadUserAssets();
+          // Reset Form
+          this.authNickname = '';
+          this.authEmail = '';
+          this.authPassword = '';
+          this.authError = '';
+          console.log('HomeView: Login completato con successo');
+        }
       }
     } catch (err: any) {
-      this.authError = 'Errore imprevisto durante l\'autenticazione';
-      console.error('Auth Error:', err);
+      this.authError = 'Errore di connessione al database.';
+      console.error('HomeView: Critical Auth Error:', err);
     } finally {
       this.loadingAuth = false;
     }
+  }
+
+  async logout() {
+    await this.supabase.signOut();
+    this.showAccountManager = false;
+    // Reset local stats
+    this.userStats = {
+      gamesPlayed: 0,
+      gamesWon: 0,
+      winRate: 0,
+      totalPoints: 0,
+      achievements: [],
+      purchases: [],
+      downloads: []
+    };
+    console.log('HomeView: Logout effettuato');
   }
 
   openCareer() {

@@ -12,8 +12,6 @@ export class SupabaseService {
     avatarUrl = signal<string | null>(null);
     loading = signal<boolean>(true);
 
-    // Inserimento URL fornito dall'utente. 
-    // La Anon Key verrà chiesta o cercata nelle variabili d'ambiente.
     private supabaseUrl = 'https://xxvlfbozkveeydritfeo.supabase.co';
     private supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh4dmxmYm96a3ZlZXlkcml0ZmVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5MDAyOTYsImV4cCI6MjA4NjQ3NjI5Nn0.P43jKtqWYzvBoBcW69BUWssCb68nU5m6zw03PdRf1vs';
 
@@ -40,7 +38,7 @@ export class SupabaseService {
             this.avatarUrl.set(null);
             return;
         }
-        const { data } = await this.supabase.from('profiles').select('username, avatar_url').eq('id', uid).single();
+        const { data } = await this.supabase.from('profiles').select('username, avatar_url').eq('id', uid).maybeSingle();
         this.username.set(data?.username ?? null);
         this.avatarUrl.set(data?.avatar_url ?? null);
     }
@@ -56,64 +54,107 @@ export class SupabaseService {
         return this.supabase;
     }
 
-    async signUp(email: string, pass: string, nickname: string) {
-        const res = await this.supabase.auth.signUp({ email, password: pass });
-        if (res.data.user) {
-            await this.supabase.from('profiles').upsert({
-                id: res.data.user.id,
-                username: nickname,
-                email: email
+    // --- AUTH SERVICE (Modelled after Number-main) ---
+    authService = {
+        signUp: async (email: string, pass: string, nickname: string) => {
+            console.log('AuthService: Tentativo registrazione per', nickname);
+
+            // 1. Verifica disponibilità nickname PRIMA della registrazione
+            const { data: existing } = await this.supabase
+                .from('profiles')
+                .select('username, nickname')
+                .or(`username.ilike.${nickname},nickname.ilike.${nickname}`)
+                .maybeSingle();
+
+            if (existing) {
+                return { data: { user: null, session: null }, error: { message: `Il nome "${nickname}" è già in uso.` } as any };
+            }
+
+            // 2. Registrazione Auth
+            const res = await this.supabase.auth.signUp({
+                email,
+                password: pass,
+                options: { data: { username: nickname } }
             });
+
+            if (res.error) return res;
+
+            // 3. Sync manuale profilo (Double Safety)
+            if (res.data.user) {
+                await this.supabase.from('profiles').upsert({
+                    id: res.data.user.id,
+                    username: nickname,
+                    nickname: nickname,
+                    email: email
+                });
+            }
+
+            return res;
+        },
+
+        signIn: async (nickname: string, pass: string) => {
+            console.log('AuthService: Login per', nickname);
+
+            // A. Risolvi email da nickname
+            const { data: profile, error: lookupError } = await this.supabase
+                .from('profiles')
+                .select('email')
+                .or(`username.eq.${nickname},nickname.eq.${nickname}`)
+                .maybeSingle();
+
+            if (lookupError) return { data: null, error: lookupError };
+            if (!profile) return { data: null, error: { message: 'Operatore non trovato.' } as any };
+
+            // B. Login con email
+            return await this.supabase.auth.signInWithPassword({
+                email: profile.email,
+                password: pass
+            });
+        },
+
+        signOut: async () => {
+            await this.supabase.auth.signOut();
+            this.user.set(null);
+            this.username.set(null);
+            this.avatarUrl.set(null);
         }
-        return res;
-    }
+    };
 
-    async signIn(email: string, pass: string) {
-        return await this.supabase.auth.signInWithPassword({ email, password: pass });
-    }
+    // --- PROFILE & CAREER SERVICE (Modelled after Number-main) ---
+    profileService = {
+        getProfile: async (uid: string) => {
+            const { data, error } = await this.supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', uid)
+                .maybeSingle();
+            return { data, error };
+        },
 
-    async signInWithNickname(nickname: string, pass: string) {
-        const { data, error } = await this.supabase
-            .from('profiles')
-            .select('email')
-            .eq('username', nickname)
-            .single();
+        getCareerProgress: async (uid: string) => {
+            const { data, error } = await this.supabase
+                .from('career_progress')
+                .select('*')
+                .eq('user_id', uid)
+                .maybeSingle();
 
-        if (error || !data) {
-            return { data: null, error: { message: 'Nickname non trovato' } as any };
+            if (!data && !error) {
+                // Crea record di default se manca
+                const def = { user_id: uid, chess_level: 1, checkers_level: 1, total_points: 0 };
+                const { data: inserted } = await this.supabase.from('career_progress').insert(def).select().maybeSingle();
+                return { data: inserted || def, error: null };
+            }
+            return { data, error };
         }
-        return await this.signIn(data.email, pass);
-    }
+    };
 
-    async signOut() {
-        await this.supabase.auth.signOut();
-    }
-
-    // --- CAREER LOGIC ---
-
+    // For backward compatibility while refactoring components
+    async signUp(email: string, pass: string, nickname: string) { return this.authService.signUp(email, pass, nickname); }
+    async signInWithNickname(nickname: string, pass: string) { return this.authService.signIn(nickname, pass); }
+    async signOut() { return this.authService.signOut(); }
     async getCareerProgress() {
-        const userId = this.user()?.id;
-        if (!userId) return null;
-
-        const { data, error } = await this.supabase
-            .from('career_progress')
-            .select('*')
-            .eq('user_id', userId)
-            .single();
-
-        if (error && error.code === 'PGRST116') {
-            // No record found, create default
-            const defaultProgress = {
-                user_id: userId,
-                chess_level: 1,
-                checkers_level: 1,
-                total_points: 0
-            };
-            await this.supabase.from('career_progress').insert(defaultProgress);
-            return defaultProgress;
-        }
-
-        return data;
+        const { data } = await this.profileService.getCareerProgress(this.user()?.id || '');
+        return data as any;
     }
 
     async saveCareerGame(type: 'chess' | 'checkers', level: number, state: any) {
@@ -163,80 +204,52 @@ export class SupabaseService {
         await this.supabase.from('career_progress').update({ current_game_state: null }).eq('user_id', userId);
     }
 
-    // --- ASSETS / SETUP LOGIC ---
-
-    /**
-     * Updates the user's profile with the new asset URL for a specific type.
-     * @param assetType e.g., 'board', 'p_w', 'k_b'
-     * @param url The public URL of the asset (uploaded or from library)
-     */
     async saveUserAssetPreference(assetType: string, url: string) {
         const userId = this.user()?.id;
         if (!userId) return;
 
-        // Fetch current assets to merge
-        const { data: profile } = await this.client
+        const { data: profile } = await this.supabase
             .from('profiles')
             .select('active_assets')
             .eq('id', userId)
-            .single();
+            .maybeSingle();
 
         const currentAssets = profile?.active_assets || {};
-
-        // Update specific asset
         currentAssets[assetType] = url;
 
-        // Save back
-        const { error } = await this.client
+        await this.supabase
             .from('profiles')
             .update({ active_assets: currentAssets })
             .eq('id', userId);
-
-        if (error) {
-            console.error('Error saving asset preference:', error);
-            throw error;
-        }
     }
 
-    /**
-     * Retrieves the user's active assets configuration.
-     */
     async getUserAssetPreferences() {
         const userId = this.user()?.id;
         if (!userId) return {};
 
-        const { data } = await this.client
+        const { data } = await this.supabase
             .from('profiles')
             .select('active_assets')
             .eq('id', userId)
-            .single();
+            .maybeSingle();
 
         return data?.active_assets || {};
     }
 
-    /**
-     * Uploads a file to the 'custom_assets' bucket and returns the public URL.
-     */
     async uploadCustomAssetFile(file: File, assetType: string): Promise<string> {
         const userId = this.user()?.id;
         if (!userId) throw new Error('User not logged in');
 
-        // Path: userId/assetType.ext (Overwrite existing)
         const fileExt = file.name.split('.').pop() || 'glb';
         const filePath = `${userId}/${assetType}.${fileExt}`;
 
-        const { error: uploadError } = await this.client.storage
+        const { error: uploadError } = await this.supabase.storage
             .from('custom_assets')
             .upload(filePath, file, { upsert: true });
 
-        if (uploadError) {
-            if (uploadError.message.includes('Bucket not found')) {
-                throw new Error("Manca il bucket 'custom_assets'. Crealo su Supabase.");
-            }
-            throw uploadError;
-        }
+        if (uploadError) throw uploadError;
 
-        const { data } = this.client.storage
+        const { data } = this.supabase.storage
             .from('custom_assets')
             .getPublicUrl(filePath);
 
