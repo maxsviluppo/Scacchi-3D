@@ -9,7 +9,7 @@ import { environment } from '../environments/environment';
 export class AiService {
   private geminiAI: GoogleGenAI | null = null;
   private aiProvider: 'gemini' | 'deepseek' | 'local' = 'local';
-  private model = 'gemini-2.0-flash-exp'; // Modello gratuito più veloce
+  private modelName = 'gemini-2.0-flash-exp';
   private quotaExceeded = false;
 
   constructor() {
@@ -69,24 +69,31 @@ export class AiService {
       const prompt = this.buildPrompt(fen, validMoves, mode, level);
 
       const response = await this.geminiAI.models.generateContent({
-        model: this.model,
+        model: this.modelName,
         contents: prompt,
         config: {
           temperature: level < 40 ? 0.7 : 0.1,
-          maxOutputTokens: 50, // Risposta breve = più veloce
+          maxOutputTokens: 50,
         }
       });
 
       const text = response.text;
-      if (!text) return null;
 
+      console.log('🤖 AI Raw Response:', text);
+
+      if (!text) {
+        console.warn('⚠️ AI: Nessun testo restituito da Gemini');
+        return null;
+      }
+
+      console.log('🤖 AI Parsed Text:', text);
       return this.parseMove(text, validMoves);
     } catch (e: any) {
-      if (e.status === 429) {
+      if (e.status === 429 || (e.message && e.message.includes('429'))) {
         this.quotaExceeded = true;
         console.warn('⚠️ Quota Gemini esaurita (1500/giorno). Passo al motore locale.');
       } else {
-        console.error('❌ Errore Gemini:', e.message);
+        console.error('❌ Errore Gemini:', e.message || e);
       }
       return null;
     }

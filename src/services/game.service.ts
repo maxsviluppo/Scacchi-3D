@@ -15,6 +15,7 @@ export type PlayerMode = 'ai' | 'local' | 'online' | 'career';
 })
 export class GameService {
   private aiService = inject(AiService);
+  private supabase = inject(SupabaseService);
 
   // App Navigation
   viewState = signal<AppView>('home');
@@ -54,6 +55,33 @@ export class GameService {
   // Actions
   setPieceStyle(style: PieceStyle) {
     this.pieceStyle.set(style);
+  }
+
+  async loadUserAssets() {
+    if (!this.supabase.user()) return;
+
+    try {
+      const assets = await this.supabase.getUserAssetPreferences();
+      if (assets && Object.keys(assets).length > 0) {
+        let hasCustomPieces = false;
+
+        this.customMeshUrls.update(current => {
+          const updated = { ...current };
+          Object.keys(assets).forEach(key => {
+            updated[key] = assets[key];
+            if (key !== 'board') hasCustomPieces = true;
+          });
+          return updated;
+        });
+
+        if (hasCustomPieces) {
+          this.setPieceStyle('custom');
+        }
+        console.log('✅ GameService: Custom Assets Synchronized', assets);
+      }
+    } catch (e) {
+      console.error('❌ GameService: Error syncing assets', e);
+    }
   }
 
   toggleOriginalTexture(value: boolean) {
@@ -269,7 +297,6 @@ export class GameService {
     }
   }
 
-  private supabase = inject(SupabaseService);
 
   private saveCareerState() {
     this.supabase.saveCareerGame(this.gameMode(), this.careerLevel(), {
@@ -310,10 +337,12 @@ export class GameService {
 
       // --- FALLBACK 1: LOCAL MINIMAX ENGINE ---
       if (!chosenMove) {
-        console.warn('Gemini Offline. Utilizzo Motore Locale (Minimax + PST)...');
+        console.warn('🤖 AI: Gemini Offline/Quota Esaurita. Utilizzo Motore Locale (Minimax)...');
         this.gameStatus.set('Calcolo mossa locale...');
         const depth = level < 30 ? 2 : (level < 70 ? 3 : 4);
+        console.log(`🤖 AI local: Calcolo profondità ${depth}...`);
         chosenMove = ChessUtils.getBestMoveLocal(this.board(), this.gameMode(), depth, 'b');
+        console.log('🤖 AI local move:', chosenMove);
       }
 
       // --- FALLBACK 2: RANDOM PREVENT CRASH ---

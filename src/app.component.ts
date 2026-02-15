@@ -1,15 +1,17 @@
-import { Component, inject, ViewChild } from '@angular/core';
+import { Component, inject, ViewChild, effect } from '@angular/core';
 import { ChessSceneComponent } from './components/chess-scene.component';
 import { HomeViewComponent } from './components/home-view.component';
 import { MarketplaceViewComponent } from './components/marketplace-view.component';
 import { CareerViewComponent } from './components/career-view.component';
+import { SupabaseService } from './services/supabase.service';
 import { GameService } from './services/game.service';
 import { PieceType, Position } from './logic/chess-types';
+import { AdminViewComponent } from './components/admin-view.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [ChessSceneComponent, HomeViewComponent, MarketplaceViewComponent, CareerViewComponent],
+  imports: [ChessSceneComponent, HomeViewComponent, MarketplaceViewComponent, CareerViewComponent, AdminViewComponent],
   template: `
     <div class="h-screen w-full relative overflow-hidden bg-slate-950 main-container">
       
@@ -23,8 +25,7 @@ import { PieceType, Position } from './logic/chess-types';
       <!-- Views Overlays -->
       @if (gameService.viewState() === 'home' || gameService.viewState() === 'settings') {
         <app-home-view 
-          [showSetup]="gameService.viewState() === 'settings'"
-          (fileSelected)="onFileSelected($event.event, $event.type, $event.colorSuffix)">
+          [showSetup]="gameService.viewState() === 'settings'">
         </app-home-view>
       }
 
@@ -34,6 +35,10 @@ import { PieceType, Position } from './logic/chess-types';
 
       @if (gameService.viewState() === 'career') {
         <app-career-view></app-career-view>
+      }
+
+      @if (gameService.viewState() === 'admin') {
+        <app-admin-view></app-admin-view>
       }
 
       @if (gameService.viewState() === 'game') {
@@ -135,14 +140,22 @@ import { PieceType, Position } from './logic/chess-types';
   `]
 })
 export class AppComponent {
-  gameService = inject(GameService);
+  gameService: GameService = inject(GameService);
+  supabase = inject(SupabaseService);
   @ViewChild(ChessSceneComponent) scene!: ChessSceneComponent;
 
   showAssets = false;
   showMenu = false;
 
   constructor() {
-    // Component initialization
+    // Persistent assets loading logic
+    effect(async () => {
+      const user = this.supabase.user();
+      if (user) {
+        console.log('AppComponent: User detected, loading persistent assets...');
+        await this.gameService.loadUserAssets();
+      }
+    });
   }
 
   // Chess Pieces
@@ -187,31 +200,4 @@ export class AppComponent {
    * type: The piece type ('p', 'k', 'cm'...) or 'board'
    * colorSuffix: 'w' or 'b' (optional, specific for pieces)
    */
-  onFileSelected(event: Event, type: string, colorSuffix?: string) {
-    const input = event.target as HTMLInputElement;
-    if (input.files && input.files[0]) {
-      const file = input.files[0];
-
-      // Construct the key for the scene loader
-      // If board: key='board'
-      // If piece with color: key='p_w' or 'p_b'
-      // If generic (legacy fallback): key='p'
-
-      let key = type;
-      if (type !== 'board' && colorSuffix) {
-        key = `${type}_${colorSuffix}`;
-      }
-
-      // Pass file to scene component to load
-      this.scene.loadCustomModel(file, key);
-
-      // Update local status
-      this.loadedStatus[key] = true;
-
-      // Auto-switch to custom style
-      if (type !== 'board') {
-        this.gameService.setPieceStyle('custom');
-      }
-    }
-  }
 }

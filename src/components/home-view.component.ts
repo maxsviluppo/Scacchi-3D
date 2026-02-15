@@ -40,7 +40,7 @@ import { ImageUtils } from '../utils/image-utils';
             </h1>
             @if (supabase.user() && supabase.username()) {
               <div class="mt-2 animate-fade-in">
-                <p class="text-[10px] md:text-[11px] font-black text-orange-400/80 uppercase tracking-[0.4em]">
+                <p class="text-[10px] md:text-[11px] font-black text-indigo-400 uppercase tracking-[0.4em]">
                   {{ supabase.username() }}
                 </p>
               </div>
@@ -77,7 +77,7 @@ import { ImageUtils } from '../utils/image-utils';
           </button>
           
           @if (supabase.user() && supabase.username()) {
-            <span class="text-[9px] font-black text-indigo-400/60 uppercase tracking-[0.2em] opacity-0 group-hover/auth:opacity-100 transition-opacity duration-300">
+            <span class="text-[9px] font-black text-indigo-400 uppercase tracking-[0.2em] opacity-0 group-hover/auth:opacity-100 transition-opacity duration-300">
               {{ supabase.username() }}
             </span>
           }
@@ -211,29 +211,31 @@ import { ImageUtils } from '../utils/image-utils';
             </button>
           </div>
 
-          <!-- Shop/Marketplace Card (Soon) -->
-          <div class="relative group">
-            <div class="absolute inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm rounded-[2rem] opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none">
-              <div class="px-6 py-2 bg-yellow-500 rounded-full shadow-[0_0_30px_rgba(249,115,22,0.4)]">
-                <span class="text-black font-black uppercase text-sm tracking-[0.2em]">Soon</span>
+          <!-- Shop/Marketplace Card -->
+          <button (click)="gameService.setView('marketplace')"
+            class="group relative overflow-hidden bg-slate-900/40 backdrop-blur-2xl border border-white/5 hover:border-yellow-500/30 rounded-[2rem] p-6 md:p-8 transition-all hover:scale-[1.02] shadow-2xl">
+            <div class="absolute inset-0 bg-gradient-to-br from-yellow-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <div class="relative flex flex-col items-center text-center gap-4">
+              <div class="w-16 h-16 rounded-2xl bg-yellow-500/20 flex items-center justify-center border border-yellow-500/20 group-hover:bg-yellow-500/30 transition-all">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-8 h-8 text-yellow-400">
+                  <path d="M21 8l-2-2H5L3 8v10a2 2 0 002 2h14a2 2 0 002-2V8z"></path>
+                  <path d="M3 8h18M10 12h4"></path>
+                </svg>
+              </div>
+              <div>
+                <h2 class="text-2xl font-black text-white uppercase tracking-tighter">Shop</h2>
+                <p class="text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em] mt-1">Skin & Assets</p>
               </div>
             </div>
-            <button class="w-full relative overflow-hidden bg-slate-900/20 backdrop-blur-2xl border border-white/5 rounded-[2rem] p-6 md:p-8 transition-all opacity-40 cursor-not-allowed">
-              <div class="relative flex flex-col items-center text-center gap-4">
-                <div class="w-16 h-16 rounded-2xl bg-slate-800 flex items-center justify-center border border-white/5">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-8 h-8 text-slate-500">
-                    <path d="M21 8l-2-2H5L3 8v10a2 2 0 002 2h14a2 2 0 002-2V8z"></path>
-                    <path d="M3 8h18M10 12h4"></path>
-                  </svg>
-                </div>
-                <div>
-                  <h2 class="text-2xl font-black text-slate-400 uppercase tracking-tighter">Shop</h2>
-                  <p class="text-slate-600 text-[10px] font-bold uppercase tracking-[0.2em] mt-1">Skin & Assets</p>
-                </div>
-              </div>
-            </button>
-          </div>
+          </button>
         </div>
+      </div>
+
+      <!-- Footer with Admin Link -->
+      <div class="relative z-10 mt-auto pt-8 pb-4 flex justify-center opacity-30 hover:opacity-100 transition-opacity">
+        <button (click)="openAdminLogin()" class="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] hover:text-indigo-400 transition-colors">
+          Area Amministrazione
+        </button>
       </div>
 
       <!-- Auth Modal -->
@@ -248,10 +250,10 @@ import { ImageUtils } from '../utils/image-utils';
             <div class="relative z-10 p-8 md:p-12">
               <div class="flex flex-col items-center text-center mb-10">
                 <h2 class="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-200 to-white tracking-tight uppercase mb-2">
-                  {{ authMode === 'login' ? 'Bentornato' : 'Inizia Ora' }}
+                  {{ authMode === 'admin' ? 'Pannello Admin' : (authMode === 'login' ? 'Bentornato' : 'Inizia Ora') }}
                 </h2>
                 <p class="text-indigo-300/80 text-sm font-bold uppercase tracking-[0.2em]">
-                  {{ authMode === 'login' ? 'Accedi al Regno' : 'Unisciti alla Leggenda' }}
+                  {{ authMode === 'admin' ? 'Accesso Riservato' : (authMode === 'login' ? 'Accedi al Regno' : 'Unisciti alla Leggenda') }}
                 </p>
               </div>
 
@@ -286,7 +288,7 @@ import { ImageUtils } from '../utils/image-utils';
 
                 <button type="submit" [disabled]="loadingAuth"
                   class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-black py-5 text-lg rounded-2xl shadow-xl transition-all active:scale-[0.98] uppercase tracking-widest mt-6">
-                  {{ loadingAuth ? 'Caricamento...' : (authMode === 'login' ? 'Accedi' : 'Registrati') }}
+                  {{ loadingAuth ? 'Caricamento...' : (authMode === 'admin' ? 'Accedi Amministratore' : (authMode === 'login' ? 'Accedi' : 'Registrati')) }}
                 </button>
               </form>
 
@@ -513,15 +515,11 @@ import { ImageUtils } from '../utils/image-utils';
 
             <!-- Navigation Tabs -->
             <div class="flex border-b border-white/10 px-8">
-              <button (click)="setupTab = 'upload'" class="px-6 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all"
-                [class.border-blue-500]="setupTab === 'upload'" [class.text-white]="setupTab === 'upload'"
-                [class.border-transparent]="setupTab !== 'upload'" [class.text-slate-500]="setupTab !== 'upload'">
-                Carica Tuoi File
+              <button class="px-6 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all border-blue-500 text-white">
+                Configurazione Pezzi
               </button>
-              <button (click)="setupTab = 'library'" class="px-6 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all"
-                [class.border-purple-500]="setupTab === 'library'" [class.text-white]="setupTab === 'library'"
-                [class.border-transparent]="setupTab !== 'library'" [class.text-slate-500]="setupTab !== 'library'">
-                Libreria Premium
+              <button (click)="gameService.setView('marketplace'); showSetup = false" class="px-6 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all border-transparent text-slate-500 hover:text-indigo-400">
+                Visita lo Shop ✨
               </button>
             </div>
 
@@ -727,7 +725,7 @@ export class HomeViewComponent implements OnInit {
 
   // Auth State
   showAuth = false;
-  authMode: 'login' | 'register' = 'login';
+  authMode: 'login' | 'register' | 'admin' = 'login';
   authNickname = '';
   authEmail = '';
   authPassword = '';
@@ -797,9 +795,22 @@ export class HomeViewComponent implements OnInit {
   }
 
   toggleAuthMode() {
-    this.authMode = this.authMode === 'login' ? 'register' : 'login';
+    if (this.authMode === 'admin') {
+      this.authMode = 'login';
+    } else {
+      this.authMode = this.authMode === 'login' ? 'register' : 'login';
+    }
     this.authError = '';
     this.authSuccess = '';
+  }
+
+  openAdminLogin() {
+    this.authMode = 'admin';
+    this.authNickname = '';
+    this.authPassword = '';
+    this.authError = '';
+    this.authSuccess = '';
+    this.showAuth = true;
   }
 
   async handleAuth(e: Event) {
@@ -810,6 +821,21 @@ export class HomeViewComponent implements OnInit {
     console.log('HomeView: Inizio procedura auth', this.authMode);
 
     try {
+      if (this.authMode === 'admin') {
+        if (this.authNickname === 'admin' && this.authPassword === 'accessometti') {
+          this.authSuccess = 'Benvenuto Admin! Redirect in corso...';
+          setTimeout(() => {
+            this.showAuth = false;
+            this.gameService.setView('admin');
+          }, 1500);
+          return;
+        } else {
+          this.authError = 'Credenziali Admin Errante!';
+          this.loadingAuth = false;
+          return;
+        }
+      }
+
       let res: any = null;
 
       if (this.authMode === 'login') {
@@ -846,18 +872,23 @@ export class HomeViewComponent implements OnInit {
           this.authError = '';
         } else {
           // Login o registrazione con auto-conferma
-          this.showAuth = false;
+          this.authSuccess = 'Accesso in corso...';
+          this.authError = '';
+
+          // FORCED CLOSURE after 2 seconds
+          setTimeout(() => {
+            this.showAuth = false;
+            this.authSuccess = '';
+          }, 2000);
 
           // Caricamento profilo e dati
           await this.supabase.loadUserProfile();
           await this.loadUserStats();
-          await this.loadUserAssets();
 
           // Reset Form
           this.authNickname = '';
           this.authEmail = '';
           this.authPassword = '';
-          this.authError = '';
           console.log('HomeView: Login completato con successo');
         }
       }
@@ -1048,38 +1079,8 @@ export class HomeViewComponent implements OnInit {
       await this.supabase.loadUserProfile();
     }
     await this.loadUserStats();
-    await this.loadUserAssets();
   }
 
-  async loadUserAssets() {
-    if (!this.supabase.user()) return;
-    try {
-      const assets = await this.supabase.getUserAssetPreferences();
-      if (assets) {
-        let hasCustomPieces = false;
-
-        // Update the signal with new object reference to trigger effects
-        this.gameService.customMeshUrls.update(current => {
-          const updated = { ...current };
-          Object.keys(assets).forEach(key => {
-            updated[key] = assets[key];
-            this.loadedStatus[key] = true;
-            if (key !== 'board') hasCustomPieces = true;
-          });
-          return updated;
-        });
-
-        // Auto-switch to custom style if we have custom pieces
-        if (hasCustomPieces && this.gameService.pieceStyle() !== 'custom') {
-          this.gameService.setPieceStyle('custom');
-        }
-
-        console.log('✅ Custom Assets Loaded:', assets);
-      }
-    } catch (e) {
-      console.error('Error loading custom assets:', e);
-    }
-  }
 
   // Setup Tab State
   setupTab: 'upload' | 'library' = 'upload';

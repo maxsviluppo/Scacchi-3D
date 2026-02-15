@@ -430,9 +430,7 @@ export class ChessUtils {
       for (let c = 0; c < 8; c++) {
         const p = board[r][c];
         if (p && p.color === color) {
-          const legals = this.getLegalMoves(board, { r, c } as any, mode);
-          // Note: we use {row: r, col: c} properly
-          const fromPos = { row: r, col: c };
+          const fromPos: Position = { row: r, col: c };
           const legalMoves = this.getLegalMoves(board, fromPos, mode);
           legalMoves.forEach(to => {
             list.push(`${cols[fromPos.col]}${8 - fromPos.row}${cols[to.col]}${8 - to.row}`);
