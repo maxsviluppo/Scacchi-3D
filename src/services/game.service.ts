@@ -41,6 +41,18 @@ export class GameService {
   // Animation State
   lastMove = signal<LastMove | null>(null);
 
+  // Toast System
+  toast = signal<{ message: string, type: 'success' | 'error' | 'info' } | null>(null);
+
+  showToast(message: string, type: 'success' | 'error' | 'info' = 'success') {
+    this.toast.set({ message, type });
+    setTimeout(() => {
+      if (this.toast()?.message === message) {
+        this.toast.set(null);
+      }
+    }, 3000);
+  }
+
   // Computed
   validMoves = computed(() => {
     const pos = this.selectedPos();

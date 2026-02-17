@@ -51,6 +51,37 @@ import { AdminViewComponent } from './components/admin-view.component';
              </svg>
            </button>
         </div>
+
+        <!-- Status Bar -->
+        <div class="absolute top-6 left-1/2 -translate-x-1/2 z-40">
+          <div class="px-6 py-3 bg-slate-900/80 backdrop-blur-md border border-white/10 rounded-full shadow-2xl">
+            <span class="text-xs font-black uppercase tracking-[0.2em] text-indigo-400 animate-pulse">{{ gameService.gameStatus() }}</span>
+          </div>
+        </div>
+
+        <!-- GAME OVER OVERLAY -->
+        @if (gameService.isGameOver()) {
+          <div class="absolute inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-md animate-fade-in">
+             <div class="bg-slate-950 border-2 border-yellow-500/30 rounded-[3rem] p-12 max-w-md w-full text-center shadow-[0_0_100px_rgba(234,179,8,0.2)]">
+                <div class="w-24 h-24 bg-yellow-500/20 rounded-3xl flex items-center justify-center mx-auto mb-8 border border-yellow-500/30">
+                  <span class="text-5xl">🏆</span>
+                </div>
+                <h2 class="text-4xl font-black text-white uppercase tracking-tighter mb-2">Partita Terminata</h2>
+                <p class="text-indigo-400 font-bold uppercase tracking-widest text-sm mb-10">{{ gameService.gameStatus() }}</p>
+                
+                <div class="space-y-4">
+                  <button (click)="gameService.resetGame()" 
+                    class="w-full py-5 bg-gradient-to-r from-yellow-500 to-amber-600 text-black font-black uppercase tracking-[0.2em] rounded-2xl shadow-xl hover:scale-105 active:scale-95 transition-all text-sm">
+                    Rivincita
+                  </button>
+                  <button (click)="gameService.setView('home')" 
+                    class="w-full py-5 bg-slate-800 text-white font-black uppercase tracking-[0.2em] rounded-2xl border border-white/10 hover:bg-slate-700 transition-all text-sm">
+                    Torna al Menu
+                  </button>
+                </div>
+             </div>
+          </div>
+        }
       }
 
       <!-- Shared Components (Modals, etc.) -->
@@ -99,9 +130,38 @@ import { AdminViewComponent } from './components/admin-view.component';
         </div>
       }
 
+      <!-- SHARED TOAST NOTIFICATION -->
+      @if (gameService.toast(); as t) {
+        <div class="fixed bottom-10 left-1/2 -translate-x-1/2 z-[200] animate-toast-in">
+          <div class="px-6 py-4 rounded-2xl shadow-2xl backdrop-blur-xl border flex items-center gap-4 min-w-[300px]"
+               [class.bg-emerald-500/20]="t.type === 'success'" [class.border-emerald-500/50]="t.type === 'success'"
+               [class.bg-rose-500/20]="t.type === 'error'" [class.border-rose-500/50]="t.type === 'error'"
+               [class.bg-blue-500/20]="t.type === 'info'" [class.border-blue-500/50]="t.type === 'info'">
+            
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center text-xl"
+                 [class.bg-emerald-500/20]="t.type === 'success'" [class.text-emerald-400]="t.type === 'success'"
+                 [class.bg-rose-500/20]="t.type === 'error'" [class.text-rose-400]="t.type === 'error'"
+                 [class.bg-blue-500/20]="t.type === 'info'" [class.text-blue-400]="t.type === 'info'">
+              {{ t.type === 'success' ? '✅' : (t.type === 'error' ? '❌' : 'ℹ️') }}
+            </div>
+            
+            <div class="flex flex-col">
+              <span class="text-[10px] font-black uppercase tracking-widest opacity-60">Notifica di Sistema</span>
+              <span class="text-sm font-bold text-white">{{ t.message }}</span>
+            </div>
+          </div>
+        </div>
+      }
+
     </div>
   `,
   styles: [`
+    @keyframes toast-in {
+      from { transform: translate(-50%, 50px); opacity: 0; }
+      to { transform: translate(-50%, 0); opacity: 1; }
+    }
+    .animate-toast-in { animation: toast-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+
     @keyframes float-particle {
       0% { transform: translateY(0) translateX(0); }
       50% { transform: translateY(-20px) translateX(10px); }

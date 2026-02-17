@@ -695,6 +695,8 @@ export class HomeViewComponent implements OnInit {
   @Input() showSetup = false;
   @Output() fileSelected = new EventEmitter<{ event: Event, type: string, colorSuffix?: string }>();
 
+  loadingAssets: Record<string, boolean> = {};
+
   showLocalGameModeSelector = false;
   showAIGameModeSelector = false;
   uploadingPhoto = false;
@@ -997,6 +999,10 @@ export class HomeViewComponent implements OnInit {
   async ngOnInit() {
     if (this.supabase.user()) {
       await this.supabase.loadUserProfile();
+      const prefs = await this.supabase.getUserAssetPreferences();
+      Object.keys(prefs).forEach(k => {
+        this.loadedStatus[k] = true;
+      });
     }
     await this.loadUserStats();
   }
@@ -1069,6 +1075,7 @@ export class HomeViewComponent implements OnInit {
     }
 
     try {
+      this.loadingAssets[key] = true;
       const userId = this.supabase.user()?.id;
       if (userId) {
         const publicUrl = await this.supabase.uploadCustomAssetFile(file, key);
@@ -1076,29 +1083,33 @@ export class HomeViewComponent implements OnInit {
 
         // Update Game Service Signal
         this.gameService.customMeshUrls.update(current => ({ ...current, [key]: publicUrl }));
-        this.loadedStatus[key] = true;
+        this.loadedStatus = { ...this.loadedStatus, [key]: true };
 
         if (type !== 'board') {
           this.gameService.setPieceStyle('custom');
         }
 
+        this.gameService.showToast('Modello caricato con successo! 🎉', 'success');
         this.fileSelected.emit({ event, type, colorSuffix });
       } else {
         // Fallback for Guest (Local only, not persistent)
         const objectUrl = URL.createObjectURL(file);
-        this.gameService.customMeshUrls.update(current => ({ ...current, [key]: objectUrl }));
-        this.loadedStatus[key] = true;
+        this.gameService.customMeshUrls.update(current => ({ ...current, ...{ [key]: objectUrl } }));
+        this.loadedStatus = { ...this.loadedStatus, [key]: true };
 
         if (type !== 'board') {
           this.gameService.setPieceStyle('custom');
         }
 
+        this.gameService.showToast('Anteprima caricata (ospite)', 'info');
         this.fileSelected.emit({ event, type, colorSuffix });
       }
 
     } catch (error: any) {
       console.error('Asset Upload Error:', error);
-      alert(`Errore caricamento: ${error.message}`);
+      this.gameService.showToast(`Errore caricamento: ${error.message}`, 'error');
+    } finally {
+      this.loadingAssets[key] = false;
     }
   }
 }

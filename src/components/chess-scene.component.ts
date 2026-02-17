@@ -103,7 +103,10 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
   }));
 
   // Prevents animations while heavy assets are processing
-  private isLoadingModel = false;
+  private loadingKeys = new Set<string>();
+  private get isLoadingModel() {
+    return this.loadingKeys.size > 0;
+  }
 
   private three: any;
   private stlLoader: any;
@@ -143,7 +146,8 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
         // Track the signal!
         const customUrls = this.gameService.customMeshUrls();
         Object.keys(customUrls).forEach(key => {
-          if (!this.customCache.has(key) && key !== 'board_last_loaded') {
+          const cached = this.customCache.get(key);
+          if ((!cached || cached.url !== customUrls[key]) && key !== 'board_last_loaded') {
             this.loadCustomModelFromUrl(customUrls[key], key);
           }
         });
@@ -205,9 +209,9 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
     if (!this.three || !url) return;
 
     // Prevent double loading
-    if (this.customCache.has(key) || this.isLoadingModel) return;
+    if (this.loadingKeys.has(key)) return;
 
-    this.isLoadingModel = true;
+    this.loadingKeys.add(key);
     try {
       const isGLB = url.toLowerCase().includes('.glb') || url.toLowerCase().includes('.gltf');
       const isSTL = url.toLowerCase().includes('.stl');
@@ -221,12 +225,12 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
       }
 
       if (result && result.geometry) {
-        this.processAndCacheGeometry(result.geometry, result.material, key);
+        this.processAndCacheGeometry(result.geometry, result.material, key, url);
       }
     } catch (e) {
       console.error('Failed to load Model from URL:', url, e);
     } finally {
-      this.isLoadingModel = false;
+      this.loadingKeys.delete(key);
       this.forceRedraw();
     }
   }
@@ -235,7 +239,7 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
     if (!this.three) return;
 
     // START LOCK
-    this.isLoadingModel = true;
+    this.loadingKeys.add(key);
 
     const url = URL.createObjectURL(file);
     const fileName = file.name.toLowerCase();
@@ -252,7 +256,7 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
 
       if (!result || !result.geometry) throw new Error("No geometry found");
 
-      this.processAndCacheGeometry(result.geometry, result.material, key);
+      this.processAndCacheGeometry(result.geometry, result.material, key, url);
 
     } catch (e) {
       console.error('Failed to load Model', e);
@@ -262,12 +266,12 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
       }
 
       // END LOCK
-      this.isLoadingModel = false;
+      this.loadingKeys.delete(key);
       this.forceRedraw();
     }
   }
 
-  private processAndCacheGeometry(geometry: any, material: any, key: string) {
+  private processAndCacheGeometry(geometry: any, material: any, key: string, url: string) {
     // Normalization logic
     geometry.center();
     geometry.computeBoundingBox();
@@ -350,7 +354,7 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
       geometry.translate(0, lift, 0);
       geometry.computeVertexNormals();
 
-      this.customCache.set(key, { geometry, material: material });
+      this.customCache.set(key, { geometry, material, url });
 
       if (this.gameService.pieceStyle() === 'custom') {
         this.gameService.setPieceStyle('custom');
@@ -654,6 +658,10 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
 
   private createPieceMesh(piece: Piece, isSelected: boolean, style: string): any {
     let mesh;
+    if (style === 'custom') {
+      return this.createCustomPiece(piece, isSelected);
+    }
+
     if (piece.type === 'cm' || piece.type === 'ck') {
       mesh = this.createCheckersPiece(piece, isSelected, style);
     } else {
@@ -661,8 +669,6 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
         mesh = this.createClassicPiece(piece, isSelected);
       } else if (style === 'neon') {
         mesh = this.createNeonPiece(piece, isSelected);
-      } else if (style === 'custom') {
-        mesh = this.createCustomPiece(piece, isSelected);
       } else {
         mesh = this.createMinimalPiece(piece, isSelected);
       }
@@ -975,14 +981,14 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
       const selBorderGeo = new this.three.RingGeometry(0.67, 0.72, 4, 1);
       selBorderGeo.rotateX(-Math.PI / 2);
       selBorderGeo.rotateY(Math.PI / 4);
-      
-      const selMat = new this.three.MeshBasicMaterial({ 
+
+      const selMat = new this.three.MeshBasicMaterial({
         color: 0xffffff, // Pure White
-        transparent: true, 
-        opacity: 1.0, 
-        side: this.three.DoubleSide 
+        transparent: true,
+        opacity: 1.0,
+        side: this.three.DoubleSide
       });
-      
+
       const selMesh = new this.three.Mesh(selBorderGeo, selMat);
       selMesh.position.set(selected.col - 3.5, 0.112, selected.row - 3.5);
       this.highlightsGroup.add(selMesh);
@@ -1009,13 +1015,13 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
     const moveBorderGeo = new this.three.RingGeometry(0.66, 0.71, 4, 1);
     moveBorderGeo.rotateX(-Math.PI / 2);
     moveBorderGeo.rotateY(Math.PI / 4);
-    
+
     // Stark White Core
-    const moveMat = new this.three.MeshBasicMaterial({ 
-      color: 0xffffff, 
-      transparent: true, 
-      opacity: 1.0, 
-      side: this.three.DoubleSide 
+    const moveMat = new this.three.MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 1.0,
+      side: this.three.DoubleSide
     });
 
     // Outer Bloom Layer
@@ -1027,10 +1033,10 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
     // Ground Spread (Ambient)
     const glowGeo = new this.three.PlaneGeometry(1.15, 1.15);
     glowGeo.rotateX(-Math.PI / 2);
-    const glowMat = new this.three.MeshBasicMaterial({ 
-      color: 0xffffff, 
-      transparent: true, 
-      opacity: 0.1 
+    const glowMat = new this.three.MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.1
     });
 
     moves.forEach(m => {
