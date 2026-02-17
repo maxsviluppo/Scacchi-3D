@@ -8,6 +8,7 @@ import { FormsModule } from '@angular/forms';
 interface AdminUser {
   id: string;
   username: string;
+  nickname?: string;
   email: string;
   created_at: string;
   is_active?: boolean;
@@ -55,7 +56,7 @@ interface KitAssetSlot {
         
         <!-- Sidebar Navigation (Responsive) -->
         <div class="w-full md:w-64 bg-slate-900/50 border-b md:border-r border-white/5 p-4 md:p-6 flex flex-row md:flex-col gap-2 overflow-x-auto scrollbar-hide shrink-0">
-          <button (click)="activeTab = 'users'" 
+          <button (click)="activeTab = 'users'; fetchUsers()" 
             [class.bg-indigo-600]="activeTab === 'users'"
             [class.text-white]="activeTab === 'users'"
             [class.text-slate-500]="activeTab !== 'users'"
@@ -88,12 +89,30 @@ interface KitAssetSlot {
               <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
                 <div>
                   <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tighter">Utenti Iscritti</h2>
-                  <p class="text-slate-500 text-xs font-bold uppercase tracking-widest mt-1">Totale Account: {{ users.length }}</p>
+                  <div class="flex items-center gap-3 mt-1">
+                    <p class="text-slate-500 text-xs font-bold uppercase tracking-widest">Totale Account: {{ users.length }}</p>
+                    @if (loading) {
+                      <span class="text-[10px] text-indigo-400 font-bold uppercase animate-pulse">Caricamento in corso...</span>
+                    }
+                  </div>
                 </div>
-                <button (click)="fetchUsers()" class="px-6 py-3 bg-slate-800 hover:bg-slate-700 rounded-xl text-[10px] font-black uppercase tracking-widest border border-white/10 transition-all flex items-center gap-2">
-                  <span>🔄</span> Aggiorna Lista
+                <button (click)="fetchUsers()" [disabled]="loading" class="px-6 py-3 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 rounded-xl text-[10px] font-black uppercase tracking-widest border border-white/10 transition-all flex items-center gap-2">
+                  <span>{{ loading ? '⏳' : '🔄' }}</span> Aggiorna Lista
                 </button>
               </div>
+
+              @if (fetchError) {
+                <div class="p-6 bg-rose-500/10 border-2 border-rose-500/20 rounded-[2rem] text-rose-500 animate-shake">
+                  <div class="flex items-center gap-4">
+                    <span class="text-2xl">⚠️</span>
+                    <div>
+                      <h3 class="font-black uppercase tracking-tighter">Errore di Sincronizzazione</h3>
+                      <p class="text-xs font-bold opacity-80 mt-1">{{ fetchError }}</p>
+                      <p class="text-[10px] mt-2 italic">Verifica le policy RLS della tabella 'profiles' su Supabase.</p>
+                    </div>
+                  </div>
+                </div>
+              }
 
               <!-- Table -->
               <div class="bg-slate-900/40 border border-white/5 rounded-[2rem] overflow-hidden shadow-2xl">
@@ -112,23 +131,40 @@ interface KitAssetSlot {
                       @for (user of users; track user.id) {
                         <tr class="border-b border-white/5 hover:bg-white/5 transition-colors group">
                           <td class="px-6 py-4">
-                            <span class="font-bold text-white group-hover:text-indigo-400 transition-colors">{{ user.username }}</span>
+                            <div class="flex flex-col">
+                              <span class="font-bold text-white group-hover:text-indigo-400 transition-colors uppercase tracking-tight">{{ user.nickname || user.username }}</span>
+                              @if (user.nickname && user.username !== user.nickname) {
+                                <span class="text-[9px] text-slate-600 font-bold uppercase tracking-widest">@{{ user.username }}</span>
+                              }
+                            </div>
                           </td>
                           <td class="px-6 py-4">
-                            <span class="text-slate-400 text-sm">{{ user.email }}</span>
+                            <span class="text-slate-400 text-sm font-medium">{{ user.email }}</span>
                           </td>
                           <td class="px-6 py-4">
-                            <span class="text-slate-500 text-[10px] uppercase font-bold">{{ user.created_at | date:'dd/MM/yyyy' }}</span>
+                            <span class="text-slate-500 text-[10px] uppercase font-bold">{{ user.created_at | date:'dd/MM/yyyy HH:mm' }}</span>
                           </td>
                           <td class="px-6 py-4">
-                            <span class="px-2 py-1 rounded text-[9px] font-black uppercase tracking-wider"
+                            <span class="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider shadow-sm"
                                   [class.bg-emerald-500/10]="user.is_active" [class.text-emerald-400]="user.is_active"
-                                  [class.bg-rose-500/10]="!user.is_active" [class.text-rose-400]="!user.is_active">
-                              {{ user.is_active ? 'Attivo' : 'Non Attivo' }}
+                                  [class.border]="user.is_active" [class.border-emerald-500/20]="user.is_active"
+                                  [class.bg-rose-500/10]="!user.is_active" [class.text-rose-400]="!user.is_active"
+                                  [class.border]="!user.is_active" [class.border-rose-500/20]="!user.is_active">
+                              {{ user.is_active ? 'Attivo' : 'Sospeso' }}
                             </span>
                           </td>
                           <td class="px-6 py-4 text-right">
-                            <button (click)="deleteUser(user.id)" class="px-4 py-2 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white rounded-lg text-[9px] font-black uppercase tracking-widest transition-all">Elimina</button>
+                            <button (click)="deleteUser(user.id)" class="px-4 py-2 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white rounded-lg text-[9px] font-black uppercase tracking-widest transition-all shadow-lg active:scale-95">Elimina</button>
+                          </td>
+                        </tr>
+                      } @empty {
+                        <tr>
+                          <td colspan="5" class="px-6 py-20 text-center">
+                            <div class="flex flex-col items-center opacity-40">
+                              <span class="text-5xl mb-4">👻</span>
+                              <p class="text-sm font-black uppercase tracking-widest text-slate-500">Nessun utente trovato</p>
+                              <p class="text-[10px] font-bold uppercase tracking-widest text-slate-600 mt-2">La tabella 'profiles' sembra essere vuota</p>
+                            </div>
                           </td>
                         </tr>
                       }
@@ -288,6 +324,7 @@ export class AdminViewComponent implements OnInit {
   activeTab: 'users' | 'kits' | 'approval' = 'users';
   users: AdminUser[] = [];
   loading = false;
+  fetchError = '';
   uploading = false;
 
   // Kit Management State
@@ -309,20 +346,25 @@ export class AdminViewComponent implements OnInit {
 
   async fetchUsers() {
     this.loading = true;
+    this.fetchError = '';
     try {
       const { data, error } = await this.supabase.client
         .from('profiles')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (!error && data) {
+      if (error) {
+        this.fetchError = error.message;
+        console.error('Supabase Error:', error);
+      } else if (data) {
         this.users = data.map(p => ({
           ...p,
-          is_active: true // For now assumed active
+          is_active: true
         }));
       }
-    } catch (e) {
-      console.error('Error fetching users', e);
+    } catch (e: any) {
+      this.fetchError = e.message || 'Errore di connessione sconosciuto.';
+      console.error('System Exception:', e);
     } finally {
       this.loading = false;
     }

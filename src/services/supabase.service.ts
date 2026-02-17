@@ -21,40 +21,62 @@ export class SupabaseService {
     }
 
     private async initAuth() {
+        // 1. Get initial session
         const { data: { session } } = await this.supabase.auth.getSession();
-        this.user.set(session?.user ?? null);
-        await this.fetchProfile(session?.user?.id);
+        const initialUser = session?.user ?? null;
+        this.user.set(initialUser);
+
+        if (initialUser) {
+            this.fetchProfile(initialUser.id);
+        }
         this.loading.set(false);
 
+        // 2. Listen for changes
         this.supabase.auth.onAuthStateChange(async (event, session) => {
-            this.user.set(session?.user ?? null);
-            await this.fetchProfile(session?.user?.id);
+            console.log('SupabaseService: Auth Event:', event);
+            const newUser = session?.user ?? null;
+
+            // Only fetch if user ID changed or explicitly signed in
+            if (newUser?.id !== this.user()?.id || event === 'SIGNED_IN') {
+                this.user.set(newUser);
+                if (newUser) {
+                    await this.fetchProfile(newUser.id);
+                } else {
+                    this.username.set(null);
+                    this.avatarUrl.set(null);
+                }
+            }
         });
     }
 
     private async fetchProfile(uid?: string) {
-        if (!uid) {
-            this.username.set(null);
-            this.avatarUrl.set(null);
-            return;
+        if (!uid) return;
+
+        try {
+            const { data, error } = await this.supabase.from('profiles')
+                .select('username, nickname, avatar_url')
+                .eq('id', uid)
+                .maybeSingle();
+
+            if (error) throw error;
+
+            console.log('SupabaseService: Profilo recuperato:', data);
+            this.username.set(data?.nickname || data?.username || null);
+            this.avatarUrl.set(data?.avatar_url ?? null);
+        } catch (e) {
+            console.warn('SupabaseService: Error fetching profile:', e);
+            // Fallback: use email as username if profile fetch fails
+            if (!this.username()) {
+                const user = this.user();
+                if (user) this.username.set(user.email?.split('@')[0] || 'Utente');
+            }
         }
-        // Fetch nickname as well
-        const { data } = await this.supabase.from('profiles')
-            .select('username, nickname, avatar_url')
-            .eq('id', uid)
-            .maybeSingle();
-
-        console.log('SupabaseService: Profilo recuperato:', data); // LOG PER DEBUG
-
-        // Prioritize nickname if available, otherwise username
-        this.username.set(data?.nickname || data?.username || null);
-        this.avatarUrl.set(data?.avatar_url ?? null);
     }
 
     async loadUserProfile() {
         const uid = this.user()?.id;
         if (uid) {
-            await this.fetchProfile(uid);
+            return await this.fetchProfile(uid);
         }
     }
 
@@ -103,11 +125,11 @@ export class SupabaseService {
         signIn: async (nickname: string, pass: string) => {
             console.log('AuthService: Login per', nickname);
 
-            // A. Risolvi email da nickname
+            // A. Risolvi email da nickname (Case Insensitive)
             const { data: profile, error: lookupError } = await this.supabase
                 .from('profiles')
                 .select('email')
-                .or(`username.eq.${nickname},nickname.eq.${nickname}`)
+                .or(`username.ilike.${nickname},nickname.ilike.${nickname}`)
                 .maybeSingle();
 
             if (lookupError) return { data: null, error: lookupError };

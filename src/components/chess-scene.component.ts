@@ -969,23 +969,85 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
     if (!this.three) return;
     this.highlightsGroup.clear();
 
+    // Selected piece highlight: Brilliant White-Cyan Luminous border
     if (selected) {
-      const selGeo = new this.three.PlaneGeometry(0.9, 0.9);
-      selGeo.rotateX(-Math.PI / 2);
-      const selMat = new this.three.MeshBasicMaterial({ color: 0x60a5fa, transparent: true, opacity: 0.4, side: this.three.DoubleSide });
-      const selMesh = new this.three.Mesh(selGeo, selMat);
-      selMesh.position.set(selected.col - 3.5, 0.11, selected.row - 3.5);
+      // 1. Core Border (High Contrast White)
+      const selBorderGeo = new this.three.RingGeometry(0.67, 0.72, 4, 1);
+      selBorderGeo.rotateX(-Math.PI / 2);
+      selBorderGeo.rotateY(Math.PI / 4);
+      
+      const selMat = new this.three.MeshBasicMaterial({ 
+        color: 0xffffff, // Pure White
+        transparent: true, 
+        opacity: 1.0, 
+        side: this.three.DoubleSide 
+      });
+      
+      const selMesh = new this.three.Mesh(selBorderGeo, selMat);
+      selMesh.position.set(selected.col - 3.5, 0.112, selected.row - 3.5);
       this.highlightsGroup.add(selMesh);
+
+      // 2. Cyan Glow/Aura (Outer)
+      const selOuterGlowGeo = new this.three.RingGeometry(0.65, 0.75, 4, 1);
+      selOuterGlowGeo.rotateX(-Math.PI / 2);
+      selOuterGlowGeo.rotateY(Math.PI / 4);
+      const selOuterGlowMat = new this.three.MeshBasicMaterial({ color: 0x00f2ff, transparent: true, opacity: 0.3 });
+      const selOuterMesh = new this.three.Mesh(selOuterGlowGeo, selOuterGlowMat);
+      selOuterMesh.position.set(selected.col - 3.5, 0.11, selected.row - 3.5);
+      this.highlightsGroup.add(selOuterMesh);
+
+      // 3. Selection Surface (Inner)
+      const selInnerGeo = new this.three.PlaneGeometry(0.96, 0.96);
+      selInnerGeo.rotateX(-Math.PI / 2);
+      const selInnerMat = new this.three.MeshBasicMaterial({ color: 0x00f2ff, transparent: true, opacity: 0.2 });
+      const selInnerMesh = new this.three.Mesh(selInnerGeo, selInnerMat);
+      selInnerMesh.position.set(selected.col - 3.5, 0.105, selected.row - 3.5);
+      this.highlightsGroup.add(selInnerMesh);
     }
 
-    const moveGeo = new this.three.RingGeometry(0.2, 0.35, 32);
-    moveGeo.rotateX(-Math.PI / 2);
-    const moveMat = new this.three.MeshBasicMaterial({ color: 0x34d399, transparent: true, opacity: 0.6, side: this.three.DoubleSide });
+    // Valid moves: Stark White Border + Double Glow Layer
+    const moveBorderGeo = new this.three.RingGeometry(0.66, 0.71, 4, 1);
+    moveBorderGeo.rotateX(-Math.PI / 2);
+    moveBorderGeo.rotateY(Math.PI / 4);
+    
+    // Stark White Core
+    const moveMat = new this.three.MeshBasicMaterial({ 
+      color: 0xffffff, 
+      transparent: true, 
+      opacity: 1.0, 
+      side: this.three.DoubleSide 
+    });
+
+    // Outer Bloom Layer
+    const bloomGeo = new this.three.RingGeometry(0.64, 0.73, 4, 1);
+    bloomGeo.rotateX(-Math.PI / 2);
+    bloomGeo.rotateY(Math.PI / 4);
+    const bloomMat = new this.three.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.25 });
+
+    // Ground Spread (Ambient)
+    const glowGeo = new this.three.PlaneGeometry(1.15, 1.15);
+    glowGeo.rotateX(-Math.PI / 2);
+    const glowMat = new this.three.MeshBasicMaterial({ 
+      color: 0xffffff, 
+      transparent: true, 
+      opacity: 0.1 
+    });
 
     moves.forEach(m => {
-      const mesh = new this.three.Mesh(moveGeo, moveMat);
-      mesh.position.set(m.col - 3.5, 0.11, m.row - 3.5);
+      // 1. Sharp Border
+      const mesh = new this.three.Mesh(moveBorderGeo, moveMat);
+      mesh.position.set(m.col - 3.5, 0.112, m.row - 3.5);
       this.highlightsGroup.add(mesh);
+
+      // 2. Bloom
+      const bloomMesh = new this.three.Mesh(bloomGeo, bloomMat);
+      bloomMesh.position.set(m.col - 3.5, 0.11, m.row - 3.5);
+      this.highlightsGroup.add(bloomMesh);
+
+      // 3. Soft Spread
+      const glowMesh = new this.three.Mesh(glowGeo, glowMat);
+      glowMesh.position.set(m.col - 3.5, 0.108, m.row - 3.5);
+      this.highlightsGroup.add(glowMesh);
     });
   }
 

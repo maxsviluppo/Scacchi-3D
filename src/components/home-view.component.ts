@@ -31,65 +31,98 @@ import { ImageUtils } from '../utils/image-utils';
       </div>
 
       <!-- Top Bar -->
-      <div class="relative z-50 flex items-center justify-between mb-6 md:mb-8">
-        <!-- THE KING Title -->
-        <div class="flex items-center gap-4">
-          <div class="relative flex flex-col items-center">
-            <h1 class="text-4xl sm:text-6xl md:text-7xl font-black uppercase tracking-tighter bg-gradient-to-r from-yellow-400 via-yellow-500 to-amber-600 text-transparent bg-clip-text drop-shadow-[0_0_30px_rgba(251,191,36,0.5)] animate-pulse-subtle">
-              THE KING
-            </h1>
-            @if (supabase.user() && supabase.username()) {
-              <div class="mt-2 animate-fade-in">
-                <p class="text-[10px] md:text-[11px] font-black text-indigo-400 uppercase tracking-[0.4em]">
-                  {{ supabase.username() }}
-                </p>
-              </div>
-            }
+      <div class="relative z-50 flex items-center justify-between mb-8 md:mb-12 px-2 md:px-6">
+        <!-- TITLE (To the Left) -->
+        <div class="flex flex-col items-start">
+          <h1 class="text-3xl sm:text-5xl md:text-6xl font-black uppercase tracking-tighter bg-gradient-to-r from-yellow-300 via-amber-500 to-yellow-600 text-transparent bg-clip-text drop-shadow-[0_0_30px_rgba(251,191,36,0.3)] animate-pulse-subtle">
+            THE KING
+          </h1>
+          <div class="flex items-center gap-2 mt-1">
+            <span class="px-2 py-0.5 bg-yellow-500 text-black text-[8px] md:text-[9px] font-black uppercase rounded-sm tracking-widest animate-fade-in-up">
+              {{ currentRankTitle }}
+            </span>
+            <p class="text-[9px] md:text-[10px] font-black text-indigo-400/80 uppercase tracking-[0.4em] ml-1">
+              Alpha 1.0
+            </p>
           </div>
         </div>
-        
-        <!-- Switch Profile Button -->
-        <!-- Profile Icon (Yellow Gradient) -->
-        <button (click)="supabase.user() ? openAccountManager() : toggleAuth()" 
-          class="relative flex items-center justify-center w-12 h-12 rounded-full backdrop-blur-md border border-white/10 shadow-[0_0_15px_rgba(234,179,8,0.2)] hover:shadow-[0_0_25px_rgba(234,179,8,0.4)] hover:scale-105 active:scale-95 transition-all group overflow-hidden bg-slate-900/40">
+
+        <!-- PROFILE BUTTON (To the Right) -->
+        <button (click)="openAccountManager()" 
+          class="group flex items-center gap-2 md:gap-3 p-1 rounded-full bg-gradient-to-br from-yellow-600/20 to-amber-900/40 backdrop-blur-xl border-2 border-yellow-500/40 hover:border-yellow-400 transition-all hover:scale-105 active:scale-95 shadow-[0_0_30px_rgba(234,179,8,0.2)] relative overflow-hidden">
           
-          <!-- Gradient Background (Subtle) -->
-          <div class="absolute inset-0 bg-gradient-to-br from-yellow-500/10 to-amber-600/5 opacity-50 group-hover:opacity-100 transition-opacity"></div>
-          
-          @if (supabase.user() && supabase.avatarUrl()) {
-             <!-- User Avatar with Gold Border -->
-            <div class="w-full h-full p-[2px] rounded-full bg-gradient-to-r from-yellow-400 via-yellow-500 to-amber-600 animate-pulse-subtle">
-               <img [src]="supabase.avatarUrl()" class="w-full h-full object-cover rounded-full border border-black/50">
-            </div>
-          } @else {
-            <!-- Default Icon with Gold Gradient -->
-            <div class="w-full h-full flex items-center justify-center rounded-full group-hover:bg-white/5 transition-colors">
-              <svg viewBox="0 0 24 24" class="w-6 h-6 drop-shadow-md">
+          <!-- Inner Glow -->
+          <div class="absolute inset-0 bg-gradient-to-r from-yellow-500/10 to-transparent opacity-50"></div>
+
+          <!-- Avatar -->
+          <div class="relative w-9 h-9 md:w-11 md:h-11 rounded-full overflow-hidden border-2 border-yellow-400/50 group-hover:border-yellow-300 transition-all bg-slate-800 flex items-center justify-center shadow-lg">
+            @if (supabase.avatarUrl()) {
+              <img [src]="supabase.avatarUrl()" class="w-full h-full object-cover">
+            } @else {
+              <svg viewBox="0 0 24 24" fill="none" class="w-7 h-7 md:w-8 md:h-8 drop-shadow-[0_0_8px_rgba(234,179,8,0.4)]">
                 <defs>
-                  <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" style="stop-color:#facc15;stop-opacity:1" /> <!-- yellow-400 -->
-                    <stop offset="50%" style="stop-color:#eab308;stop-opacity:1" /> <!-- yellow-500 -->
-                    <stop offset="100%" style="stop-color:#d97706;stop-opacity:1" /> <!-- amber-600 -->
+                  <linearGradient id="crownGradHeader" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:#fef3c7;stop-opacity:1" />
+                    <stop offset="50%" style="stop-color:#fbbf24;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#b45309;stop-opacity:1" />
                   </linearGradient>
                 </defs>
-                <path fill="url(#goldGradient)" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
+                <path d="M5 15l-2 5h18l-2-5 3-7-6 2-4-7-4 7-6-2 3 7z" fill="url(#crownGradHeader)" stroke="#fbbf24" stroke-width="0.5" stroke-linejoin="round"/>
               </svg>
-            </div>
-          }
+            }
+          </div>
+
+          <!-- Info -->
+          <div class="flex flex-col items-start leading-tight pr-3">
+            <span class="text-[11px] md:text-sm font-bold text-white uppercase tracking-tight truncate max-w-[80px] md:max-w-[120px] mb-0.5">
+              {{ supabase.username() || 'Accedi' }}
+            </span>
+            @if (supabase.user()) {
+              <span class="text-[8px] md:text-[9px] font-black text-yellow-500 uppercase tracking-tighter">
+                {{ userStats.totalPoints }} PT • {{ currentRankTitle }}
+              </span>
+            }
+          </div>
         </button>
       </div>
 
-      <!-- Main Navigation Grid -->
+      <!-- Main Navigation Grid - Always Visible, in 2 columns -->
       <div class="flex-1 flex items-center justify-center">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 w-full max-w-[1600px] z-10 px-4">
+        <div class="grid grid-cols-2 gap-3 md:gap-6 w-full max-w-5xl z-10 px-2 md:px-0 mb-20 auto-rows-fr">
           
+          <!-- Career Mode Card (Featured - Full Width) -->
+          <button (click)="openCareer()"
+            class="col-span-2 group relative overflow-hidden bg-gradient-to-br from-yellow-500/20 via-slate-900/60 to-slate-950/80 backdrop-blur-2xl border-2 border-yellow-500/30 hover:border-yellow-400 rounded-[2rem] p-6 md:p-8 transition-all hover:scale-[1.01] shadow-[0_0_50px_rgba(234,179,8,0.1)] active:scale-95">
+            <div class="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(234,179,8,0.1),transparent_70%)] opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <div class="relative flex items-center justify-between gap-6 px-4 md:px-8">
+              <div class="flex items-center gap-4 md:gap-8">
+                <div class="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-yellow-500/20 flex items-center justify-center border border-yellow-500/20 group-hover:bg-yellow-500/30 transition-all shadow-xl">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-10 h-10 md:w-12 md:h-12 text-yellow-400">
+                    <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                    <path d="M2 17l10 5 10-5"></path>
+                    <path d="M2 12l10 5 10-5"></path>
+                  </svg>
+                </div>
+                <div class="text-left">
+                  <h2 class="text-2xl md:text-4xl font-black text-white uppercase tracking-tighter">Modalità Carriera</h2>
+                  <p class="text-yellow-500 text-[10px] md:text-xs font-black uppercase tracking-[0.3em] mt-1">Conquista il Trono • 100 Livelli</p>
+                </div>
+              </div>
+              <div class="hidden md:block">
+                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="w-8 h-8 text-yellow-500/50 group-hover:text-yellow-400 group-hover:translate-x-2 transition-all">
+                    <path d="M9 18l6-6-6-6"></path>
+                 </svg>
+              </div>
+            </div>
+          </button>
+
           <!-- Local Game Card -->
           <button (click)="showLocalGameModeSelector = true"
-            class="group relative overflow-hidden bg-slate-900/40 backdrop-blur-2xl border border-white/5 hover:border-orange-500/30 rounded-[2rem] p-6 md:p-8 transition-all hover:scale-[1.02] shadow-2xl">
+            class="group relative overflow-hidden bg-slate-900/40 backdrop-blur-2xl border border-white/5 hover:border-orange-500/30 rounded-[2rem] p-4 md:p-8 transition-all hover:scale-[1.02] active:scale-95 shadow-2xl">
             <div class="absolute inset-0 bg-gradient-to-br from-orange-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-            <div class="relative flex flex-col items-center text-center gap-4">
-              <div class="w-16 h-16 rounded-2xl bg-orange-500/20 flex items-center justify-center border border-orange-500/20 group-hover:bg-orange-500/30 transition-all">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-8 h-8 text-orange-400">
+            <div class="relative flex flex-col items-center text-center gap-3 md:gap-4">
+              <div class="w-12 h-12 md:w-16 md:h-16 rounded-2xl bg-orange-500/20 flex items-center justify-center border border-orange-500/20 group-hover:bg-orange-500/30 transition-all">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-6 h-6 md:w-8 md:h-8 text-orange-400">
                   <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
                   <circle cx="9" cy="7" r="4"></circle>
                   <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
@@ -97,402 +130,296 @@ import { ImageUtils } from '../utils/image-utils';
                 </svg>
               </div>
               <div>
-                <h2 class="text-2xl font-black text-white uppercase tracking-tighter">Sfida Locale</h2>
-                <p class="text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em] mt-1">Multiplayer Offline</p>
+                <h2 class="text-xl md:text-2xl font-black text-white uppercase tracking-tighter">Sfida Locale</h2>
+                <p class="text-slate-400 text-[8px] md:text-[10px] font-bold uppercase tracking-[0.2em] mt-1">Multiplayer Offline</p>
               </div>
             </div>
           </button>
 
           <!-- AI Challenge Card -->
           <button (click)="showAIGameModeSelector = true"
-            class="group relative overflow-hidden bg-slate-900/40 backdrop-blur-2xl border border-white/5 hover:border-indigo-500/30 rounded-[2rem] p-6 md:p-8 transition-all hover:scale-[1.02] shadow-2xl">
+            class="group relative overflow-hidden bg-slate-900/40 backdrop-blur-2xl border border-white/5 hover:border-indigo-500/30 rounded-[2rem] p-4 md:p-8 transition-all hover:scale-[1.02] active:scale-95 shadow-2xl">
             <div class="absolute inset-0 bg-gradient-to-br from-indigo-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-            <div class="relative flex flex-col items-center text-center gap-4">
-              <div class="w-16 h-16 rounded-2xl bg-indigo-500/20 flex items-center justify-center border border-indigo-500/20 group-hover:bg-indigo-500/30 transition-all">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-8 h-8 text-indigo-400">
+            <div class="relative flex flex-col items-center text-center gap-3 md:gap-4">
+              <div class="w-12 h-12 md:w-16 md:h-16 rounded-2xl bg-indigo-500/20 flex items-center justify-center border border-indigo-500/20 group-hover:bg-indigo-500/30 transition-all">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-6 h-6 md:w-8 md:h-8 text-indigo-400">
                   <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
                   <circle cx="12" cy="12" r="3"></circle>
                 </svg>
               </div>
               <div>
-                <h2 class="text-2xl font-black text-white uppercase tracking-tighter">Sfida AI</h2>
-                <p class="text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em] mt-1">vs Gemini AI</p>
-              </div>
-            </div>
-          </button>
-
-          <!-- setup was here -->
-
-          <!-- Career Mode Card -->
-          <button (click)="openCareer()"
-            class="group relative overflow-hidden bg-slate-900/40 backdrop-blur-2xl border border-white/5 hover:border-yellow-500/30 rounded-[2rem] p-6 md:p-8 transition-all hover:scale-[1.02] shadow-2xl">
-            <div class="absolute inset-0 bg-gradient-to-br from-yellow-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-            <div class="relative flex flex-col items-center text-center gap-4">
-              <div class="w-16 h-16 rounded-2xl bg-yellow-500/20 flex items-center justify-center border border-yellow-500/20 group-hover:bg-yellow-500/30 transition-all">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-8 h-8 text-yellow-400">
-                  <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
-                  <path d="M2 17l10 5 10-5"></path>
-                  <path d="M2 12l10 5 10-5"></path>
-                </svg>
-              </div>
-              <div>
-                <h2 class="text-2xl font-black text-white uppercase tracking-tighter">Carriera</h2>
-                <p class="text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em] mt-1">100 Livelli</p>
+                <h2 class="text-xl md:text-2xl font-black text-white uppercase tracking-tighter">Sfida AI</h2>
+                <p class="text-slate-400 text-[8px] md:text-[10px] font-bold uppercase tracking-[0.2em] mt-1">vs Gemini AI</p>
               </div>
             </div>
           </button>
 
           <!-- Adventure Mode Card (Soon) -->
-          <div class="relative group">
-            <div class="absolute inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm rounded-[2rem] opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none">
-              <div class="px-6 py-2 bg-emerald-500 rounded-full shadow-[0_0_30px_rgba(16,185,129,0.4)]">
-                <span class="text-white font-black uppercase text-sm tracking-[0.2em]">Soon</span>
+          <button (click)="openAdventure()" class="group relative overflow-hidden bg-slate-900/40 backdrop-blur-2xl border border-white/5 hover:border-emerald-500/30 rounded-[2rem] p-4 md:p-8 transition-all hover:scale-[1.02] active:scale-95 shadow-2xl">
+            <div class="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <div class="relative flex flex-col items-center text-center gap-3 md:gap-4">
+              <div class="w-12 h-12 md:w-16 md:h-16 rounded-2xl bg-emerald-500/20 flex items-center justify-center border border-emerald-500/20 group-hover:bg-emerald-500/30 transition-all">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-6 h-6 md:w-8 md:h-8 text-emerald-400">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                  <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg>
+              </div>
+              <div>
+                <h2 class="text-xl md:text-2xl font-black text-white uppercase tracking-tighter">Avventura</h2>
+                <p class="text-emerald-500/60 text-[8px] md:text-[10px] font-bold uppercase tracking-[0.2em] mt-1 italic">Prossimamente</p>
               </div>
             </div>
-            <button class="w-full relative overflow-hidden bg-slate-900/20 backdrop-blur-2xl border border-white/5 rounded-[2rem] p-6 md:p-8 transition-all opacity-40 cursor-not-allowed">
-              <div class="relative flex flex-col items-center text-center gap-4">
-                <div class="w-16 h-16 rounded-2xl bg-emerald-500/20 flex items-center justify-center border border-emerald-500/20 group-hover:bg-emerald-500/30 transition-all">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-8 h-8 text-emerald-400">
-                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
-                  </svg>
-                </div>
-                <div>
-                  <h2 class="text-2xl font-black text-slate-400 uppercase tracking-tighter">Avventura</h2>
-                  <p class="text-slate-600 text-[10px] font-bold uppercase tracking-[0.2em] mt-1">Missioni Epiche</p>
-                </div>
-              </div>
-            </button>
-          </div>
+          </button>
 
           <!-- Online Challenge Card (Soon) -->
-          <div class="relative group">
-            <div class="absolute inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm rounded-[2rem] opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none">
-              <div class="px-6 py-2 bg-rose-500 rounded-full shadow-[0_0_30px_rgba(244,63,94,0.4)]">
-                <span class="text-white font-black uppercase text-sm tracking-[0.2em]">Soon</span>
+          <button class="relative group overflow-hidden bg-slate-900/20 backdrop-blur-2xl border border-white/5 rounded-[2rem] p-4 md:p-8 transition-all opacity-60 cursor-not-allowed">
+            <div class="relative flex flex-col items-center text-center gap-3 md:gap-4">
+              <div class="w-12 h-12 md:w-16 md:h-16 rounded-2xl bg-slate-800 flex items-center justify-center border border-white/5 opacity-40">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-6 h-6 md:w-8 md:h-8 text-slate-500">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
+                </svg>
+              </div>
+              <div>
+                <h2 class="text-xl md:text-2xl font-black text-slate-500 uppercase tracking-tighter">Sfida Online</h2>
+                <p class="text-slate-600 text-[8px] md:text-[10px] font-bold uppercase tracking-[0.2em] mt-1">Multiplayer PvP</p>
               </div>
             </div>
-            <button class="w-full relative overflow-hidden bg-slate-900/20 backdrop-blur-2xl border border-white/5 rounded-[2rem] p-6 md:p-8 transition-all opacity-40 cursor-not-allowed">
-              <div class="relative flex flex-col items-center text-center gap-4">
-                <div class="w-16 h-16 rounded-2xl bg-slate-800 flex items-center justify-center border border-white/5">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-8 h-8 text-slate-500">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
-                    <line x1="9" y1="9" x2="9.01" y2="9"></line>
-                    <line x1="15" y1="9" x2="15.01" y2="9"></line>
-                  </svg>
-                </div>
-                <div>
-                  <h2 class="text-2xl font-black text-slate-400 uppercase tracking-tighter">Sfida Online</h2>
-                  <p class="text-slate-600 text-[10px] font-bold uppercase tracking-[0.2em] mt-1">Multiplayer PvP</p>
-                </div>
-              </div>
-            </button>
-          </div>
+          </button>
 
           <!-- Setup Card -->
           <button (click)="showSetup = true"
-            class="group relative overflow-hidden bg-slate-900/40 backdrop-blur-2xl border border-white/5 hover:border-cyan-500/30 rounded-[2rem] p-6 md:p-8 transition-all hover:scale-[1.02] shadow-2xl">
+            class="group relative overflow-hidden bg-slate-900/40 backdrop-blur-2xl border border-white/5 hover:border-cyan-500/30 rounded-[2rem] p-4 md:p-8 transition-all hover:scale-[1.02] active:scale-95 shadow-2xl">
             <div class="absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-            <div class="relative flex flex-col items-center text-center gap-4">
-              <div class="w-16 h-16 rounded-2xl bg-cyan-500/20 flex items-center justify-center border border-cyan-500/20 group-hover:bg-cyan-500/30 transition-all">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-8 h-8 text-cyan-400">
+            <div class="relative flex flex-col items-center text-center gap-3 md:gap-4">
+              <div class="w-12 h-12 md:w-16 md:h-16 rounded-2xl bg-cyan-500/20 flex items-center justify-center border border-cyan-500/20 group-hover:bg-cyan-500/30 transition-all">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-6 h-6 md:w-8 md:h-8 text-cyan-400">
                   <path d="M12 20h9"></path>
                   <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
                 </svg>
               </div>
               <div>
-                <h2 class="text-2xl font-black text-white uppercase tracking-tighter">Setup</h2>
-                <p class="text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em] mt-1">Modelli 3D</p>
+                <h2 class="text-xl md:text-2xl font-black text-white uppercase tracking-tighter">Setup</h2>
+                <p class="text-slate-400 text-[8px] md:text-[10px] font-bold uppercase tracking-[0.2em] mt-1">Modelli 3D</p>
               </div>
             </div>
           </button>
 
           <!-- Shop/Marketplace Card -->
           <button (click)="gameService.setView('marketplace')"
-            class="group relative overflow-hidden bg-slate-900/40 backdrop-blur-2xl border border-white/5 hover:border-yellow-500/30 rounded-[2rem] p-6 md:p-8 transition-all hover:scale-[1.02] shadow-2xl">
+            class="group relative overflow-hidden bg-slate-900/40 backdrop-blur-2xl border border-white/5 hover:border-yellow-500/30 rounded-[2rem] p-4 md:p-8 transition-all hover:scale-[1.02] active:scale-95 shadow-2xl">
             <div class="absolute inset-0 bg-gradient-to-br from-yellow-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-            <div class="relative flex flex-col items-center text-center gap-4">
-              <div class="w-16 h-16 rounded-2xl bg-yellow-500/20 flex items-center justify-center border border-yellow-500/20 group-hover:bg-yellow-500/30 transition-all">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-8 h-8 text-yellow-400">
+            <div class="relative flex flex-col items-center text-center gap-3 md:gap-4">
+              <div class="w-12 h-12 md:w-16 md:h-16 rounded-2xl bg-yellow-500/20 flex items-center justify-center border border-yellow-500/20 group-hover:bg-yellow-500/30 transition-all">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-6 h-6 md:w-8 md:h-8 text-yellow-400">
                   <path d="M21 8l-2-2H5L3 8v10a2 2 0 002 2h14a2 2 0 002-2V8z"></path>
                   <path d="M3 8h18M10 12h4"></path>
                 </svg>
               </div>
               <div>
-                <h2 class="text-2xl font-black text-white uppercase tracking-tighter">Shop</h2>
-                <p class="text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em] mt-1">Skin & Assets</p>
+                <h2 class="text-xl md:text-2xl font-black text-white uppercase tracking-tighter">Shop</h2>
+                <p class="text-slate-400 text-[8px] md:text-[10px] font-bold uppercase tracking-[0.2em] mt-1">Skin & Assets</p>
               </div>
             </div>
           </button>
         </div>
       </div>
-
-      <!-- Footer with Admin Link -->
-      <div class="relative z-10 mt-auto pt-8 pb-4 flex justify-center opacity-30 hover:opacity-100 transition-opacity">
-        <button (click)="openAdminLogin()" class="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] hover:text-indigo-400 transition-colors">
-          Area Amministrazione
-        </button>
+        </div>
       </div>
 
-      <!-- Auth Modal -->
+      <!-- Footer -->
+      <div class="relative z-10 mt-auto pt-8 pb-4 flex flex-col items-center gap-4">
+        <button (click)="openAdminLogin()" class="text-[10px] font-bold text-slate-600 hover:text-orange-500 uppercase tracking-[0.3em] transition-colors">
+          Area Amministrazione
+        </button>
+        <p class="text-[9px] font-black text-slate-700 uppercase tracking-[0.4em]">
+           The King Chess &copy; 2026
+        </p>
+      </div>
+
+      <!-- AUTH MODAL (Modelled after Dama 3D) -->
       @if (showAuth) {
-        <div class="fixed inset-0 z-[100] flex items-center justify-center bg-gradient-to-br from-slate-950/98 via-indigo-950/95 to-slate-900/98 backdrop-blur-2xl animate-fade-in p-4"
-             (click)="showAuth = false">
-          <div class="relative bg-slate-900/60 backdrop-blur-3xl border border-white/10 rounded-[3rem] max-w-lg w-full shadow-[0_0_120px_rgba(99,102,241,0.25)] overflow-hidden"
-               (click)="$event.stopPropagation()">
+        <div class="fixed inset-0 z-[1000] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md animate-fade-in" (click)="showAuth = false">
+          <div class="relative w-full max-w-md bg-[#0f172a] border-[3px] border-yellow-500/30 rounded-[2.5rem] p-8 md:p-10 shadow-[0_0_80px_rgba(234,179,8,0.15)] overflow-hidden" (click)="$event.stopPropagation()">
             
-            <div class="absolute inset-0 bg-gradient-to-br from-indigo-600/10 via-purple-600/5 to-pink-600/10 animate-gradient-shift"></div>
+            <!-- Bg Glow -->
+            <div class="absolute -top-24 -right-24 w-64 h-64 bg-yellow-500/10 rounded-full blur-3xl"></div>
             
-            <div class="relative z-10 p-8 md:p-12">
-              <div class="flex flex-col items-center text-center mb-10">
-                <h2 class="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-200 to-white tracking-tight uppercase mb-2">
-                  {{ authMode === 'admin' ? 'Pannello Admin' : (authMode === 'login' ? 'Bentornato' : 'Inizia Ora') }}
-                </h2>
-                <p class="text-indigo-300/80 text-sm font-bold uppercase tracking-[0.2em]">
-                  {{ authMode === 'admin' ? 'Accesso Riservato' : (authMode === 'login' ? 'Accedi al Regno' : 'Unisciti alla Leggenda') }}
-                </p>
+            <button (click)="showAuth = false" class="absolute top-6 right-6 text-slate-500 hover:text-white transition-colors">✕</button>
+
+            <div class="flex flex-col items-center text-center mb-8">
+              <div class="w-20 h-20 rounded-3xl bg-gradient-to-br from-yellow-500/20 to-amber-600/20 border border-yellow-500/20 flex items-center justify-center mb-4 shadow-xl">
+                 @if (authMode === 'admin') {
+                   <span class="text-4xl">🛡️</span>
+                 } @else if (authMode === 'login') {
+                   <svg viewBox="0 0 24 24" fill="none" class="w-12 h-12 drop-shadow-[0_0_12px_rgba(234,179,8,0.5)]">
+                     <defs>
+                       <linearGradient id="crownGradAuth" x1="0%" y1="0%" x2="100%" y2="100%">
+                         <stop offset="0%" style="stop-color:#fef3c7;stop-opacity:1" />
+                         <stop offset="50%" style="stop-color:#fbbf24;stop-opacity:1" />
+                         <stop offset="100%" style="stop-color:#b45309;stop-opacity:1" />
+                       </linearGradient>
+                     </defs>
+                     <path d="M5 15l-2 5h18l-2-5 3-7-6 2-4-7-4 7-6-2 3 7z" fill="url(#crownGradAuth)" stroke="#fbbf24" stroke-width="0.5" stroke-linejoin="round"/>
+                   </svg>
+                 } @else {
+                   <span class="text-4xl">✨</span>
+                 }
+              </div>
+              <h2 class="text-3xl font-black text-white uppercase tracking-tighter mb-1">
+                {{ authMode === 'admin' ? 'Arsenale Admin' : (authMode === 'login' ? 'Bentornato' : 'Nuovo Erede') }}
+              </h2>
+              <p class="text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em]">
+                {{ authMode === 'admin' ? 'Accesso Area Riservata' : (authMode === 'login' ? 'Il tuo trono ti attende' : 'Unisciti alla battaglia') }}
+              </p>
+            </div>
+
+            <form (submit)="handleAuth($event)" class="space-y-4">
+              <!-- Nickname field for Login/Register -->
+              <div class="space-y-1">
+                <label class="text-[10px] font-black text-yellow-500 uppercase tracking-widest ml-4">Nome in Codice</label>
+                <input [(ngModel)]="authNickname" name="nickname" type="text" required
+                  class="w-full bg-slate-800/50 border-2 border-slate-700 rounded-2xl py-4 px-6 text-white placeholder-slate-600 focus:border-yellow-500 focus:outline-none transition-all font-bold"
+                  placeholder="Inserisci il tuo Nickname">
               </div>
 
-              <form (submit)="handleAuth($event)" class="space-y-5">
-                <div class="space-y-2">
-                  <label class="text-xs font-black text-indigo-300 uppercase tracking-[0.15em] ml-2">Nickname</label>
-                  <input type="text" name="nickname" [(ngModel)]="authNickname" required
-                    class="w-full bg-slate-950/70 border border-white/10 rounded-2xl px-6 py-4 text-white text-lg focus:border-indigo-400/60 transition-all">
+              <!-- Email field only for Register -->
+              @if (authMode === 'register') {
+                <div class="space-y-1 animate-fade-in-up">
+                  <label class="text-[10px] font-black text-yellow-500 uppercase tracking-widest ml-4">Email Personale</label>
+                  <input [(ngModel)]="authEmail" name="email" type="email" required
+                    class="w-full bg-slate-800/50 border-2 border-slate-700 rounded-2xl py-4 px-6 text-white placeholder-slate-600 focus:border-yellow-500 focus:outline-none transition-all font-bold"
+                    placeholder="email@esempio.com">
                 </div>
+              }
 
-                @if (authMode === 'register') {
-                  <div class="space-y-2">
-                    <label class="text-xs font-black text-indigo-300 uppercase tracking-[0.15em] ml-2">Email</label>
-                    <input type="email" name="email" [(ngModel)]="authEmail" required
-                      class="w-full bg-slate-950/70 border border-white/10 rounded-2xl px-6 py-4 text-white text-lg focus:border-indigo-400/60 transition-all">
-                  </div>
-                }
-
-                <div class="space-y-2">
-                  <label class="text-xs font-black text-indigo-300 uppercase tracking-[0.15em] ml-2">Password</label>
-                  <input type="password" name="password" [(ngModel)]="authPassword" required
-                    class="w-full bg-slate-950/70 border border-white/10 rounded-2xl px-6 py-4 text-white text-lg focus:border-indigo-400/60 transition-all">
-                </div>
-
-                @if (authError) {
-                  <p class="text-rose-400 text-sm font-bold text-center uppercase tracking-wide bg-rose-500/10 py-3 rounded-xl border border-rose-500/20 shadow-lg animate-fade-in px-4">{{ authError }}</p>
-                }
-
-                @if (authSuccess) {
-                  <p class="text-emerald-400 text-sm font-bold text-center uppercase tracking-wide bg-emerald-500/10 py-3 rounded-xl border border-emerald-500/20 shadow-lg animate-fade-in px-4">{{ authSuccess }}</p>
-                }
-
-                <button type="submit" [disabled]="loadingAuth"
-                  class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-black py-5 text-lg rounded-2xl shadow-xl transition-all active:scale-[0.98] uppercase tracking-widest mt-6">
-                  {{ loadingAuth ? 'Caricamento...' : (authMode === 'admin' ? 'Accedi Amministratore' : (authMode === 'login' ? 'Accedi' : 'Registrati')) }}
-                </button>
-              </form>
-
-              <div class="mt-8 text-center text-slate-400 text-sm font-bold uppercase tracking-widest">
-                <button (click)="toggleAuthMode()" class="hover:text-white transition-colors">
-                  {{ authMode === 'login' ? 'Nuovo qui? Registrati' : 'Hai già un account? Accedi' }}
-                </button>
+              <div class="space-y-1">
+                <label class="text-[10px] font-black text-yellow-500 uppercase tracking-widest ml-4">Codice d'Accesso</label>
+                <input [(ngModel)]="authPassword" name="password" type="password" required
+                  class="w-full bg-slate-800/50 border-2 border-slate-700 rounded-2xl py-4 px-6 text-white placeholder-slate-600 focus:border-yellow-500 focus:outline-none transition-all font-bold"
+                  placeholder="••••••••">
               </div>
 
-              <button (click)="showAuth = false" class="absolute top-6 right-6 text-slate-500 hover:text-white transition-colors">✕</button>
+              @if (authError) {
+                <div class="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-bold text-center animate-shake">
+                  ❌ {{ authError }}
+                </div>
+              }
+
+              @if (authSuccess) {
+                <div class="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-xs font-bold text-center">
+                  ✅ {{ authSuccess }}
+                </div>
+              }
+
+              <button type="submit" [disabled]="loadingAuth"
+                class="w-full bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 text-black py-4 rounded-2xl font-black uppercase tracking-widest shadow-xl active:scale-95 transition-all disabled:opacity-50 mt-4 h-16 flex items-center justify-center">
+                @if (loadingAuth) {
+                  <div class="w-6 h-6 border-4 border-black/30 border-t-black rounded-full animate-spin"></div>
+                } @else {
+                  {{ authMode === 'admin' ? 'Accedi' : (authMode === 'login' ? 'Entra nel Regno' : 'Crea Account') }}
+                }
+              </button>
+            </form>
+
+            <div class="mt-8 flex flex-col items-center gap-3">
+              <button (click)="toggleAuthMode()" class="text-[10px] font-black text-slate-500 hover:text-white uppercase tracking-widest transition-colors">
+                {{ authMode === 'login' ? 'Non hai un account? Registrati' : 'Hai già un account? Accedi' }}
+              </button>
             </div>
           </div>
         </div>
       }
 
-      <!-- Account Manager Modal -->
+      <!-- ACCOUNT MANAGER MODAL -->
       @if (showAccountManager) {
-        <div class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/90 backdrop-blur-md p-4 animate-fade-in"
-             (click)="showAccountManager = false">
-          
-          <div class="relative bg-slate-900/90 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] max-w-2xl w-full max-h-[90vh] shadow-[0_0_80px_rgba(0,0,0,0.6)] overflow-hidden flex flex-col"
-               (click)="$event.stopPropagation()">
+        <div class="fixed inset-0 z-[1000] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md animate-fade-in" (click)="showAccountManager = false">
+          <div class="relative w-full max-w-2xl bg-[#0f172a] border-[3px] border-indigo-500/30 rounded-[2.5rem] p-8 md:p-10 shadow-2xl overflow-hidden" (click)="$event.stopPropagation()">
             
-            <!-- Close Button -->
-            <button (click)="showAccountManager = false" 
-              class="absolute top-6 right-6 z-50 w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-white border border-white/10 transition-all active:scale-95">
-              ✕
-            </button>
+            <!-- Bg Orbs -->
+            <div class="absolute -bottom-24 -left-24 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl"></div>
             
-            <div class="p-8 md:p-10 overflow-y-auto custom-scrollbar relative z-10">
-              
-              <!-- HEADER: Icon Left + Name Right -->
-              <div class="flex flex-row items-center gap-6 mb-10 pb-8 border-b border-white/5">
-                
-                <!-- 1. Profile Icon (Left) -->
-                <div class="relative group shrink-0">
-                  <div class="w-20 h-20 rounded-full overflow-hidden border-2 border-amber-500/30 shadow-[0_0_30px_rgba(245,158,11,0.2)] bg-black/40 flex items-center justify-center relative">
-                    <!-- Gradient Background -->
-                    <div class="absolute inset-0 bg-gradient-to-br from-amber-500/10 to-orange-600/10 opacity-60"></div>
+            <button (click)="showAccountManager = false" class="absolute top-6 right-6 text-slate-500 hover:text-white transition-colors">✕</button>
 
-                    @if (supabase.avatarUrl()) {
-                        <div class="w-full h-full p-[2px] rounded-full bg-gradient-to-r from-amber-300 via-amber-500 to-orange-500 animate-pulse-subtle">
-                           <img [src]="supabase.avatarUrl()" class="w-full h-full object-cover rounded-full border border-black/80">
-                        </div>
-                    } @else {
-                        <div class="w-full h-full flex items-center justify-center rounded-full">
-                          <svg viewBox="0 0 24 24" class="w-10 h-10 drop-shadow-md">
-                            <defs>
-                              <linearGradient id="goldGradientUser" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" style="stop-color:#fcd34d;stop-opacity:1" /> <!-- amber-300 -->
-                                <stop offset="50%" style="stop-color:#f59e0b;stop-opacity:1" /> <!-- amber-500 -->
-                                <stop offset="100%" style="stop-color:#d97706;stop-opacity:1" /> <!-- amber-600 -->
-                              </linearGradient>
-                            </defs>
-                            <path fill="url(#goldGradientUser)" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
-                          </svg>
-                        </div>
-                    }
-                  </div>
-                  
-                  <!-- Edit Photo Prompt (Hover) -->
-                  <label class="absolute -bottom-1 -right-1 w-8 h-8 bg-slate-800 rounded-full border border-white/10 flex items-center justify-center cursor-pointer shadow-lg hover:bg-slate-700 transition-colors">
-                     <span class="text-xs">📷</span>
-                     <input type="file" class="hidden" accept="image/*" (change)="onProfilePhotoSelected($event)">
-                  </label>
-                </div>
-                
-                <!-- 2. Name & Status (Right) -->
-                <div class="flex-1 flex flex-col justify-center">
-                  <!-- Name -->
-                  <div class="relative group/name w-full">
-                     @if (isEditingName) {
-                      <input type="text" [(ngModel)]="tempNickname" (blur)="saveNickname()" (keydown.enter)="saveNickname()"
-                        class="text-3xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400 uppercase tracking-tighter bg-transparent border-b border-amber-500/50 focus:outline-none w-full mb-1"
-                        autoFocus>
-                      <p class="text-[9px] text-amber-500/80 mt-1 uppercase font-bold tracking-widest">Premi Invio per salvare</p>
-                    } @else {
-                      <h2 (dblclick)="startEditingName()" 
-                        class="text-3xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-200 to-slate-400 uppercase tracking-tighter drop-shadow-md cursor-pointer hover:via-amber-200 transition-all truncate"
-                        title="Doppio click per modificare">
-                        {{ supabase.username() || 'GIOCATORE 1' }}
-                      </h2>
-                    }
-                  </div>
-                  
-                  <!-- Status / Email -->
-                  <div class="flex items-center gap-2 mt-1">
-                    <div class="px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-[9px] font-black text-emerald-400 uppercase tracking-widest">
-                        Online
+            <div class="flex flex-col md:flex-row items-center gap-8 mb-10">
+              <!-- Profile Avatar with Camera Icon -->
+              <div class="relative group">
+                <div class="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-yellow-500 p-1 bg-slate-800 shadow-2xl relative overflow-hidden">
+                  @if (supabase.avatarUrl()) {
+                    <img [src]="supabase.avatarUrl()" class="w-full h-full object-cover rounded-full">
+                  } @else {
+                    <div class="w-full h-full flex items-center justify-center">
+                      <svg viewBox="0 0 24 24" fill="none" class="w-20 h-20 md:w-24 md:h-24 drop-shadow-[0_0_20px_rgba(234,179,8,0.6)]">
+                         <defs>
+                           <linearGradient id="crownGradProfile" x1="0%" y1="0%" x2="100%" y2="100%">
+                             <stop offset="0%" style="stop-color:#fef3c7;stop-opacity:1" />
+                             <stop offset="50%" style="stop-color:#fbbf24;stop-opacity:1" />
+                             <stop offset="100%" style="stop-color:#b45309;stop-opacity:1" />
+                           </linearGradient>
+                         </defs>
+                         <path d="M5 15l-2 5h18l-2-5 3-7-6 2-4-7-4 7-6-2 3 7z" fill="url(#crownGradProfile)" stroke="#fbbf24" stroke-width="0.5" stroke-linejoin="round"/>
+                      </svg>
                     </div>
-                    @if (supabase.user()?.email) {
-                        <span class="text-[10px] font-bold text-slate-500 tracking-wider truncate max-w-[200px]">{{ supabase.user()?.email }}</span>
-                    }
+                  }
+
+                  <!-- Upload Overlay (Always visible on mobile, hover on desktop) -->
+                  <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer overflow-hidden">
+                    <label class="cursor-pointer w-full h-full flex items-center justify-center">
+                      <input type="file" class="hidden" (change)="onProfilePhotoSelected($event)" accept="image/*">
+                      <div class="flex flex-col items-center">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-8 h-8 text-white">
+                          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                          <circle cx="12" cy="13" r="4"></circle>
+                        </svg>
+                        <span class="text-[8px] font-black text-white uppercase tracking-widest mt-1">Carica</span>
+                      </div>
+                    </label>
                   </div>
                 </div>
-
+                
               </div>
 
-              <!-- STATS GRID -->
-              <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
-                <!-- Games -->
-                <div class="bg-indigo-900/10 border border-indigo-500/20 p-4 rounded-2xl relative overflow-hidden group hover:bg-indigo-900/20 transition-all">
-                  <div class="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                  <p class="text-[9px] text-indigo-300 font-black uppercase tracking-widest mb-1 relative z-10">Partite</p>
-                  <p class="text-3xl font-black text-white relative z-10">{{ userStats.gamesPlayed }}</p>
-                  <span class="absolute -bottom-4 -right-2 text-6xl text-indigo-500/10 group-hover:text-indigo-500/20 transition-all select-none">♟</span>
+              <div class="flex-1 text-center md:text-left">
+                <div class="flex items-center justify-center md:justify-start gap-3 mb-2">
+                  @if (!isEditingName) {
+                    <h2 class="text-3xl font-black text-white uppercase tracking-tighter">{{ supabase.username() }}</h2>
+                    <button (click)="startEditingName()" class="p-2 hover:text-yellow-500 transition-colors">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                    </button>
+                  } @else {
+                    <input [(ngModel)]="tempNickname" (blur)="saveNickname()" (keyup.enter)="saveNickname()" autoFocus
+                           class="bg-slate-800 border-2 border-yellow-500 rounded-xl py-2 px-4 text-white font-bold text-xl uppercase tracking-tighter outline-none w-48 focus:shadow-[0_0_20px_rgba(234,179,8,0.3)]">
+                  }
                 </div>
-                
-                <!-- Wins -->
-                <div class="bg-emerald-900/10 border border-emerald-500/20 p-4 rounded-2xl relative overflow-hidden group hover:bg-emerald-900/20 transition-all">
-                   <div class="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                   <p class="text-[9px] text-emerald-300 font-black uppercase tracking-widest mb-1 relative z-10">Vittorie</p>
-                   <p class="text-3xl font-black text-white relative z-10">{{ userStats.gamesWon }}</p>
-                   <span class="absolute -bottom-4 -right-2 text-6xl text-emerald-500/10 group-hover:text-emerald-500/20 transition-all select-none">♛</span>
+                <p class="text-indigo-400 text-[10px] font-black uppercase tracking-[0.3em] mb-1">Membro Reale dal 2026</p>
+                <div class="inline-block px-3 py-1 bg-yellow-500/20 border border-yellow-500/30 rounded-lg mb-4">
+                  <span class="text-[10px] font-black text-yellow-500 uppercase tracking-widest">{{ currentRankTitle }}</span>
                 </div>
-                
-                <!-- Rate -->
-                <div class="bg-violet-900/10 border border-violet-500/20 p-4 rounded-2xl relative overflow-hidden group hover:bg-violet-900/20 transition-all">
-                   <div class="absolute inset-0 bg-gradient-to-br from-violet-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                   <p class="text-[9px] text-violet-300 font-black uppercase tracking-widest mb-1 relative z-10">Win Rate</p>
-                   <p class="text-3xl font-black text-white relative z-10">{{ userStats.winRate }}%</p>
-                   <span class="absolute -bottom-4 -right-2 text-6xl text-violet-500/10 group-hover:text-violet-500/20 transition-all select-none">📈</span>
-                </div>
-                
-                <!-- Points -->
-                <div class="bg-amber-900/10 border border-amber-500/20 p-4 rounded-2xl relative overflow-hidden group hover:bg-amber-900/20 transition-all">
-                   <div class="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                   <p class="text-[9px] text-amber-300 font-black uppercase tracking-widest mb-1 relative z-10">Punti</p>
-                   <p class="text-3xl font-black text-white relative z-10">{{ userStats.totalPoints }}</p>
-                   <span class="absolute -bottom-4 -right-2 text-6xl text-amber-500/10 group-hover:text-amber-500/20 transition-all select-none">★</span>
-                </div>
-              </div>
-
-              <!-- LIST SECTIONS -->
-              <div class="space-y-8">
-                
-                <!-- Achievements -->
-                <div>
-                  <h3 class="flex items-center gap-2 mb-3 px-1">
-                    <span class="text-lg">🏆</span>
-                    <span class="text-xs font-black text-slate-300 uppercase tracking-widest">Premi & Medaglie</span>
-                  </h3>
-                  
-                  <div class="bg-black/20 border border-white/5 rounded-2xl p-2 max-h-40 overflow-y-auto custom-scrollbar">
-                    @if (userStats.achievements.length > 0) {
-                        @for (achievement of userStats.achievements; track achievement.id) {
-                        <div class="flex items-center gap-4 p-3 bg-slate-800/50 rounded-xl mb-1 last:mb-0 hover:bg-slate-800 transition-colors">
-                            <span class="text-2xl">{{ achievement.icon }}</span>
-                            <div class="flex-1">
-                            <p class="text-xs font-bold text-white uppercase">{{ achievement.name }}</p>
-                            <p class="text-[9px] text-slate-500">{{ achievement.date }}</p>
-                            </div>
-                        </div>
-                        }
-                    } @else {
-                        <div class="flex flex-col items-center justify-center py-6 gap-2 opacity-50">
-                            <span class="text-3xl grayscale opacity-50">🏆</span>
-                            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Nessun premio ancora conquistato</p>
-                        </div>
-                    }
+                <div class="flex gap-4 mt-2 justify-center md:justify-start">
+                  <div class="px-4 py-2 bg-indigo-500/10 border border-indigo-500/20 rounded-xl flex flex-col items-center min-w-[80px]">
+                    <span class="text-lg font-black text-white leading-none mb-1">{{ userStats.totalPoints }}</span>
+                    <span class="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Punti</span>
                   </div>
-                </div>
-
-                <!-- Purchases -->
-                <div>
-                  <h3 class="flex items-center gap-2 mb-3 px-1">
-                    <span class="text-lg">💳</span>
-                    <span class="text-xs font-black text-slate-300 uppercase tracking-widest">Storico Acquisti</span>
-                  </h3>
-                  
-                  <div class="bg-black/20 border border-white/5 rounded-2xl p-2 max-h-40 overflow-y-auto custom-scrollbar">
-                    @if (userStats.purchases.length > 0) {
-                        @for (purchase of userStats.purchases; track purchase.id) {
-                        <div class="flex items-center justify-between p-3 bg-slate-800/50 rounded-xl mb-1 last:mb-0 hover:bg-slate-800 transition-colors">
-                            <div>
-                            <p class="text-xs font-bold text-white uppercase">{{ purchase.name }}</p>
-                            <p class="text-[9px] text-slate-500">{{ purchase.date }}</p>
-                            </div>
-                            <p class="text-xs font-black text-emerald-400">€{{ purchase.price }}</p>
-                        </div>
-                        }
-                    } @else {
-                        <div class="flex flex-col items-center justify-center py-6 gap-2 opacity-50">
-                            <span class="text-3xl grayscale opacity-50">💳</span>
-                            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Nessun acquisto effettuato</p>
-                        </div>
-                    }
+                  <div class="px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex flex-col items-center min-w-[80px]">
+                    <span class="text-lg font-black text-white leading-none mb-1">{{ userStats.gamesWon }}</span>
+                    <span class="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Vinte</span>
                   </div>
                 </div>
               </div>
+            </div>
 
-              <!-- Footer Actions -->
-              <div class="mt-10 pt-6 border-t border-white/5 flex flex-col items-center">
-                 <button (click)="logout()" 
-                    class="w-full py-4 relative group overflow-hidden rounded-xl bg-slate-800/50 border border-rose-500/30 hover:border-rose-500/60 transition-all">
-                    <div class="absolute inset-0 bg-gradient-to-r from-rose-500/10 via-rose-500/5 to-rose-500/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                    <span class="relative z-10 text-xs font-black text-rose-400 uppercase tracking-[0.25em] group-hover:text-rose-300 transition-colors">
-                        Disconnetti Account
-                    </span>
-                 </button>
-                 <p class="text-[9px] text-slate-600 mt-4 font-mono">ID: {{supabase.user()?.id}}</p>
-              </div>
-
+            <div class="mt-8">
+               <button (click)="logout()" class="w-full bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-500 py-4 rounded-2xl font-black uppercase tracking-widest transition-all">
+                Esci dal Profilo
+               </button>
             </div>
           </div>
         </div>
       }
+
+      <div class="h-10"></div>
+
+
 
       <!-- Selection Modals for Local/AI -->
       @if (showLocalGameModeSelector) {
@@ -538,7 +465,7 @@ import { ImageUtils } from '../utils/image-utils';
             <!-- Header -->
             <div class="p-6 border-b border-white/10 bg-black/20 flex justify-between items-center">
               <div class="flex flex-col">
-                <h3 class="text-2xl font-black text-white uppercase tracking-wider">Libreria Modelli 3D</h3>
+                <h3 class="text-2xl font-black text-white uppercase tracking-wider">Custom 3D</h3>
                 <p class="text-xs text-slate-400 mt-1 uppercase font-bold tracking-widest">Personalizza i tuoi pezzi e la scacchiera</p>
               </div>
               <button (click)="showSetup = false" class="text-slate-400 hover:text-white p-2 text-xl transition-colors">✕</button>
@@ -547,11 +474,21 @@ import { ImageUtils } from '../utils/image-utils';
 
             <!-- Navigation Tabs -->
             <div class="flex border-b border-white/10 px-8">
-              <button class="px-6 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all border-blue-500 text-white">
+              <button (click)="setupTab = 'upload'"
+                [class.border-blue-500]="setupTab === 'upload'"
+                [class.text-white]="setupTab === 'upload'"
+                [class.border-transparent]="setupTab !== 'upload'"
+                [class.text-slate-500]="setupTab !== 'upload'"
+                class="px-6 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all">
                 Configurazione Pezzi
               </button>
-              <button (click)="gameService.setView('marketplace'); showSetup = false" class="px-6 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all border-transparent text-slate-500 hover:text-indigo-400">
-                Visita lo Shop ✨
+              <button (click)="setupTab = 'library'"
+                [class.border-blue-500]="setupTab === 'library'"
+                [class.text-white]="setupTab === 'library'"
+                [class.border-transparent]="setupTab !== 'library'"
+                [class.text-slate-500]="setupTab !== 'library'"
+                class="px-6 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all">
+                Libreria Asset
               </button>
             </div>
 
@@ -742,6 +679,19 @@ import { ImageUtils } from '../utils/image-utils';
       50% { filter: drop-shadow(0 0 50px rgba(251, 191, 36, 0.8)); }
     }
     .animate-pulse-subtle { animation: pulse-subtle 3s ease-in-out infinite; }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+    }
+    .animate-shake { animation: shake 0.2s ease-in-out infinite; }
+
+    @keyframes fade-in-up {
+      from { opacity: 0; transform: translateY(15px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in-up { animation: fade-in-up 0.4s ease-out forwards; }
   `]
 })
 export class HomeViewComponent implements OnInit {
@@ -751,20 +701,9 @@ export class HomeViewComponent implements OnInit {
   @Input() showSetup = false;
   @Output() fileSelected = new EventEmitter<{ event: Event, type: string, colorSuffix?: string }>();
 
-  showAIGameModeSelector = false;
   showLocalGameModeSelector = false;
-  showAccountManager = false; // Added this property
-
-  // Auth State
-  showAuth = false;
-  authMode: 'login' | 'register' | 'admin' = 'login';
-  authNickname = '';
-  authEmail = '';
-  authPassword = '';
-  authError = '';
-  authSuccess = '';
-  loadingAuth = false;
-  uploadingPhoto = false; // Already present, but ensuring it's here
+  showAIGameModeSelector = false;
+  uploadingPhoto = false;
 
   // Setup / Assets Properties
   pieceTypes: any[] = [
@@ -781,9 +720,18 @@ export class HomeViewComponent implements OnInit {
   ];
   loadedStatus: Record<string, boolean> = {};
 
-  // User Stats (mock data for now)
-  isEditingName = false;
-  tempNickname = '';
+  // Modal States
+  showAuth = false;
+  showAccountManager = false;
+  authMode: 'login' | 'register' | 'admin' = 'login';
+
+  // Auth Form Fields
+  authNickname = '';
+  authEmail = '';
+  authPassword = '';
+  authError = '';
+  authSuccess = '';
+  loadingAuth = false;
 
   userStats = {
     gamesPlayed: 0,
@@ -794,6 +742,28 @@ export class HomeViewComponent implements OnInit {
     purchases: [],
     downloads: []
   };
+
+  ranks = [
+    "Recluta", "Soldato", "Sentinella", "Guardia", "Sergente",
+    "Tenente", "Capitano", "Maggiore", "Colonnello", "Generale",
+    "Cavaliere", "Paladino", "Protettore", "Difensore", "Veterano",
+    "Maestro d'Armi", "Scudiere", "Araldo", "Messaggero", "Diplomatico",
+    "Barone", "Visconte", "Conte", "Marchese", "Duca",
+    "Gran Duca", "Principe", "Erede al Trono", "Reggente", "Governatore",
+    "Saggio", "Erudito", "Filosofo", "Maestro di Logica", "Stratega",
+    "Tattico Supremo", "Gran Maestro", "Architetto di Guerra", "Veggente", "Oracolo",
+    "Guardiano del Sacro", "Campione del Re", "Eroe del Regno", "Leggenda Vivente", "Mito Eterno",
+    "Semidio del Gioco", "Avatar della Vittoria", "Sovrano Universale", "Imperatore del Tempo", "Re dei Re"
+  ];
+
+  get currentRankTitle(): string {
+    if (!this.supabase.user()) return 'Ospite';
+    const index = Math.floor(this.userStats.totalPoints / 100);
+    return this.ranks[Math.min(index, this.ranks.length - 1)];
+  }
+
+  isEditingName = false;
+  tempNickname = '';
 
   getIconForType(type: string): string {
     const icons: Record<string, string> = {
@@ -846,87 +816,51 @@ export class HomeViewComponent implements OnInit {
   }
 
   async handleAuth(e: Event) {
-    e.preventDefault();
+    if (e) e.preventDefault();
     this.loadingAuth = true;
     this.authError = '';
-    this.authSuccess = ''; // Assicurati di avere questa proprietà nel componente
-    console.log('HomeView: Inizio procedura auth', this.authMode);
+    this.authSuccess = '';
 
     try {
       if (this.authMode === 'admin') {
         if (this.authNickname === 'admin' && this.authPassword === 'accessometti') {
-          this.authSuccess = 'Benvenuto Admin! Redirect in corso...';
+          this.authSuccess = 'Benvenuto Admin! Accesso in corso...';
           setTimeout(() => {
             this.showAuth = false;
             this.gameService.setView('admin');
           }, 1500);
           return;
         } else {
-          this.authError = 'Credenziali Admin Errante!';
-          this.loadingAuth = false;
+          this.authError = 'Credenziali Admin non valide.';
           return;
         }
       }
 
-      let res: any = null;
-
+      let res: any;
       if (this.authMode === 'login') {
         res = await this.supabase.authService.signIn(this.authNickname, this.authPassword);
       } else {
-        // Registrazione
         res = await this.supabase.authService.signUp(this.authEmail, this.authPassword, this.authNickname);
       }
 
       const { data, error } = res;
-
       if (error) {
-        console.error('HomeView: Errore durante auth:', error);
-        let msg = error.message || 'Si è verificato un errore.';
-
-        // Traduzioni errori stile Number-main
-        if (msg.includes('Invalid login credentials')) {
-          msg = 'Credenziali non valide. Verifica nickname e password.';
-        } else if (msg.includes('User already registered')) {
-          msg = 'Email già registrata. Prova ad accedere!';
-        } else if (msg.includes('Password should be at least')) {
-          msg = 'La password deve avere almeno 6 caratteri.';
-        } else if (msg.includes('Email not confirmed')) {
-          msg = 'Email non confermata. Controlla la tua posta elettronica.';
-        } else if (msg.includes('Nickname già in uso')) {
-          msg = 'Questo nickname è già stato preso. Scegline un altro!';
-        }
-
-        this.authError = msg;
+        this.authError = error.message;
       } else {
-        // Successo
         if (this.authMode === 'register' && !data?.session) {
-          this.authSuccess = 'Account creato! Ti abbiamo inviato un\'email di conferma. Clicca sul link per attivare l\'account.';
-          this.authError = '';
+          this.authSuccess = 'Account creato! Conferma la tua email.';
         } else {
-          // Login o registrazione con auto-conferma
-          this.authSuccess = 'Accesso in corso...';
-          this.authError = '';
-
-          // FORCED CLOSURE after 2 seconds
+          this.authSuccess = `Benvenuto, ${this.authNickname || 'Giocatore'}!`;
           setTimeout(() => {
             this.showAuth = false;
             this.authSuccess = '';
           }, 2000);
-
-          // Caricamento profilo e dati
           await this.supabase.loadUserProfile();
           await this.loadUserStats();
-
-          // Reset Form
-          this.authNickname = '';
-          this.authEmail = '';
-          this.authPassword = '';
-          console.log('HomeView: Login completato con successo');
         }
       }
     } catch (err: any) {
-      this.authError = 'Errore di connessione al database.';
-      console.error('HomeView: Critical Auth Error:', err);
+      this.authError = 'Errore di connessione.';
     } finally {
       this.loadingAuth = false;
     }
@@ -935,7 +869,6 @@ export class HomeViewComponent implements OnInit {
   async logout() {
     await this.supabase.signOut();
     this.showAccountManager = false;
-    // Reset local stats
     this.userStats = {
       gamesPlayed: 0,
       gamesWon: 0,
@@ -945,7 +878,79 @@ export class HomeViewComponent implements OnInit {
       purchases: [],
       downloads: []
     };
-    console.log('HomeView: Logout effettuato');
+  }
+
+  async openAccountManager() {
+    if (!this.supabase.user()) {
+      this.toggleAuth();
+      return;
+    }
+    this.showAccountManager = true;
+    await this.loadUserStats();
+  }
+
+  async onProfilePhotoSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || !input.files[0]) return;
+    const file = input.files[0];
+    const userId = this.supabase.user()?.id;
+    if (!userId) return;
+
+    this.uploadingPhoto = true;
+    try {
+      const base64Image = await ImageUtils.processAvatarImage(file);
+      const response = await fetch(base64Image);
+      const blob = await response.blob();
+      const fileExt = file.name.split('.').pop() || 'jpg';
+      const fileName = `${userId}-${Date.now()}.${fileExt}`;
+      const filePath = `avatars/${fileName}`;
+
+      const { error } = await this.supabase.client.storage
+        .from('avatars')
+        .upload(filePath, blob, { contentType: 'image/jpeg', upsert: true });
+
+      if (error) throw error;
+
+      const { data: urlData } = this.supabase.client.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      await this.supabase.client.from('profiles')
+        .update({ avatar_url: urlData.publicUrl })
+        .eq('id', userId);
+
+      await this.supabase.loadUserProfile();
+    } catch (error: any) {
+      console.error('Upload Error:', error);
+      alert(`Errore caricamento: ${error.message}`);
+    } finally {
+      this.uploadingPhoto = false;
+    }
+  }
+
+  async deleteProfilePhoto() {
+    const userId = this.supabase.user()?.id;
+    if (!userId) return;
+    await this.supabase.client.from('profiles').update({ avatar_url: null }).eq('id', userId);
+    await this.supabase.loadUserProfile();
+  }
+
+  startEditingName() {
+    this.tempNickname = this.supabase.username() || '';
+    this.isEditingName = true;
+  }
+
+  async saveNickname() {
+    if (!this.tempNickname.trim()) {
+      this.isEditingName = false;
+      return;
+    }
+    const userId = this.supabase.user()?.id;
+    if (userId) {
+      await this.supabase.client.from('profiles').update({ nickname: this.tempNickname }).eq('id', userId);
+      this.supabase.username.set(this.tempNickname);
+    }
+    this.isEditingName = false;
   }
 
   openCareer() {
@@ -959,7 +964,6 @@ export class HomeViewComponent implements OnInit {
 
   openAdventure() {
     if (this.supabase.user()) {
-      // TODO: Implement adventure mode view
       alert('Modalità Avventura in arrivo! 🏰');
     } else {
       this.toggleAuth();
@@ -967,162 +971,21 @@ export class HomeViewComponent implements OnInit {
     }
   }
 
-  async openAccountManager() {
-    if (!this.supabase.user()) {
-      this.toggleAuth();
-      return;
-    }
-    this.showAccountManager = true;
-    await this.loadUserStats();
-  }
-
   async loadUserStats() {
+    const userId = this.supabase.user()?.id;
+    if (!userId) return;
     try {
-      const userId = this.supabase.user()?.id;
-      if (!userId) return;
-
-      const progress = await this.supabase.getCareerProgress();
-      if (progress) {
-        this.userStats.totalPoints = progress.total_points || 0;
-        // Map real results from the database if they exist
-        // Note: these fields might need to be added to your career_progress table
-        this.userStats.gamesPlayed = progress.games_played || 0;
-        this.userStats.gamesWon = progress.games_won || 0;
-
+      const { data } = await this.supabase.profileService.getCareerProgress(userId);
+      if (data) {
+        this.userStats.totalPoints = data.total_points || 0;
+        this.userStats.gamesPlayed = data.games_played || 0;
+        this.userStats.gamesWon = data.games_won || 0;
         if (this.userStats.gamesPlayed > 0) {
           this.userStats.winRate = Number(((this.userStats.gamesWon / this.userStats.gamesPlayed) * 100).toFixed(1));
-        } else {
-          this.userStats.winRate = 0;
         }
-      } else {
-        // Defaults for new users
-        this.userStats.gamesPlayed = 0;
-        this.userStats.gamesWon = 0;
-        this.userStats.winRate = 0;
-        this.userStats.totalPoints = 0;
-      }
-    } catch (error) {
-      console.error('Error loading stats:', error);
-    }
-  }
-
-  async onProfilePhotoSelected(event: Event) {
-    const input = event.target as HTMLInputElement;
-    if (!input.files || !input.files[0]) return;
-    const file = input.files[0];
-    const userId = this.supabase.user()?.id;
-    if (!userId) return;
-
-    this.uploadingPhoto = true;
-    try {
-      // 1. Client-side compression/resize (Matches Number-main logic)
-      const base64Image = await ImageUtils.processAvatarImage(file);
-
-      // 2. Upload to Storage (Bucket 'avatars')
-      // convert base64 to blob for upload
-      const response = await fetch(base64Image);
-      const blob = await response.blob();
-      const fileExt = file.name.split('.').pop() || 'jpg';
-      const fileName = `${userId}-${Date.now()}.${fileExt}`;
-      const filePath = `${fileName}`;
-
-      const { data, error } = await this.supabase.client.storage
-        .from('avatars')
-        .upload(filePath, blob, {
-          contentType: 'image/jpeg',
-          upsert: true
-        });
-
-      if (error) {
-        if (error.message.includes('Bucket not found')) {
-          throw new Error("Manca il bucket 'avatars' su Supabase. Crealo come Pubblico.");
-        }
-        throw error;
-      }
-
-      // 3. Get Public URL
-      const { data: urlData } = this.supabase.client.storage
-        .from('avatars')
-        .getPublicUrl(filePath);
-
-      // 4. Update Profile
-      await this.supabase.client.from('profiles')
-        .update({ avatar_url: urlData.publicUrl })
-        .eq('id', userId);
-
-      await this.supabase.loadUserProfile();
-
-      // Removed alert as per request
-      // alert('Foto aggiornata con successo! ✨');
-
-    } catch (error: any) {
-      console.error('Upload Error:', error);
-      alert(`Impossibile caricare la foto: ${error.message}`);
-    } finally {
-      this.uploadingPhoto = false;
-    }
-  }
-
-  startEditingName() {
-    this.tempNickname = this.supabase.username() || '';
-    this.isEditingName = true;
-  }
-
-  async debugFetchProfile() {
-    const uid = this.supabase.user()?.id;
-    if (!uid) {
-      alert('ID Utente non trovato (L\'utente sembra non essere loggato).');
-      return;
-    }
-
-    console.log('DEBUG: Tentativo fetch profilo per UID:', uid);
-
-    const { data, error } = await this.supabase.client
-      .from('profiles')
-      .select('*')
-      .eq('id', uid)
-      .maybeSingle();
-
-    if (error) {
-      console.error('DEBUG: Errore query profiles:', error);
-      alert('ERRORE QUERY: ' + error.message);
-    } else if (data) {
-      console.log('DEBUG: Profilo trovato:', data);
-      alert(`PROFILO TROVATO!\nUsername: ${data.username}\nNickname: ${data.nickname}\nID: ${data.id}`);
-      // Force update local signal
-      if (data.username) this.supabase.username.set(data.username);
-    } else {
-      console.warn('DEBUG: Profilo non trovato nella tabella.');
-      alert('NESSUN PROFILO TROVATO NEL DATABASE per questo ID.');
-    }
-  }
-
-  async saveNickname() {
-    if (!this.tempNickname.trim()) {
-      this.isEditingName = false;
-      return;
-    }
-    try {
-      const userId = this.supabase.user()?.id;
-      if (userId) {
-        await this.supabase.client.from('profiles').update({ username: this.tempNickname }).eq('id', userId);
-        // Manually update local signal to reflect change immediately
-        this.supabase.username.set(this.tempNickname);
       }
     } catch (e) {
-      console.error('Error saving name', e);
-    }
-    this.isEditingName = false;
-  }
-
-  async deleteProfilePhoto() {
-    const userId = this.supabase.user()?.id;
-    if (!userId) return;
-    try {
-      await this.supabase.client.from('profiles').update({ avatar_url: null }).eq('id', userId);
-      await this.supabase.loadUserProfile();
-    } catch (error: any) {
-      alert('Errore cancellazione foto');
+      console.error('Error loading stats', e);
     }
   }
 
@@ -1150,7 +1013,8 @@ export class HomeViewComponent implements OnInit {
 
   async selectLibrarySet(setId: string) {
     if (!this.supabase.user()) {
-      alert('Devi accedere per salvare le preferenze!');
+      this.toggleAuth();
+      this.authError = 'Effettua il login per salvare le preferenze.';
       return;
     }
 
@@ -1212,8 +1076,6 @@ export class HomeViewComponent implements OnInit {
 
     try {
       const userId = this.supabase.user()?.id;
-
-      // If user is logged in, upload and save to profile
       if (userId) {
         const publicUrl = await this.supabase.uploadCustomAssetFile(file, key);
         await this.supabase.saveUserAssetPreference(key, publicUrl);
