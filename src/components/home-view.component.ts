@@ -41,9 +41,6 @@ import { ImageUtils } from '../utils/image-utils';
             <span class="px-2 py-0.5 bg-yellow-500 text-black text-[8px] md:text-[9px] font-black uppercase rounded-sm tracking-widest animate-fade-in-up">
               {{ currentRankTitle }}
             </span>
-            <p class="text-[9px] md:text-[10px] font-black text-indigo-400/80 uppercase tracking-[0.4em] ml-1">
-              Alpha 1.0
-            </p>
           </div>
         </div>
 
@@ -79,7 +76,7 @@ import { ImageUtils } from '../utils/image-utils';
             </span>
             @if (supabase.user()) {
               <span class="text-[8px] md:text-[9px] font-black text-yellow-500 uppercase tracking-tighter">
-                {{ userStats.totalPoints }} PT • {{ currentRankTitle }}
+                {{ userStats.totalPoints }} Punti
               </span>
             }
           </div>
@@ -155,18 +152,17 @@ import { ImageUtils } from '../utils/image-utils';
           </button>
 
           <!-- Adventure Mode Card (Soon) -->
-          <button (click)="openAdventure()" class="group relative overflow-hidden bg-slate-900/40 backdrop-blur-2xl border border-white/5 hover:border-emerald-500/30 rounded-[2rem] p-4 md:p-8 transition-all hover:scale-[1.02] active:scale-95 shadow-2xl">
-            <div class="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          <button class="relative group overflow-hidden bg-slate-900/20 backdrop-blur-2xl border border-white/5 rounded-[2rem] p-4 md:p-8 transition-all opacity-60 cursor-not-allowed">
             <div class="relative flex flex-col items-center text-center gap-3 md:gap-4">
-              <div class="w-12 h-12 md:w-16 md:h-16 rounded-2xl bg-emerald-500/20 flex items-center justify-center border border-emerald-500/20 group-hover:bg-emerald-500/30 transition-all">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-6 h-6 md:w-8 md:h-8 text-emerald-400">
+              <div class="w-12 h-12 md:w-16 md:h-16 rounded-2xl bg-slate-800 flex items-center justify-center border border-white/5 opacity-40">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-6 h-6 md:w-8 md:h-8 text-slate-500">
                   <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
                   <polyline points="9 22 9 12 15 12 15 22"></polyline>
                 </svg>
               </div>
               <div>
-                <h2 class="text-xl md:text-2xl font-black text-white uppercase tracking-tighter">Avventura</h2>
-                <p class="text-emerald-500/60 text-[8px] md:text-[10px] font-bold uppercase tracking-[0.2em] mt-1 italic">Prossimamente</p>
+                <h2 class="text-xl md:text-2xl font-black text-slate-500 uppercase tracking-tighter">Avventura</h2>
+                <p class="text-emerald-500 text-[8px] md:text-[10px] font-bold uppercase tracking-[0.2em] mt-1 italic">Prossimamente</p>
               </div>
             </div>
           </button>
@@ -852,7 +848,7 @@ export class HomeViewComponent implements OnInit {
           setTimeout(() => {
             this.showAuth = false;
             this.authSuccess = '';
-          }, 2000);
+          }, 1000);
           await this.supabase.loadUserProfile();
           await this.loadUserStats();
         }
