@@ -14,12 +14,23 @@ interface AdminUser {
   is_active?: boolean;
 }
 
+interface AssetCollection {
+  id: string;
+  name: string;
+  type: 'chess' | 'checkers';
+  price_eur: number;
+  assets: Record<string, string>;
+  is_public: boolean;
+  created_at: string;
+}
+
 interface KitAssetSlot {
   id: string; // e.g. 'p_w', 'r_b', 'board'
   label: string;
   icon: string;
   file: File | null;
   uploadedUrl: string | null;
+  previewUrl: string | null; // URL per anteprima 3D
   status: 'pending' | 'ready' | 'uploading' | 'done' | 'error';
 }
 
@@ -175,123 +186,218 @@ interface KitAssetSlot {
             </div>
           }
 
-          <!-- KITS TAB (New Design) -->
+          <!-- KITS TAB (Refactored) -->
           @if (activeTab === 'kits') {
-            <div class="space-y-10 animate-fade-in max-w-5xl mx-auto pb-20">
+            <div class="space-y-10 animate-fade-in max-w-6xl mx-auto pb-20">
               
-              <!-- Header -->
-              <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-white/5 pb-8">
+              <!-- Header with Sub-Tabs -->
+              <div class="flex flex-col md:flex-row justify-between items-center gap-6 border-b border-white/5 pb-8">
                 <div>
                   <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tighter">Gestione Kit 3D</h2>
-                  <p class="text-slate-500 text-xs font-bold uppercase tracking-widest mt-2">Carica e Configura set completi per lo Shop</p>
+                  <p class="text-slate-500 text-xs font-bold uppercase tracking-widest mt-2">Gestisci la vetrina dello Shop e pubblica nuovi set</p>
+                </div>
+                
+                <div class="flex bg-slate-900/80 p-1 rounded-2xl border border-white/5 shadow-2xl">
+                  <button (click)="kitSubTab = 'list'; fetchPublishedKits()" 
+                    [class.bg-indigo-600]="kitSubTab === 'list'"
+                    [class.text-white]="kitSubTab === 'list'"
+                    [class.text-slate-400]="kitSubTab !== 'list'"
+                    class="px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">
+                    Lista Kit
+                  </button>
+                  <button (click)="kitSubTab = 'create'" 
+                    [class.bg-indigo-600]="kitSubTab === 'create'"
+                    [class.text-white]="kitSubTab === 'create'"
+                    [class.text-slate-400]="kitSubTab !== 'create'"
+                    class="px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">
+                    Crea Nuovo
+                  </button>
                 </div>
               </div>
 
-              <!-- Configuration Form -->
-              <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                
-                <!-- Setup Panel -->
-                <div class="lg:col-span-1 space-y-6">
-                  <div class="bg-indigo-900/10 border border-indigo-500/20 rounded-[2rem] p-6 md:p-8 space-y-6 sticky top-6">
-                    <h3 class="text-lg font-black uppercase tracking-tight text-white flex items-center gap-3">
-                      <span class="p-2 bg-indigo-500/20 rounded-lg text-lg">⚙️</span> Configurazione
-                    </h3>
-                    
-                    <div class="space-y-4">
-                      <div>
-                        <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Nome del Kit</label>
-                        <input type="text" [(ngModel)]="newKit.name" placeholder="es. Classic Ivory" 
-                          class="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-indigo-500 outline-none transition-colors text-white placeholder-slate-600 font-bold">
-                      </div>
+              <!-- LIST VIEW -->
+              @if (kitSubTab === 'list') {
+                <div class="animate-fade-in space-y-6">
+                  @if (loading) {
+                    <div class="text-center py-20 animate-pulse text-slate-500 font-black uppercase tracking-widest">Sincronizzazione archivio...</div>
+                  } @else {
+                    <div class="grid grid-cols-1 gap-4">
+                       @for (kit of publishedKits; track kit.id) {
+                         <div class="bg-slate-900/40 border border-white/10 rounded-3xl p-6 flex flex-col md:flex-row items-center justify-between gap-6 hover:border-indigo-500/30 transition-all group">
+                            <div class="flex items-center gap-6 flex-1">
+                               <div class="w-20 h-20 bg-slate-950 rounded-2xl border border-white/10 flex items-center justify-center text-3xl shadow-2xl group-hover:scale-105 transition-transform">
+                                  {{ kit.type === 'chess' ? '♟️' : '⚪' }}
+                               </div>
+                               <div>
+                                  <div class="flex items-center gap-3">
+                                    <h3 class="text-xl font-black uppercase tracking-tight text-white">{{ kit.name }}</h3>
+                                    <span class="px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[9px] font-black uppercase tracking-widest rounded-full">
+                                      {{ kit.type === 'chess' ? 'Scacchi' : 'Dama' }}
+                                    </span>
+                                  </div>
+                                  <div class="flex items-center gap-4 mt-2">
+                                     <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Prezzo: <span class="text-emerald-400">{{ kit.price_eur === 0 ? 'GRATIS' : '€' + kit.price_eur }}</span></p>
+                                     <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Asset: <span class="text-indigo-400">{{ getObjectKeys(kit.assets).length }} caricati</span></p>
+                                  </div>
+                               </div>
+                            </div>
 
-                      <div class="grid grid-cols-2 gap-4">
-                         <div>
-                            <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Tipo Gioco</label>
-                            <select [(ngModel)]="newKit.type" (change)="updateSlots()"
-                              class="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-indigo-500 outline-none transition-colors text-white font-bold appearance-none">
-                              <option value="chess">Scacchi</option>
-                              <option value="checkers">Dama</option>
-                            </select>
+                            <div class="flex items-center gap-4">
+                               <button (click)="toggleKitVisibility(kit)" 
+                                 class="px-6 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all"
+                                 [class.bg-emerald-500/10]="kit.is_public" [class.text-emerald-400]="kit.is_public" [class.border-emerald-500/30]="kit.is_public"
+                                 [class.bg-orange-500/10]="!kit.is_public" [class.text-orange-400]="!kit.is_public" [class.border-orange-500/30]="!kit.is_public">
+                                 {{ kit.is_public ? 'Visibile' : 'Nascosto' }}
+                               </button>
+                               <button (click)="deleteKit(kit.id)" class="w-12 h-12 flex items-center justify-center rounded-xl bg-rose-500/10 text-rose-500 border border-rose-500/20 hover:bg-rose-500 hover:text-white transition-all">
+                                 🗑️
+                               </button>
+                            </div>
                          </div>
-                         <div>
-                            <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Prezzo (€)</label>
-                            <input type="number" [(ngModel)]="newKit.price" min="0" step="0.5"
-                              class="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-indigo-500 outline-none transition-colors text-white font-bold">
+                       } @empty {
+                         <div class="bg-slate-900/20 border-2 border-dashed border-white/5 rounded-[3rem] py-32 text-center">
+                            <span class="text-5xl opacity-40">🏪</span>
+                            <h3 class="text-xl font-black uppercase tracking-tighter text-slate-500 mt-6">Nessun Kit Pubblicato</h3>
+                            <button (click)="kitSubTab = 'create'" class="mt-6 text-indigo-400 font-bold uppercase text-[10px] tracking-widest hover:text-indigo-300">Crea il tuo primo kit dello shop</button>
                          </div>
-                      </div>
+                       }
+                    </div>
+                  }
+                </div>
+              }
 
-                      <div class="pt-4 border-t border-white/5">
-                        <label class="flex items-center gap-3 cursor-pointer group">
-                          <input type="checkbox" [(ngModel)]="newKit.isPublic" class="w-5 h-5 rounded border-white/20 bg-slate-800 text-indigo-500 focus:ring-offset-0 focus:ring-0">
-                          <span class="text-xs font-bold text-slate-400 group-hover:text-white transition-colors uppercase tracking-wider">Visibile nello Shop</span>
-                        </label>
-                      </div>
+              <!-- CREATE VIEW -->
+              @if (kitSubTab === 'create') {
+                <div class="animate-fade-in grid grid-cols-1 lg:grid-cols-3 gap-8">
+                  <!-- Setup Panel -->
+                  <div class="lg:col-span-1 space-y-6">
+                    <div class="bg-indigo-900/10 border border-indigo-500/20 rounded-[2rem] p-6 md:p-8 space-y-6 sticky top-6">
+                      <h3 class="text-lg font-black uppercase tracking-tight text-white flex items-center gap-3">
+                        <span class="p-2 bg-indigo-500/20 rounded-lg text-lg">⚙️</span> Configurazione
+                      </h3>
+                      
+                      <div class="space-y-4">
+                        <div>
+                          <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Nome del Kit</label>
+                          <input type="text" [(ngModel)]="newKit.name" placeholder="es. Classic Ivory" 
+                            class="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-indigo-500 outline-none transition-colors text-white placeholder-slate-600 font-bold">
+                        </div>
 
-                      <button (click)="publishKit()" [disabled]="uploading"
-                        class="w-full py-4 mt-4 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl font-black uppercase text-xs tracking-widest shadow-[0_0_20px_rgba(79,70,229,0.3)] transition-all transform active:scale-95 flex items-center justify-center gap-2">
-                        @if (uploading) {
-                          <div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                          <span>Pubblicazione...</span>
-                        } @else {
-                          <span>🚀 Pubblica Kit</span>
-                        }
-                      </button>
+                        <div class="grid grid-cols-2 gap-4">
+                           <div>
+                              <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Tipo Gioco</label>
+                              <select [(ngModel)]="newKit.type" (change)="updateSlots()"
+                                class="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-indigo-500 outline-none transition-colors text-white font-bold appearance-none">
+                                <option value="chess">Scacchi</option>
+                                <option value="checkers">Dama</option>
+                              </select>
+                           </div>
+                           <div>
+                              <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Prezzo (€)</label>
+                              <input type="number" [(ngModel)]="newKit.price" min="0" step="0.5"
+                                class="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-indigo-500 outline-none transition-colors text-white font-bold">
+                           </div>
+                        </div>
+
+                        <div class="pt-4 border-t border-white/5">
+                          <label class="flex items-center gap-3 cursor-pointer group">
+                            <input type="checkbox" [(ngModel)]="newKit.isPublic" class="w-5 h-5 rounded border-white/20 bg-slate-800 text-indigo-500 focus:ring-offset-0 focus:ring-0">
+                            <span class="text-xs font-bold text-slate-400 group-hover:text-white transition-colors uppercase tracking-wider">Visibile nello Shop</span>
+                          </label>
+                        </div>
+
+                        <button (click)="publishKit()" [disabled]="uploading"
+                          class="w-full py-4 mt-4 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl font-black uppercase text-xs tracking-widest shadow-[0_0_20px_rgba(79,70,229,0.3)] transition-all transform active:scale-95 flex items-center justify-center gap-2">
+                          @if (uploading) {
+                            <div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                            <span>Pubblicazione...</span>
+                          } @else {
+                            <span>🚀 Pubblica Kit</span>
+                          }
+                        </button>
+                      </div>
                     </div>
                   </div>
+
+                  <!-- Assets Upload Grid -->
+                  <div class="lg:col-span-2">
+                     <div class="bg-slate-900/30 border border-white/5 rounded-[2rem] p-6 md:p-8">
+                        <h3 class="text-lg font-black uppercase tracking-tight text-white mb-6 flex items-center justify-between">
+                           <span class="flex items-center gap-3"><span class="p-2 bg-slate-800 rounded-lg text-lg">📦</span> Asset Richiesti</span>
+                           <span class="text-[10px] bg-slate-800 px-3 py-1 rounded-full text-slate-400 uppercase tracking-widest">{{ countReadySlots() }} / {{ assetSlots.length }} Pronti</span>
+                        </h3>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                           @for (slot of assetSlots; track slot.id) {
+                              <label class="relative group cursor-pointer block">
+                                 <input type="file" class="hidden" accept=".glb,.gltf,.stl" (change)="onFileSelected($event, slot)">
+                                 
+                                 <div class="relative h-48 bg-gradient-to-br from-slate-900/80 to-slate-950/80 backdrop-blur-xl border-2 border-white/10 rounded-2xl overflow-hidden transition-all duration-500 group-hover:border-indigo-500/50 group-hover:shadow-[0_0_30px_rgba(99,102,241,0.3)] group-hover:scale-[1.02]"
+                                      [class.border-emerald-500/70]="slot.status === 'ready'"
+                                      [class.shadow-[0_0_30px_rgba(16,185,129,0.4)]]="slot.status === 'ready'">
+                                    
+                                    <div class="absolute inset-0 opacity-5" style="background-image: radial-gradient(circle, white 1px, transparent 1px); background-size: 20px 20px;"></div>
+                                    
+                                    @if (slot.status === 'ready') {
+                                       <div class="absolute top-3 right-3 z-20 flex items-center gap-2 px-3 py-1.5 bg-emerald-500/20 backdrop-blur-md border border-emerald-400/30 rounded-full shadow-lg animate-pulse-slow">
+                                          <div class="w-2 h-2 bg-emerald-400 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.8)]"></div>
+                                          <span class="text-[9px] font-black uppercase tracking-wider text-emerald-300">Pronto</span>
+                                       </div>
+                                    }
+                                    
+                                    <div class="relative h-full flex flex-col items-center justify-center p-4">
+                                       @if (slot.previewUrl) {
+                                          <div class="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-indigo-900/20 to-purple-900/20">
+                                             <div class="text-center">
+                                                <div class="w-20 h-20 mx-auto mb-3 bg-gradient-to-br from-indigo-500/30 to-purple-500/30 rounded-2xl flex items-center justify-center border border-white/20 shadow-2xl backdrop-blur-sm">
+                                                   <span class="text-4xl filter drop-shadow-lg">🎨</span>
+                                                </div>
+                                                <div class="px-3 py-1 bg-black/40 backdrop-blur-md rounded-lg border border-white/10">
+                                                   <p class="text-[8px] font-bold text-emerald-300 uppercase tracking-widest">Preview Disponibile</p>
+                                                </div>
+                                             </div>
+                                          </div>
+                                       } @else {
+                                          <div class="text-center space-y-3">
+                                             <div class="w-16 h-16 mx-auto bg-slate-800/50 rounded-2xl flex items-center justify-center border border-white/5 group-hover:border-indigo-500/30 group-hover:bg-indigo-900/20 transition-all duration-300">
+                                                <span class="text-4xl filter drop-shadow-lg group-hover:scale-110 transition-transform duration-300">{{ slot.icon }}</span>
+                                             </div>
+                                             <div class="space-y-1">
+                                                <p class="text-xs font-black uppercase tracking-wider text-slate-400 group-hover:text-indigo-300 transition-colors">
+                                                   {{ slot.label }}
+                                                </p>
+                                                <p class="text-[9px] font-bold text-slate-600 uppercase tracking-widest">Clicca per caricare</p>
+                                             </div>
+                                          </div>
+                                       }
+                                    </div>
+                                    
+                                    @if (slot.file) {
+                                       <div class="absolute bottom-0 left-0 right-0 px-3 py-2 bg-black/60 backdrop-blur-md border-t border-white/10">
+                                          <div class="flex items-center gap-2">
+                                             <svg class="w-3 h-3 text-emerald-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                                <path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/>
+                                             </svg>
+                                             <span class="text-[8px] text-slate-300 font-bold truncate flex-1">{{ slot.file.name }}</span>
+                                          </div>
+                                       </div>
+                                    }
+                                 </div>
+                              </label>
+                           }
+                        </div>
+
+                        <div class="mt-6 flex items-start gap-3 p-4 bg-orange-500/10 border border-orange-500/20 rounded-xl">
+                          <span class="text-xl">💡</span>
+                          <p class="text-[10px] text-orange-200/80 font-bold leading-relaxed">
+                             Assicurati che i modelli 3D siano centrati e scalati correttamente prima dell'upload. 
+                             I file verranno rinominati automaticamente e salvati nella cloud di THE KING.
+                          </p>
+                        </div>
+                     </div>
+                  </div>
                 </div>
-
-                <!-- Assets Upload Grid -->
-                <div class="lg:col-span-2">
-                   <div class="bg-slate-900/30 border border-white/5 rounded-[2rem] p-6 md:p-8">
-                      <h3 class="text-lg font-black uppercase tracking-tight text-white mb-6 flex items-center justify-between">
-                         <span class="flex items-center gap-3"><span class="p-2 bg-slate-800 rounded-lg text-lg">📦</span> Asset Richiesti</span>
-                         <span class="text-[10px] bg-slate-800 px-3 py-1 rounded-full text-slate-400 uppercase tracking-widest">{{ countReadySlots() }} / {{ assetSlots.length }} Pronti</span>
-                      </h3>
-
-                      <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-                         @for (slot of assetSlots; track slot.id) {
-                            <label class="relative group cursor-pointer">
-                               <input type="file" class="hidden" accept=".glb,.gltf,.stl" (change)="onFileSelected($event, slot)">
-                               
-                               <div class="h-32 bg-slate-950 border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center p-4 transition-all group-hover:border-indigo-500/50 group-hover:bg-slate-900/80"
-                                    [class.border-emerald-500-50]="slot.status === 'ready'"
-                                    [class.bg-emerald-900-10]="slot.status === 'ready'"
-                                    [class.opacity-100]="slot.status === 'ready'">
-                                  
-                                  @if (slot.status === 'ready') {
-                                     <div class="absolute top-2 right-2 w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" class="w-3 h-3"><path d="M20 6L9 17l-5-5"/></svg>
-                                     </div>
-                                  }
-
-                                  <span class="text-3xl mb-2 filter drop-shadow-lg group-hover:scale-110 transition-transform duration-300">{{ slot.icon }}</span>
-                                  <span class="text-[10px] font-black uppercase tracking-widest text-center"
-                                        [class.text-emerald-400]="slot.status === 'ready'"
-                                        [class.text-slate-500]="slot.status !== 'ready'"
-                                        [class.group-hover-text-indigo-300]="slot.status !== 'ready'">
-                                     {{ slot.label }}
-                                  </span>
-                                  @if (slot.file) {
-                                     <span class="text-[8px] text-slate-600 mt-1 truncate max-w-full px-2">{{ slot.file.name }}</span>
-                                  }
-                               </div>
-                            </label>
-                         }
-                      </div>
-
-                      <div class="mt-6 flex items-start gap-3 p-4 bg-orange-500/10 border border-orange-500/20 rounded-xl">
-                        <span class="text-xl">💡</span>
-                        <p class="text-[10px] text-orange-200/80 font-bold leading-relaxed">
-                           Assicurati che i modelli 3D siano centrati e scalati correttamente prima dell'upload. 
-                           I file verranno rinominati automaticamente e salvati nella cloud di THE KING.
-                        </p>
-                      </div>
-                   </div>
-                </div>
-
-              </div>
-            </div>
-          }
+              }
 
           <!-- APPROVAL TAB -->
           @if (activeTab === 'approval') {
@@ -313,6 +419,11 @@ interface KitAssetSlot {
     .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.2); border-radius: 10px; }
     @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     .animate-fade-in { animation: fade-in 0.4s ease-out; }
+    @keyframes pulse-slow { 
+      0%, 100% { opacity: 1; transform: scale(1); } 
+      50% { opacity: 0.8; transform: scale(0.98); } 
+    }
+    .animate-pulse-slow { animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
     .scrollbar-hide::-webkit-scrollbar { display: none; }
     .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
   `]
@@ -326,8 +437,11 @@ export class AdminViewComponent implements OnInit {
   loading = false;
   fetchError = '';
   uploading = false;
+  getObjectKeys = Object.keys;
 
   // Kit Management State
+  kitSubTab: 'create' | 'list' = 'list';
+  publishedKits: AssetCollection[] = [];
   newKit = {
     name: '',
     price: 0,
@@ -339,6 +453,7 @@ export class AdminViewComponent implements OnInit {
 
   ngOnInit() {
     this.fetchUsers();
+    this.fetchPublishedKits();
     this.updateSlots();
   }
 
@@ -348,19 +463,38 @@ export class AdminViewComponent implements OnInit {
     this.loading = true;
     this.fetchError = '';
     try {
+      // Try with service_role first (admin access)
       const { data, error } = await this.supabase.client
         .from('profiles')
-        .select('*')
+        .select('id, username, nickname, email, created_at, is_active')
         .order('created_at', { ascending: false });
 
       if (error) {
-        this.fetchError = error.message;
-        console.error('Supabase Error:', error);
+        console.warn('Supabase RLS Error:', error);
+        // Fallback: Try to get at least current user's data
+        const currentUser = this.supabase.user();
+        if (currentUser) {
+          const { data: userData } = await this.supabase.client
+            .from('profiles')
+            .select('id, username, nickname, email, created_at, is_active')
+            .eq('id', currentUser.id)
+            .single();
+
+          if (userData) {
+            this.users = [{ ...userData, is_active: userData.is_active ?? true }];
+            this.fetchError = 'Visualizzazione limitata: solo il tuo profilo (configura RLS per accesso completo)';
+          } else {
+            this.fetchError = 'Impossibile caricare gli utenti. Verifica le policy RLS su Supabase.';
+          }
+        } else {
+          this.fetchError = error.message;
+        }
       } else if (data) {
         this.users = data.map(p => ({
           ...p,
-          is_active: true
+          is_active: p.is_active ?? true
         }));
+        console.log(`✅ Caricati ${this.users.length} utenti`);
       }
     } catch (e: any) {
       this.fetchError = e.message || 'Errore di connessione sconosciuto.';
@@ -392,7 +526,7 @@ export class AdminViewComponent implements OnInit {
     this.assetSlots = [];
 
     // Board (Common)
-    this.assetSlots.push({ id: 'board', label: 'Scacchiera', icon: '🔲', file: null, uploadedUrl: null, status: 'pending' });
+    this.assetSlots.push({ id: 'board', label: 'Scacchiera', icon: '🔲', file: null, uploadedUrl: null, previewUrl: null, status: 'pending' });
 
     if (this.newKit.type === 'chess') {
       const pieces = [
@@ -405,8 +539,8 @@ export class AdminViewComponent implements OnInit {
       ];
       // White & Black
       pieces.forEach(p => {
-        this.assetSlots.push({ id: `${p.id}_w`, label: `${p.label} Bianco`, icon: p.icon, file: null, uploadedUrl: null, status: 'pending' });
-        this.assetSlots.push({ id: `${p.id}_b`, label: `${p.label} Nero`, icon: p.icon, file: null, uploadedUrl: null, status: 'pending' });
+        this.assetSlots.push({ id: `${p.id}_w`, label: `${p.label} Bianco`, icon: p.icon, file: null, uploadedUrl: null, previewUrl: null, status: 'pending' });
+        this.assetSlots.push({ id: `${p.id}_b`, label: `${p.label} Nero`, icon: p.icon, file: null, uploadedUrl: null, previewUrl: null, status: 'pending' });
       });
     } else {
       // Checkers
@@ -415,8 +549,8 @@ export class AdminViewComponent implements OnInit {
         { id: 'ck', label: 'Dama', icon: '👑' }
       ];
       pieces.forEach(p => {
-        this.assetSlots.push({ id: `${p.id}_w`, label: `${p.label} Bianca`, icon: p.icon, file: null, uploadedUrl: null, status: 'pending' });
-        this.assetSlots.push({ id: `${p.id}_b`, label: `${p.label} Nera`, icon: p.icon, file: null, uploadedUrl: null, status: 'pending' });
+        this.assetSlots.push({ id: `${p.id}_w`, label: `${p.label} Bianca`, icon: p.icon, file: null, uploadedUrl: null, previewUrl: null, status: 'pending' });
+        this.assetSlots.push({ id: `${p.id}_b`, label: `${p.label} Nera`, icon: p.icon, file: null, uploadedUrl: null, previewUrl: null, status: 'pending' });
       });
     }
   }
@@ -424,8 +558,16 @@ export class AdminViewComponent implements OnInit {
   onFileSelected(event: Event, slot: KitAssetSlot) {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files[0]) {
-      slot.file = input.files[0];
+      const file = input.files[0];
+      slot.file = file;
       slot.status = 'ready';
+
+      // Generate preview URL for 3D model
+      if (slot.previewUrl) {
+        URL.revokeObjectURL(slot.previewUrl); // Clean up old preview
+      }
+      slot.previewUrl = URL.createObjectURL(file);
+      console.log(`✅ Preview generata per ${slot.label}:`, slot.previewUrl);
     }
   }
 
@@ -499,12 +641,66 @@ export class AdminViewComponent implements OnInit {
 
       alert('✅ Kit Pubblicato con Successo!');
       this.resetForm();
+      this.kitSubTab = 'list';
+      this.fetchPublishedKits();
 
     } catch (e: any) {
       console.error('Publish Error', e);
       alert('Errore durante la pubblicazione: ' + e.message);
     } finally {
       this.uploading = false;
+    }
+  }
+
+  async fetchPublishedKits() {
+    this.loading = true;
+    try {
+      const { data, error } = await this.supabase.client
+        .from('asset_collections')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      this.publishedKits = data || [];
+    } catch (e) {
+      console.error('Error fetching kits', e);
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  async deleteKit(kitId: string) {
+    if (!confirm('Sei sicuro di voler eliminare questo kit? I file verranno rimossi dal database.')) return;
+
+    try {
+      // 1. Delete from DB
+      const { error } = await this.supabase.client
+        .from('asset_collections')
+        .delete()
+        .eq('id', kitId);
+
+      if (error) throw error;
+
+      // 2. Local update
+      this.publishedKits = this.publishedKits.filter(k => k.id !== kitId);
+      alert('Kit eliminato con successo.');
+    } catch (e: any) {
+      alert('Errore eliminazione kit: ' + e.message);
+    }
+  }
+
+  async toggleKitVisibility(kit: AssetCollection) {
+    const newStatus = !kit.is_public;
+    try {
+      const { error } = await this.supabase.client
+        .from('asset_collections')
+        .update({ is_public: newStatus })
+        .eq('id', kit.id);
+
+      if (error) throw error;
+      kit.is_public = newStatus;
+    } catch (e: any) {
+      alert('Errore aggiornamento visibilità: ' + e.message);
     }
   }
 

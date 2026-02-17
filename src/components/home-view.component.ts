@@ -852,6 +852,7 @@ export class HomeViewComponent implements OnInit {
             this.authSuccess = '';
           }, 1000);
           await this.supabase.loadUserProfile();
+          await this.gameService.loadUserAssets();
           await this.loadUserStats();
         }
       }
@@ -999,6 +1000,8 @@ export class HomeViewComponent implements OnInit {
   async ngOnInit() {
     if (this.supabase.user()) {
       await this.supabase.loadUserProfile();
+      await this.gameService.loadUserAssets();
+
       const prefs = await this.supabase.getUserAssetPreferences();
       Object.keys(prefs).forEach(k => {
         this.loadedStatus[k] = true;
