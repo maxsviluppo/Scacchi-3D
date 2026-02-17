@@ -224,8 +224,6 @@ import { ImageUtils } from '../utils/image-utils';
           </button>
         </div>
       </div>
-        </div>
-      </div>
 
       <!-- Footer -->
       <div class="relative z-10 mt-auto pt-8 pb-4 flex flex-col items-center gap-4">
