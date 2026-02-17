@@ -177,8 +177,6 @@ interface AssetCollection {
           }
         </div>
       </div>
-
-      </div>
     </div>
   `,
   styles: [`

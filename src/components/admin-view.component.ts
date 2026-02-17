@@ -402,6 +402,8 @@ interface KitAssetSlot {
                   </div>
                 </div>
               }
+            </div>
+          }
 
           <!-- APPROVAL TAB -->
           @if (activeTab === 'approval') {
