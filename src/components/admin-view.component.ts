@@ -17,10 +17,14 @@ interface AdminUser {
 interface AssetCollection {
   id: string;
   name: string;
+  author_id?: string;
+  author_name?: string;
   type: 'chess' | 'checkers';
   price_eur: number;
   assets: Record<string, string>;
   is_public: boolean;
+  is_official: boolean;
+  status: 'pending' | 'approved' | 'rejected';
   created_at: string;
 }
 
@@ -401,12 +405,71 @@ interface KitAssetSlot {
 
           <!-- APPROVAL TAB -->
           @if (activeTab === 'approval') {
-            <div class="flex flex-col items-center justify-center py-24 text-center min-h-[50vh]">
-              <div class="w-24 h-24 rounded-[2rem] bg-slate-900 border border-white/10 flex items-center justify-center mb-6 shadow-2xl">
-                <span class="text-4xl grayscale opacity-50">⚖️</span>
+            <div class="space-y-10 animate-fade-in max-w-6xl mx-auto pb-20">
+              <div class="border-b border-white/5 pb-8">
+                <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tighter text-indigo-400">Revisione Community</h2>
+                <p class="text-slate-500 text-xs font-bold uppercase tracking-widest mt-2">Valuta i kit creati dagli utenti per la pubblicazione nello shop</p>
               </div>
-              <h2 class="text-2xl font-black uppercase tracking-tighter text-slate-700">Area Approvazioni</h2>
-              <p class="text-slate-600 text-xs font-bold uppercase tracking-[0.2em] mt-2 max-w-sm">Nessun kit in attesa di revisione.</p>
+
+              <div class="grid grid-cols-1 gap-6">
+                @for (kit of pendingKits; track kit.id) {
+                  <div class="bg-slate-900/60 border border-white/10 rounded-[2.5rem] p-8 flex flex-col lg:flex-row items-center justify-between gap-10 group hover:border-indigo-500/30 transition-all shadow-2xl relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-2 h-full bg-indigo-500 opacity-50"></div>
+                    
+                    <div class="flex items-center gap-8 flex-1">
+                      <div class="w-24 h-24 bg-slate-950 rounded-3xl border border-white/10 flex items-center justify-center text-4xl shadow-inner group-hover:scale-105 transition-transform">
+                        {{ kit.type === 'chess' ? '♟️' : '⚪' }}
+                      </div>
+                      <div class="space-y-2">
+                        <div class="flex items-center gap-3">
+                          <h3 class="text-2xl font-black uppercase tracking-tight text-white">{{ kit.name }}</h3>
+                          <span class="px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-black uppercase tracking-widest rounded-full">
+                            {{ kit.type === 'chess' ? 'Scacchi' : 'Dama' }}
+                          </span>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-6">
+                          <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                            <span class="p-1 bg-slate-800 rounded">👤</span> Autore: <span class="text-white">{{ kit.author_name || 'Utente' }}</span>
+                          </p>
+                          <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                            <span class="p-1 bg-slate-800 rounded">📦</span> Asset: <span class="text-indigo-400 font-black">{{ getObjectKeys(kit.assets).length }} caricati</span>
+                          </p>
+                          <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                            <span class="p-1 bg-slate-800 rounded">📅</span> Data: <span class="text-slate-300">{{ kit.created_at | date:'dd/MM/yy HH:mm' }}</span>
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row items-center gap-4 min-w-[300px]">
+                      <div class="relative flex-1 group/input">
+                        <label class="absolute -top-6 left-2 text-[8px] font-black text-slate-600 uppercase tracking-[0.2em]">Imposta Prezzo (€)</label>
+                        <input type="number" [(ngModel)]="kit.price_eur" step="0.5" min="0" 
+                               class="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-3 text-sm font-black text-white focus:border-indigo-500 outline-none transition-all">
+                      </div>
+                      
+                      <div class="flex items-center gap-2">
+                        <button (click)="approveKit(kit)" 
+                          class="px-6 py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg active:scale-95 flex items-center gap-2">
+                          <span>Approva</span>
+                        </button>
+                        <button (click)="rejectKit(kit.id)" 
+                          class="p-4 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white border border-rose-500/20 rounded-xl transition-all">
+                          🗑️
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                } @empty {
+                  <div class="bg-slate-900/30 border-2 border-dashed border-white/5 rounded-[3rem] py-40 text-center animate-pulse">
+                    <div class="w-24 h-24 bg-slate-950 rounded-full flex items-center justify-center mx-auto mb-8 border border-white/5 shadow-2xl">
+                      <span class="text-5xl opacity-30">✨</span>
+                    </div>
+                    <h3 class="text-2xl font-black uppercase tracking-tighter text-slate-600">Archivio Revisioni Pulito</h3>
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-slate-700 mt-4">Nessun nuovo kit in attesa di approvazione dalla community</p>
+                  </div>
+                }
+              </div>
             </div>
           }
 
@@ -442,6 +505,7 @@ export class AdminViewComponent implements OnInit {
   // Kit Management State
   kitSubTab: 'create' | 'list' = 'list';
   publishedKits: AssetCollection[] = [];
+  pendingKits: AssetCollection[] = [];
   newKit = {
     name: '',
     price: 0,
@@ -454,6 +518,7 @@ export class AdminViewComponent implements OnInit {
   ngOnInit() {
     this.fetchUsers();
     this.fetchPublishedKits();
+    this.fetchPendingKits();
     this.updateSlots();
   }
 
@@ -622,7 +687,6 @@ export class AdminViewComponent implements OnInit {
       }
 
       // 2. Save Kit Definition to DB
-      // Ensure table 'asset_collections' exists or create migration if not
       const kitEntry = {
         id: kitId,
         name: this.newKit.name,
@@ -630,6 +694,8 @@ export class AdminViewComponent implements OnInit {
         price_eur: this.newKit.price,
         assets: assetMap, // JSONB column
         is_public: this.newKit.isPublic,
+        is_official: true, // Admin kits are official
+        status: 'approved', // Admin kits are auto-approved
         created_at: new Date().toISOString()
       };
 
@@ -658,6 +724,7 @@ export class AdminViewComponent implements OnInit {
       const { data, error } = await this.supabase.client
         .from('asset_collections')
         .select('*')
+        .eq('is_official', true) // In List view we only show official kits by default, or maybe all admin-managed
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -669,8 +736,64 @@ export class AdminViewComponent implements OnInit {
     }
   }
 
+  async fetchPendingKits() {
+    try {
+      const { data, error } = await this.supabase.client
+        .from('asset_collections')
+        .select('*, author:profiles(username, nickname)')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      this.pendingKits = (data || []).map(k => ({
+        ...k,
+        author_name: k.author?.nickname || k.author?.username || 'Utente Anonimo'
+      }));
+    } catch (e) {
+      console.error('Error fetching pending kits', e);
+    }
+  }
+
+  async approveKit(kit: AssetCollection) {
+    if (!confirm(`Approvare il kit "${kit.name}"? Sarà visibile nello shop al prezzo di €${kit.price_eur}.`)) return;
+
+    try {
+      const { error } = await this.supabase.client
+        .from('asset_collections')
+        .update({
+          status: 'approved',
+          is_public: true,
+          price_eur: kit.price_eur
+        })
+        .eq('id', kit.id);
+
+      if (error) throw error;
+      alert('✅ Kit approvato con successo!');
+      this.fetchPendingKits();
+    } catch (e: any) {
+      alert('Errore approvazione: ' + e.message);
+    }
+  }
+
+  async rejectKit(kitId: string) {
+    if (!confirm('Sei sicuro di voler rifiutare ed eliminare questo kit?')) return;
+
+    try {
+      const { error } = await this.supabase.client
+        .from('asset_collections')
+        .delete()
+        .eq('id', kitId);
+
+      if (error) throw error;
+      alert('Kit rifiutato ed eliminato.');
+      this.fetchPendingKits();
+    } catch (e: any) {
+      alert('Errore rifiuto: ' + e.message);
+    }
+  }
+
   async deleteKit(kitId: string) {
-    if (!confirm('Sei sicuro di voler eliminare questo kit? I file verranno rimossi dal database.')) return;
+    if (!confirm('Sei sicuro di voler eliminare questo kit ufficial?')) return;
 
     try {
       // 1. Delete from DB
@@ -683,9 +806,9 @@ export class AdminViewComponent implements OnInit {
 
       // 2. Local update
       this.publishedKits = this.publishedKits.filter(k => k.id !== kitId);
-      alert('Kit eliminato con successo.');
+      alert('Kit eliminato con successo!');
     } catch (e: any) {
-      alert('Errore eliminazione kit: ' + e.message);
+      alert('Errore eliminazione: ' + e.message);
     }
   }
 

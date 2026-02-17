@@ -575,6 +575,21 @@ import { ImageUtils } from '../utils/image-utils';
                         }
                         </div>
                     </div>
+
+                    <!-- Community Submission -->
+                    <div class="pt-10 border-t border-white/10 flex flex-col items-center">
+                      <div class="max-w-md w-full bg-indigo-500/5 rounded-3xl p-6 border border-indigo-500/10 text-center">
+                        <span class="text-3xl mb-4 block">🌍</span>
+                        <h4 class="text-lg font-black text-white uppercase tracking-tight">Condividi con la Community</h4>
+                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-2 mb-6">Invia il tuo set attuale per l'approvazione. Se accettato, sarà visibile nello Shop Utenti!</p>
+                        
+                        <button (click)="submitKitForApproval()"
+                          [disabled]="!canSubmitKit()"
+                          class="w-full py-4 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-30 disabled:cursor-not-allowed text-white rounded-xl font-black uppercase tracking-[.2em] text-[10px] transition-all shadow-xl active:scale-95">
+                          {{ !supabase.user() ? 'Accedi per Pubblicare' : 'Invia per Revisione' }}
+                        </button>
+                      </div>
+                    </div>
                   </div>
               }
 
@@ -1113,6 +1128,52 @@ export class HomeViewComponent implements OnInit {
       this.gameService.showToast(`Errore caricamento: ${error.message}`, 'error');
     } finally {
       this.loadingAssets[key] = false;
+    }
+  }
+
+  canSubmitKit(): boolean {
+    if (!this.supabase.user()) return false;
+    // Check if at least one custom asset is loaded
+    return Object.values(this.loadedStatus).some(val => val === true);
+  }
+
+  async submitKitForApproval() {
+    if (!this.supabase.user()) {
+      this.toggleAuth();
+      return;
+    }
+
+    const kitName = prompt('Dai un nome al tuo Kit:');
+    if (!kitName) return;
+
+    try {
+      const user = this.supabase.user();
+      if (!user) return;
+
+      const assets = this.gameService.customMeshUrls();
+      const type = Object.keys(assets).some(k => k.startsWith('c')) ? 'checkers' : 'chess';
+
+      const kitId = (kitName.toLowerCase().replace(/\s+/g, '_') + '_' + Date.now()).substring(0, 50);
+
+      const { error } = await this.supabase.client.from('asset_collections').insert({
+        id: kitId,
+        name: kitName,
+        type: type,
+        price_eur: 0,
+        assets: assets,
+        is_public: false, // Wait for admin
+        is_official: false,
+        status: 'pending',
+        author_id: user.id
+      });
+
+      if (error) throw error;
+
+      this.gameService.showToast('✅ Richiesta inviata! In attesa di approvazione admin.', 'success');
+      this.showSetup = false;
+    } catch (e: any) {
+      console.error('Submit Error:', e);
+      this.gameService.showToast('Errore durante l\'invio: ' + e.message, 'error');
     }
   }
 }
