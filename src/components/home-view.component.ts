@@ -454,35 +454,44 @@ import { ImageUtils } from '../utils/image-utils';
 
       <!-- SETUP / ASSETS MODAL -->
       @if (showSetup) {
-        <div class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in" (click)="showSetup = false">
-          <div class="bg-slate-900/90 backdrop-blur-2xl border border-white/10 shadow-2xl rounded-[2.5rem] w-full max-w-4xl overflow-hidden flex flex-col max-h-[90vh]" (click)="$event.stopPropagation()">
+        <div class="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-fade-in" (click)="showSetup = false">
+          <div class="bg-gradient-to-b from-slate-900 to-slate-950 border border-yellow-500/20 shadow-[0_0_80px_rgba(234,179,8,0.08)] rounded-[2.5rem] w-full max-w-4xl overflow-hidden flex flex-col max-h-[90vh]" (click)="$event.stopPropagation()">
             <!-- Header -->
-            <div class="p-6 border-b border-white/10 bg-black/20 flex justify-between items-center">
-              <div class="flex flex-col">
-                <h3 class="text-2xl font-black text-white uppercase tracking-wider">Custom 3D</h3>
-                <p class="text-xs text-slate-400 mt-1 uppercase font-bold tracking-widest">Personalizza i tuoi pezzi e la scacchiera</p>
+            <div class="relative p-6 border-b border-yellow-500/10 bg-gradient-to-r from-yellow-900/20 via-slate-900/40 to-amber-900/20 flex justify-between items-center overflow-hidden">
+              <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(234,179,8,0.07),transparent_60%)] pointer-events-none"></div>
+              <div class="relative flex items-center gap-4">
+                <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-yellow-500/20 to-amber-700/20 border border-yellow-500/30 flex items-center justify-center shadow-[0_0_20px_rgba(234,179,8,0.15)]">
+                  <svg viewBox="0 0 24 24" fill="none" class="w-8 h-8 drop-shadow-[0_0_8px_rgba(234,179,8,0.5)]">
+                    <defs><linearGradient id="crownSetup" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#fef3c7"/><stop offset="50%" style="stop-color:#fbbf24"/><stop offset="100%" style="stop-color:#b45309"/></linearGradient></defs>
+                    <path d="M5 15l-2 5h18l-2-5 3-7-6 2-4-7-4 7-6-2 3 7z" fill="url(#crownSetup)" stroke="#fbbf24" stroke-width="0.5" stroke-linejoin="round"/>
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="text-2xl font-black uppercase tracking-tighter bg-gradient-to-r from-yellow-300 via-amber-400 to-yellow-600 text-transparent bg-clip-text">Arsenale 3D</h3>
+                  <p class="text-[10px] text-yellow-600/70 mt-0.5 uppercase font-bold tracking-[0.3em]">Forgia il tuo esercito &bull; Personalizza il campo di battaglia</p>
+                </div>
               </div>
-              <button (click)="showSetup = false" class="text-slate-400 hover:text-white p-2 text-xl transition-colors">✕</button>
+              <button (click)="showSetup = false" class="relative w-10 h-10 rounded-xl bg-slate-800/80 hover:bg-red-900/40 border border-white/10 hover:border-red-500/40 text-slate-400 hover:text-red-400 transition-all flex items-center justify-center text-lg">✕</button>
             </div>
 
 
             <!-- Navigation Tabs -->
-            <div class="flex border-b border-white/10 px-8">
+            <div class="flex border-b border-yellow-500/10 px-6 bg-slate-950/30">
               <button (click)="setupTab = 'upload'"
-                [class.border-blue-500]="setupTab === 'upload'"
-                [class.text-white]="setupTab === 'upload'"
+                [class.border-yellow-500]="setupTab === 'upload'"
+                [class.text-yellow-400]="setupTab === 'upload'"
                 [class.border-transparent]="setupTab !== 'upload'"
                 [class.text-slate-500]="setupTab !== 'upload'"
-                class="px-6 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all">
-                Configurazione Pezzi
+                class="flex items-center gap-2 px-6 py-4 text-xs font-black uppercase tracking-widest border-b-2 transition-all">
+                <span class="text-base">&#9876;</span> Forgia Pezzi
               </button>
               <button (click)="setupTab = 'library'"
-                [class.border-blue-500]="setupTab === 'library'"
-                [class.text-white]="setupTab === 'library'"
+                [class.border-yellow-500]="setupTab === 'library'"
+                [class.text-yellow-400]="setupTab === 'library'"
                 [class.border-transparent]="setupTab !== 'library'"
                 [class.text-slate-500]="setupTab !== 'library'"
-                class="px-6 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all">
-                Libreria Asset
+                class="flex items-center gap-2 px-6 py-4 text-xs font-black uppercase tracking-widest border-b-2 transition-all">
+                <span class="text-base">&#9812;</span> Libreria Reale
               </button>
             </div>
 
@@ -492,101 +501,235 @@ import { ImageUtils } from '../utils/image-utils';
               <!-- UPLOAD TAB -->
               @if (setupTab === 'upload') {
                   <div class="space-y-10 animate-fade-in">
+                    
+                    <!-- Original Textures Toggle -->
+                    <div class="relative bg-gradient-to-r from-indigo-900/30 to-purple-900/20 border border-indigo-500/30 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4 overflow-hidden group hover:border-indigo-400/50 transition-all">
+                      <div class="absolute inset-0 bg-[radial-gradient(circle_at_left,rgba(99,102,241,0.07),transparent_60%)]"></div>
+                      <div class="relative flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-6 h-6 text-indigo-400"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                        </div>
+                        <div>
+                          <h4 class="text-sm font-black text-white uppercase tracking-tight">Texture Originali</h4>
+                          <p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Usa le texture native dei modelli 3D importati</p>
+                        </div>
+                      </div>
+                      <div class="relative flex items-center gap-3">
+                        <span class="text-[10px] font-black uppercase tracking-widest" [class.text-indigo-400]="gameService.useOriginalTexture()" [class.text-slate-600]="!gameService.useOriginalTexture()">
+                          {{ gameService.useOriginalTexture() ? 'ATTIVE' : 'OFF' }}
+                        </span>
+                        <button (click)="gameService.toggleOriginalTexture(!gameService.useOriginalTexture())"
+                          [class.bg-indigo-500]="gameService.useOriginalTexture()"
+                          [class.bg-slate-800]="!gameService.useOriginalTexture()"
+                          class="relative inline-flex h-7 w-14 items-center rounded-full transition-all duration-300 border border-white/10 shadow-lg">
+                          <span [class.translate-x-8]="gameService.useOriginalTexture()" [class.translate-x-1]="!gameService.useOriginalTexture()"
+                            class="inline-block h-5 w-5 transform rounded-full bg-white transition-all duration-300 shadow-md"></span>
+                        </button>
+                      </div>
+                    </div>
+
                     <!-- Board Setup -->
-                    <div class="bg-indigo-900/10 border border-white/5 rounded-[2rem] p-8 space-y-6">
-                        <div class="flex items-center gap-6">
-                        <div class="w-14 h-14 rounded-2xl bg-slate-800/50 flex items-center justify-center border border-white/10">
-                            <svg viewBox="0 0 24 24" fill="currentColor" class="w-8 h-8 text-slate-400">
-                            <rect x="2" y="2" width="20" height="20" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
-                            <rect x="2" y="2" width="5" height="5"/>
-                            <rect x="12" y="2" width="5" height="5"/>
-                            <rect x="7" y="7" width="5" height="5"/>
-                            <rect x="17" y="7" width="5" height="5"/>
-                            <rect x="2" y="12" width="5" height="5"/>
-                            <rect x="12" y="12" width="5" height="5"/>
-                            <rect x="7" y="17" width="5" height="5"/>
-                            <rect x="17" y="17" width="5" height="5"/>
-                            </svg>
+                    <div class="relative bg-gradient-to-br from-amber-900/20 to-slate-900/60 border border-amber-500/20 rounded-2xl p-6 overflow-hidden group hover:border-amber-500/40 transition-all">
+                      <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(245,158,11,0.05),transparent_60%)] pointer-events-none"></div>
+                      <div class="relative flex items-center gap-5 mb-5">
+                        <div class="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shadow-[0_0_15px_rgba(245,158,11,0.08)]">
+                          <svg viewBox="0 0 24 24" fill="currentColor" class="w-8 h-8 text-amber-400">
+                            <rect x="2" y="2" width="20" height="20" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/>
+                            <rect x="2" y="2" width="5" height="5" opacity="0.8"/><rect x="12" y="2" width="5" height="5" opacity="0.8"/>
+                            <rect x="7" y="7" width="5" height="5" opacity="0.8"/><rect x="17" y="7" width="5" height="5" opacity="0.8"/>
+                            <rect x="2" y="12" width="5" height="5" opacity="0.8"/><rect x="12" y="12" width="5" height="5" opacity="0.8"/>
+                            <rect x="7" y="17" width="5" height="5" opacity="0.8"/><rect x="17" y="17" width="5" height="5" opacity="0.8"/>
+                          </svg>
                         </div>
                         <div class="flex-1">
-                            <h4 class="text-xl font-black text-white uppercase tracking-tight">Scacchiera 3D</h4>
-                            <p class="text-[10px] text-indigo-400 font-bold uppercase tracking-widest mt-1">
-                            {{ loadedStatus['board'] ? 'Stato: Caricato OK' : 'Stato: Modello Standard' }}
-                            </p>
+                          <h4 class="text-lg font-black text-white uppercase tracking-tight">Campo di Battaglia</h4>
+                          <p class="text-[10px] font-bold uppercase tracking-widest mt-1" [class.text-emerald-400]="loadedStatus['board']" [class.text-amber-500/60]="!loadedStatus['board']">
+                            {{ loadedStatus['board'] ? '&#10003; Modello Custom Caricato' : '&#9670; Scacchiera Standard Attiva' }}
+                          </p>
                         </div>
-                        </div>
-
-                        <label class="cursor-pointer block">
-                        <span class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-black uppercase text-center py-4 rounded-xl border border-white/10 transition-all block shadow-lg">
-                            Carica file STL / GLB / GLTF
-                        </span>
-                        <input type="file" accept=".stl,.glb,.gltf" class="hidden" (change)="onFileSelected($event, 'board')">
+                      </div>
+                      <div class="flex gap-2">
+                        <label class="relative flex-1 cursor-pointer group">
+                          <div class="w-full h-full flex items-center justify-center gap-3 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 text-xs font-black uppercase py-4 rounded-xl border border-amber-500/20 hover:border-amber-400/40 transition-all shadow-lg">
+                            &#8679; Carica Scacchiera &middot; STL / GLB / GLTF
+                          </div>
+                          <input type="file" accept=".stl,.glb,.gltf" 
+                                 class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
+                                 (change)="onFileSelected($event, 'board')">
                         </label>
+                        
+                        <button (click)="rotateAsset('board')" title="Ruota 45°"
+                          class="relative z-20 w-14 flex items-center justify-center bg-slate-800 hover:bg-amber-500/20 text-amber-400 rounded-xl border border-white/10 hover:border-amber-400/50 transition-all shadow-lg active:scale-95">
+                          <span class="text-xl">↻</span>
+                        </button>
+                      </div>
                     </div>
 
                     <!-- Chess Pieces -->
                     <div>
-                        <h4 class="text-sm font-black text-blue-400 uppercase tracking-widest mb-6 border-b border-blue-500/30 pb-3">Set Scacchi Custom</h4>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div class="flex items-center gap-3 mb-5">
+                        <div class="h-px flex-1 bg-gradient-to-r from-transparent to-yellow-500/30"></div>
+                        <h4 class="text-xs font-black text-yellow-400 uppercase tracking-[0.3em]">&#9812; Set Scacchi Custom &#9823;</h4>
+                        <div class="h-px flex-1 bg-gradient-to-l from-transparent to-yellow-500/30"></div>
+                      </div>
+                      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                         @for (type of pieceTypes; track type.id) {
-                            <div class="bg-white/5 border border-white/5 rounded-2xl p-4 flex flex-col gap-4 group hover:border-blue-500/30 transition-all">
-                            <div class="flex items-center gap-4">
-                                <div class="w-10 h-10 rounded-lg bg-black/40 flex items-center justify-center text-xl text-slate-400 border border-white/5">
+                          <div class="relative bg-slate-900/60 border border-white/5 rounded-2xl p-4 flex flex-col gap-4 group hover:border-yellow-500/30 hover:shadow-[0_0_20px_rgba(234,179,8,0.06)] transition-all overflow-hidden">
+                            <div class="absolute inset-0 bg-gradient-to-br from-yellow-500/0 group-hover:from-yellow-500/4 to-transparent transition-all duration-500 pointer-events-none"></div>
+                            <div class="relative flex items-center gap-3">
+                              <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-slate-800 to-slate-900 border border-yellow-500/20 flex items-center justify-center text-2xl shadow-inner group-hover:border-yellow-400/40 transition-all">
                                 {{ getIconForType(type.id) }}
-                                </div>
-                                <h4 class="text-base font-black text-white uppercase">{{ type.label }}</h4>
+                              </div>
+                              <div>
+                                <h4 class="text-sm font-black text-white uppercase tracking-tight">{{ type.label }}</h4>
+                                <p class="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Modello 3D Custom</p>
+                              </div>
                             </div>
-                            <div class="grid grid-cols-2 gap-3">
-                                <label class="cursor-pointer bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-black uppercase text-center py-3 rounded-xl border border-white/10 transition-all">
-                                {{ loadedStatus[type.id + '_w'] ? 'BIANCO OK' : 'CARICA BIANCO' }}
-                                <input type="file" accept=".stl,.glb,.gltf" class="hidden" (change)="onFileSelected($event, type.id, 'w')">
+                            <div class="grid grid-cols-2 gap-4 mt-auto">
+                              <!-- White Piece -->
+                              <div class="flex items-stretch gap-2">
+                                <label class="relative flex-1 cursor-pointer group">
+                                  <div class="w-full h-full flex items-center justify-center gap-2 py-3 rounded-xl border transition-all overflow-hidden shadow-lg"
+                                    [class.bg-emerald-500/10]="loadedStatus[type.id + '_w']" 
+                                    [class.border-emerald-500/30]="loadedStatus[type.id + '_w']" 
+                                    [class.text-emerald-400]="loadedStatus[type.id + '_w']"
+                                    [class.bg-slate-800/80]="!loadedStatus[type.id + '_w']" 
+                                    [class.border-white/10]="!loadedStatus[type.id + '_w']" 
+                                    [class.text-slate-400]="!loadedStatus[type.id + '_w']"
+                                    [class.group-hover:border-white/30]="!loadedStatus[type.id + '_w']">
+                                    <span class="text-[10px] font-black uppercase tracking-wider">Bianco</span>
+                                    @if(loadedStatus[type.id + '_w']) { <span class="text-sm font-bold">✓</span> }
+                                  </div>
+                                  <input type="file" accept=".stl,.glb,.gltf" 
+                                         class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
+                                         (change)="onFileSelected($event, type.id, 'w')">
                                 </label>
-                                <label class="cursor-pointer bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-black uppercase text-center py-3 rounded-xl border border-white/10 transition-all">
-                                {{ loadedStatus[type.id + '_b'] ? 'NERO OK' : 'CARICA NERO' }}
-                                <input type="file" accept=".stl,.glb,.gltf" class="hidden" (change)="onFileSelected($event, type.id, 'b')">
+                                
+                                <button (click)="rotateAsset(type.id, 'w')" 
+                                  class="relative z-20 w-10 flex flex-col items-center justify-center bg-yellow-500/20 text-yellow-500 rounded-xl border border-yellow-500/30 hover:bg-yellow-500/40 transition-all shadow-lg active:scale-95"
+                                  title="Ruota Modello">
+                                  <span class="text-lg leading-none">↻</span>
+                                </button>
+                              </div>
+
+                              <!-- Black Piece -->
+                              <div class="flex items-stretch gap-2">
+                                <label class="relative flex-1 cursor-pointer group">
+                                  <div class="w-full h-full flex items-center justify-center gap-2 py-3 rounded-xl border transition-all overflow-hidden shadow-lg"
+                                    [class.bg-emerald-500/10]="loadedStatus[type.id + '_b']" 
+                                    [class.border-emerald-500/30]="loadedStatus[type.id + '_b']" 
+                                    [class.text-emerald-400]="loadedStatus[type.id + '_b']"
+                                    [class.bg-slate-800/80]="!loadedStatus[type.id + '_b']" 
+                                    [class.border-white/10]="!loadedStatus[type.id + '_b']" 
+                                    [class.text-slate-400]="!loadedStatus[type.id + '_b']"
+                                    [class.group-hover:border-white/30]="!loadedStatus[type.id + '_b']">
+                                    <span class="text-[10px] font-black uppercase tracking-wider">Nero</span>
+                                    @if(loadedStatus[type.id + '_b']) { <span class="text-sm font-bold">✓</span> }
+                                  </div>
+                                  <input type="file" accept=".stl,.glb,.gltf" 
+                                         class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
+                                         (change)="onFileSelected($event, type.id, 'b')">
                                 </label>
+
+                                <button (click)="rotateAsset(type.id, 'b')" 
+                                  class="relative z-20 w-10 flex flex-col items-center justify-center bg-yellow-500/20 text-yellow-500 rounded-xl border border-yellow-500/30 hover:bg-yellow-500/40 transition-all shadow-lg active:scale-95"
+                                  title="Ruota Modello">
+                                  <span class="text-lg leading-none">↻</span>
+                                </button>
+                              </div>
                             </div>
-                            </div>
+                          </div>
                         }
-                        </div>
+                      </div>
                     </div>
 
                     <!-- Checkers Pieces -->
                     <div>
-                        <h4 class="text-sm font-black text-emerald-400 uppercase tracking-widest mb-6 border-b border-emerald-500/30 pb-3">Set Dama Custom</h4>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div class="flex items-center gap-3 mb-5">
+                        <div class="h-px flex-1 bg-gradient-to-r from-transparent to-emerald-500/30"></div>
+                        <h4 class="text-xs font-black text-emerald-400 uppercase tracking-[0.3em]">&#9678; Set Dama Custom &#9678;</h4>
+                        <div class="h-px flex-1 bg-gradient-to-l from-transparent to-emerald-500/30"></div>
+                      </div>
+                      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                         @for (type of checkerTypes; track type.id) {
-                            <div class="bg-white/5 border border-white/5 rounded-2xl p-4 flex flex-col gap-4 group hover:border-emerald-500/30 transition-all">
-                            <div class="flex items-center gap-4">
-                                <div class="w-10 h-10 rounded-lg bg-black/40 flex items-center justify-center text-xl text-emerald-500 border border-white/5">◎</div>
-                                <h4 class="text-base font-black text-white uppercase">{{ type.label }}</h4>
+                          <div class="relative bg-slate-900/60 border border-white/5 rounded-2xl p-4 flex flex-col gap-4 group hover:border-emerald-500/30 hover:shadow-[0_0_20px_rgba(16,185,129,0.06)] transition-all overflow-hidden">
+                            <div class="absolute inset-0 bg-gradient-to-br from-emerald-500/0 group-hover:from-emerald-500/4 to-transparent transition-all duration-500 pointer-events-none"></div>
+                            <div class="relative flex items-center gap-3">
+                              <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-slate-800 to-slate-900 border border-emerald-500/20 flex items-center justify-center text-2xl text-emerald-400 shadow-inner group-hover:border-emerald-400/40 transition-all">&#9678;</div>
+                              <div>
+                                <h4 class="text-sm font-black text-white uppercase tracking-tight">{{ type.label }}</h4>
+                                <p class="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Modello 3D Custom</p>
+                              </div>
                             </div>
-                            <div class="grid grid-cols-2 gap-3">
-                                <label class="cursor-pointer bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-black uppercase text-center py-3 rounded-xl border border-white/10 transition-all">
-                                {{ loadedStatus[type.id + '_w'] ? 'BIANCO OK' : 'CARICA BIANCO' }}
-                                <input type="file" accept=".stl,.glb,.gltf" class="hidden" (change)="onFileSelected($event, type.id, 'w')">
+                            <div class="grid grid-cols-2 gap-4 mt-auto">
+                              <!-- White Checkers -->
+                              <div class="flex items-stretch gap-2">
+                                <label class="relative flex-1 cursor-pointer group">
+                                  <div class="w-full h-full flex items-center justify-center gap-2 py-3 rounded-xl border transition-all overflow-hidden shadow-lg"
+                                    [class.bg-emerald-500/10]="loadedStatus[type.id + '_w']" 
+                                    [class.border-emerald-500/30]="loadedStatus[type.id + '_w']" 
+                                    [class.text-emerald-400]="loadedStatus[type.id + '_w']"
+                                    [class.bg-slate-800/80]="!loadedStatus[type.id + '_w']" 
+                                    [class.border-white/10]="!loadedStatus[type.id + '_w']" 
+                                    [class.text-slate-400]="!loadedStatus[type.id + '_w']"
+                                    [class.group-hover:border-white/30]="!loadedStatus[type.id + '_w']">
+                                    <span class="text-[10px] font-black uppercase tracking-wider">Bianco</span>
+                                    @if(loadedStatus[type.id + '_w']) { <span class="text-sm font-bold">✓</span> }
+                                  </div>
+                                  <input type="file" accept=".stl,.glb,.gltf" 
+                                         class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
+                                         (change)="onFileSelected($event, type.id, 'w')">
                                 </label>
-                                <label class="cursor-pointer bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-black uppercase text-center py-3 rounded-xl border border-white/10 transition-all">
-                                {{ loadedStatus[type.id + '_b'] ? 'NERO OK' : 'CARICA NERO' }}
-                                <input type="file" accept=".stl,.glb,.gltf" class="hidden" (change)="onFileSelected($event, type.id, 'b')">
+                                
+                                <button (click)="rotateAsset(type.id, 'w')" 
+                                  class="relative z-20 w-10 flex flex-col items-center justify-center bg-emerald-500/20 text-emerald-500 rounded-xl border border-emerald-500/30 hover:bg-emerald-500/40 transition-all shadow-lg active:scale-95"
+                                  title="Ruota Modello">
+                                  <span class="text-lg leading-none">↻</span>
+                                </button>
+                              </div>
+
+                              <!-- Black Checkers -->
+                              <div class="flex items-stretch gap-2">
+                                <label class="relative flex-1 cursor-pointer group">
+                                  <div class="w-full h-full flex items-center justify-center gap-2 py-3 rounded-xl border transition-all overflow-hidden shadow-lg"
+                                    [class.bg-emerald-500/10]="loadedStatus[type.id + '_b']" 
+                                    [class.border-emerald-500/30]="loadedStatus[type.id + '_b']" 
+                                    [class.text-emerald-400]="loadedStatus[type.id + '_b']"
+                                    [class.bg-slate-800/80]="!loadedStatus[type.id + '_b']" 
+                                    [class.border-white/10]="!loadedStatus[type.id + '_b']" 
+                                    [class.text-slate-400]="!loadedStatus[type.id + '_b']"
+                                    [class.group-hover:border-white/30]="!loadedStatus[type.id + '_b']">
+                                    <span class="text-[10px] font-black uppercase tracking-wider">Nero</span>
+                                    @if(loadedStatus[type.id + '_b']) { <span class="text-sm font-bold">✓</span> }
+                                  </div>
+                                  <input type="file" accept=".stl,.glb,.gltf" 
+                                         class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
+                                         (change)="onFileSelected($event, type.id, 'b')">
                                 </label>
+
+                                <button (click)="rotateAsset(type.id, 'b')" 
+                                  class="relative z-20 w-10 flex flex-col items-center justify-center bg-emerald-500/20 text-emerald-500 rounded-xl border border-emerald-500/30 hover:bg-emerald-500/40 transition-all shadow-lg active:scale-95"
+                                  title="Ruota Modello">
+                                  <span class="text-lg leading-none">↻</span>
+                                </button>
+                              </div>
                             </div>
-                            </div>
+                          </div>
                         }
-                        </div>
+                      </div>
                     </div>
 
                     <!-- Community Submission -->
-                    <div class="pt-10 border-t border-white/10 flex flex-col items-center">
-                      <div class="max-w-md w-full bg-indigo-500/5 rounded-3xl p-6 border border-indigo-500/10 text-center">
-                        <span class="text-3xl mb-4 block">🌍</span>
-                        <h4 class="text-lg font-black text-white uppercase tracking-tight">Condividi con la Community</h4>
-                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-2 mb-6">Invia il tuo set attuale per l'approvazione. Se accettato, sarà visibile nello Shop Utenti!</p>
-                        
+                    <div class="relative bg-gradient-to-br from-indigo-900/20 to-purple-900/10 border border-indigo-500/20 rounded-2xl p-6 overflow-hidden">
+                      <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom,rgba(99,102,241,0.07),transparent_70%)]"></div>
+                      <div class="relative flex flex-col items-center text-center">
+                        <div class="w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center mb-4 text-3xl">&#127757;</div>
+                        <h4 class="text-base font-black text-white uppercase tracking-tight mb-1">Condividi con la Community</h4>
+                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-5 max-w-xs">Invia il tuo set per l'approvazione. Se accettato, sarà visibile nello Shop Reale!</p>
                         <button (click)="submitKitForApproval()"
                           [disabled]="!canSubmitKit()"
-                          class="w-full py-4 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-30 disabled:cursor-not-allowed text-white rounded-xl font-black uppercase tracking-[.2em] text-[10px] transition-all shadow-xl active:scale-95">
-                          {{ !supabase.user() ? 'Accedi per Pubblicare' : 'Invia per Revisione' }}
+                          class="px-8 py-3 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-30 disabled:cursor-not-allowed text-white rounded-xl font-black uppercase tracking-[.2em] text-[10px] transition-all shadow-xl active:scale-95 border border-indigo-400/20">
+                          {{ !supabase.user() ? '&#128274; Accedi per Pubblicare' : '&#127757; Invia per Revisione' }}
                         </button>
                       </div>
                     </div>
@@ -596,60 +739,94 @@ import { ImageUtils } from '../utils/image-utils';
               <!-- LIBRARY TAB -->
               @if (setupTab === 'library') {
                 <div class="space-y-8 animate-fade-in">
-                    
-                    <!-- Featured Sets -->
-                    <div>
-                        <h4 class="text-sm font-black text-purple-400 uppercase tracking-widest mb-4">Set Completi (Scacchi)</h4>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <!-- Example Item 1 -->
-                            <div class="bg-gradient-to-br from-slate-800 to-slate-900 border border-white/10 rounded-2xl p-1 overflow-hidden group">
-                                <div class="relative h-32 bg-slate-950/50 rounded-xl overflow-hidden mb-3 flex items-center justify-center">
-                                    <span class="text-4xl">🏰</span> <!-- Placeholder for preview image -->
-                                    <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                        <button (click)="selectLibrarySet('classic_ivory')" class="px-4 py-2 bg-white text-black font-black uppercase text-xs rounded-full tracking-wider transform translate-y-2 group-hover:translate-y-0 transition-all">Usa Questo</button>
-                                    </div>
-                                </div>
-                                <div class="px-3 pb-3">
-                                    <h5 class="text-white font-bold uppercase text-sm">Classic Ivory</h5>
-                                    <p class="text-xs text-slate-500 mt-1">Stile classico pregiato</p>
-                                </div>
-                            </div>
 
-                            <!-- Example Item 2 -->
-                            <div class="bg-gradient-to-br from-slate-800 to-slate-900 border border-purple-500/30 rounded-2xl p-1 overflow-hidden group shadow-[0_0_20px_rgba(168,85,247,0.15)]">
-                                <div class="relative h-32 bg-slate-950/50 rounded-xl overflow-hidden mb-3 flex items-center justify-center">
-                                    <span class="text-4xl">🔮</span>
-                                    <div class="absolute top-2 right-2 bg-purple-500 text-white text-[10px] font-black px-2 py-1 rounded-full uppercase tracking-wider">Premium</div>
-                                    <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                        <button (click)="selectLibrarySet('neon_cyber')" class="px-4 py-2 bg-purple-500 text-white font-black uppercase text-xs rounded-full tracking-wider transform translate-y-2 group-hover:translate-y-0 transition-all">Sblocca</button>
-                                    </div>
-                                </div>
-                                <div class="px-3 pb-3">
-                                    <h5 class="text-white font-bold uppercase text-sm">Neon Cyber</h5>
-                                    <p class="text-xs text-slate-500 mt-1">Stile futuristico luminoso</p>
-                                </div>
-                            </div>
-                        </div>
+                  <!-- Featured Chess Sets -->
+                  <div>
+                    <div class="flex items-center gap-3 mb-5">
+                      <div class="h-px flex-1 bg-gradient-to-r from-transparent to-purple-500/30"></div>
+                      <h4 class="text-xs font-black text-purple-400 uppercase tracking-[0.3em]">&#9819; Set Scacchi Completi</h4>
+                      <div class="h-px flex-1 bg-gradient-to-l from-transparent to-purple-500/30"></div>
                     </div>
-
-                    <!-- Boards -->
-                     <div>
-                        <h4 class="text-sm font-black text-cyan-400 uppercase tracking-widest mb-4">Scacchiere</h4>
-                        <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
-                             <div class="bg-slate-800/50 border border-white/5 rounded-xl p-3 flex flex-col items-center gap-2 cursor-pointer hover:bg-slate-700/50 transition-all" (click)="selectLibrarySet('board_wood')">
-                                <div class="w-12 h-12 rounded bg-[#5c4033]"></div>
-                                <span class="text-[10px] font-bold text-white uppercase">Legno</span>
-                             </div>
-                             <div class="bg-slate-800/50 border border-white/5 rounded-xl p-3 flex flex-col items-center gap-2 cursor-pointer hover:bg-slate-700/50 transition-all" (click)="selectLibrarySet('board_marble')">
-                                <div class="w-12 h-12 rounded bg-slate-300"></div>
-                                <span class="text-[10px] font-bold text-white uppercase">Marmo</span>
-                             </div>
-                             <div class="bg-slate-800/50 border border-white/5 rounded-xl p-3 flex flex-col items-center gap-2 cursor-pointer hover:bg-slate-700/50 transition-all" (click)="selectLibrarySet('board_glass')">
-                                <div class="w-12 h-12 rounded bg-cyan-900/40 border border-cyan-500/30"></div>
-                                <span class="text-[10px] font-bold text-white uppercase">Vetro</span>
-                             </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <!-- Classic Ivory -->
+                      <div class="bg-gradient-to-br from-slate-800 to-slate-900 border border-white/10 rounded-2xl overflow-hidden group hover:border-yellow-500/30 hover:shadow-[0_0_30px_rgba(234,179,8,0.08)] transition-all">
+                        <div class="relative h-36 bg-gradient-to-br from-amber-900/30 to-slate-950 flex items-center justify-center overflow-hidden">
+                          <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(245,158,11,0.12),transparent_60%)]"></div>
+                          <div class="flex gap-2 text-4xl relative z-10 drop-shadow-[0_0_10px_rgba(245,158,11,0.3)]"><span class="text-amber-100">&#9812;</span><span class="text-amber-200">&#9813;</span><span class="text-amber-100">&#9814;</span></div>
+                          <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <button (click)="selectLibrarySet('classic_ivory')" class="px-5 py-2.5 bg-gradient-to-r from-yellow-500 to-amber-600 text-black font-black uppercase text-xs rounded-full tracking-wider transform translate-y-3 group-hover:translate-y-0 transition-all shadow-xl">Usa Questo Set</button>
+                          </div>
                         </div>
-                     </div>
+                        <div class="p-4 flex items-center justify-between">
+                          <div><h5 class="text-white font-black uppercase text-sm tracking-tight">Classic Ivory</h5><p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">Stile classico pregiato</p></div>
+                          <span class="px-2 py-1 bg-yellow-500/10 border border-yellow-500/20 rounded-lg text-[9px] font-black text-yellow-500 uppercase tracking-wider">Free</span>
+                        </div>
+                      </div>
+                      <!-- Neon Cyber -->
+                      <div class="bg-gradient-to-br from-slate-800 to-slate-900 border border-purple-500/30 rounded-2xl overflow-hidden group hover:border-purple-400/50 hover:shadow-[0_0_30px_rgba(168,85,247,0.12)] transition-all">
+                        <div class="relative h-36 bg-gradient-to-br from-purple-900/40 to-slate-950 flex items-center justify-center overflow-hidden">
+                          <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(168,85,247,0.18),transparent_60%)]"></div>
+                          <div class="flex gap-2 text-4xl relative z-10 drop-shadow-[0_0_12px_rgba(168,85,247,0.7)]"><span class="text-purple-300">&#9812;</span><span class="text-purple-400">&#9813;</span><span class="text-purple-300">&#9814;</span></div>
+                          <div class="absolute top-3 right-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider">Premium</div>
+                          <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <button (click)="selectLibrarySet('neon_cyber')" class="px-5 py-2.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-black uppercase text-xs rounded-full tracking-wider transform translate-y-3 group-hover:translate-y-0 transition-all shadow-xl">Sblocca Set</button>
+                          </div>
+                        </div>
+                        <div class="p-4 flex items-center justify-between">
+                          <div><h5 class="text-white font-black uppercase text-sm tracking-tight">Neon Cyber</h5><p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">Stile futuristico luminoso</p></div>
+                          <span class="px-2 py-1 bg-purple-500/10 border border-purple-500/20 rounded-lg text-[9px] font-black text-purple-400 uppercase tracking-wider">Premium</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Boards -->
+                  <div>
+                    <div class="flex items-center gap-3 mb-5">
+                      <div class="h-px flex-1 bg-gradient-to-r from-transparent to-cyan-500/30"></div>
+                      <h4 class="text-xs font-black text-cyan-400 uppercase tracking-[0.3em]">&#9670; Campi di Battaglia</h4>
+                      <div class="h-px flex-1 bg-gradient-to-l from-transparent to-cyan-500/30"></div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-3">
+                      <div class="group cursor-pointer bg-slate-900/60 border border-white/5 rounded-2xl p-4 flex flex-col items-center gap-3 hover:border-amber-500/40 hover:shadow-[0_0_20px_rgba(245,158,11,0.08)] transition-all" (click)="selectLibrarySet('board_wood')">
+                        <div class="w-full h-14 rounded-xl grid grid-cols-4 grid-rows-2 overflow-hidden">
+                          <div class="bg-amber-800"></div><div class="bg-amber-600"></div><div class="bg-amber-800"></div><div class="bg-amber-600"></div>
+                          <div class="bg-amber-600"></div><div class="bg-amber-800"></div><div class="bg-amber-600"></div><div class="bg-amber-800"></div>
+                        </div>
+                        <span class="text-[10px] font-black text-white uppercase tracking-widest">Legno</span>
+                        <span class="text-[8px] font-bold text-amber-500/60 uppercase tracking-wider">Classico</span>
+                      </div>
+                      <div class="group cursor-pointer bg-slate-900/60 border border-white/5 rounded-2xl p-4 flex flex-col items-center gap-3 hover:border-slate-400/40 hover:shadow-[0_0_20px_rgba(148,163,184,0.08)] transition-all" (click)="selectLibrarySet('board_marble')">
+                        <div class="w-full h-14 rounded-xl grid grid-cols-4 grid-rows-2 overflow-hidden">
+                          <div class="bg-slate-200"></div><div class="bg-slate-600"></div><div class="bg-slate-200"></div><div class="bg-slate-600"></div>
+                          <div class="bg-slate-600"></div><div class="bg-slate-200"></div><div class="bg-slate-600"></div><div class="bg-slate-200"></div>
+                        </div>
+                        <span class="text-[10px] font-black text-white uppercase tracking-widest">Marmo</span>
+                        <span class="text-[8px] font-bold text-slate-400/60 uppercase tracking-wider">Elegante</span>
+                      </div>
+                      <div class="group cursor-pointer bg-slate-900/60 border border-white/5 rounded-2xl p-4 flex flex-col items-center gap-3 hover:border-cyan-500/40 hover:shadow-[0_0_20px_rgba(6,182,212,0.08)] transition-all" (click)="selectLibrarySet('board_glass')">
+                        <div class="w-full h-14 rounded-xl border border-cyan-500/20 grid grid-cols-4 grid-rows-2 overflow-hidden">
+                          <div class="bg-cyan-900/60"></div><div class="bg-cyan-500/20"></div><div class="bg-cyan-900/60"></div><div class="bg-cyan-500/20"></div>
+                          <div class="bg-cyan-500/20"></div><div class="bg-cyan-900/60"></div><div class="bg-cyan-500/20"></div><div class="bg-cyan-900/60"></div>
+                        </div>
+                        <span class="text-[10px] font-black text-white uppercase tracking-widest">Vetro</span>
+                        <span class="text-[8px] font-bold text-cyan-400/60 uppercase tracking-wider">Futuristico</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Coming Soon Banner -->
+                  <div class="relative bg-gradient-to-r from-slate-900/60 to-slate-800/40 border border-white/5 rounded-2xl p-5 overflow-hidden">
+                    <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_right,rgba(234,179,8,0.04),transparent_60%)]"></div>
+                    <div class="relative flex items-center gap-4">
+                      <div class="w-12 h-12 rounded-xl bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center text-2xl">&#9876;</div>
+                      <div class="flex-1">
+                        <h4 class="text-sm font-black text-white uppercase tracking-tight">Nuovi Set in Arrivo</h4>
+                        <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">Set medievali, futuristici e fantasy &middot; Prossimamente nello Shop</p>
+                      </div>
+                      <span class="px-3 py-1.5 bg-yellow-500/10 border border-yellow-500/20 rounded-lg text-[9px] font-black text-yellow-500 uppercase tracking-wider">Soon</span>
+                    </div>
+                  </div>
 
                 </div>
               }
@@ -696,14 +873,18 @@ import { ImageUtils } from '../utils/image-utils';
     }
     .animate-shake { animation: shake 0.2s ease-in-out infinite; }
 
-    @keyframes fade-in-up {
-      from { opacity: 0; transform: translateY(15px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
     .animate-fade-in-up { animation: fade-in-up 0.4s ease-out forwards; }
+    
+    .glow-gold { box-shadow: 0 0 20px rgba(234, 179, 8, 0.15); }
+    .premium-card { background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 100%); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
+    .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(234, 179, 8, 0.3); border-radius: 10px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(234, 179, 8, 0.5); }
   `]
 })
 export class HomeViewComponent implements OnInit {
+  Math = Math;
   gameService = inject(GameService);
   supabase = inject(SupabaseService);
 
@@ -859,16 +1040,22 @@ export class HomeViewComponent implements OnInit {
         this.authError = error.message;
       } else {
         if (this.authMode === 'register' && !data?.session) {
-          this.authSuccess = 'Account creato! Conferma la tua email.';
+          // Email confirmation required — keep modal open with message
+          this.authSuccess = 'Account creato! Controlla la tua email per confermare.';
         } else {
-          this.authSuccess = `Benvenuto, ${this.authNickname || 'Giocatore'}!`;
-          setTimeout(() => {
-            this.showAuth = false;
-            this.authSuccess = '';
-          }, 1000);
-          await this.supabase.loadUserProfile();
-          await this.gameService.loadUserAssets();
-          await this.loadUserStats();
+          // ✅ CLOSE MODAL IMMEDIATELY — don't wait for async calls
+          this.showAuth = false;
+          this.authSuccess = '';
+          this.authError = '';
+          this.authNickname = '';
+          this.authPassword = '';
+          this.authEmail = '';
+
+          // Load data in background (non-blocking)
+          this.supabase.loadUserProfile()
+            .then(() => this.gameService.loadUserAssets())
+            .then(() => this.loadUserStats())
+            .catch(e => console.error('Post-login data load error:', e));
         }
       }
     } catch (err: any) {
@@ -1013,14 +1200,17 @@ export class HomeViewComponent implements OnInit {
 
 
   async ngOnInit() {
+    // Always load assets (Official Kit for guests, custom for users)
+    await this.gameService.loadUserAssets();
+
+    // Sync local UI status signals with current loaded assets (ensures icons show for everyone)
+    const currentAssets = this.gameService.customMeshUrls();
+    Object.keys(currentAssets).forEach(k => {
+      this.loadedStatus[k] = true;
+    });
+
     if (this.supabase.user()) {
       await this.supabase.loadUserProfile();
-      await this.gameService.loadUserAssets();
-
-      const prefs = await this.supabase.getUserAssetPreferences();
-      Object.keys(prefs).forEach(k => {
-        this.loadedStatus[k] = true;
-      });
     }
     await this.loadUserStats();
   }
@@ -1028,6 +1218,14 @@ export class HomeViewComponent implements OnInit {
 
   // Setup Tab State
   setupTab: 'upload' | 'library' = 'upload';
+
+  rotateAsset(type: string, color?: string) {
+    console.log(`Rotating asset: ${type} ${color || ''}`);
+    let key = type;
+    if (color) key = `${type}_${color}`;
+    this.gameService.updateRotation(key);
+    this.gameService.setPieceStyle('custom'); // Ensure visual update on board
+  }
 
   async selectLibrarySet(setId: string) {
     if (!this.supabase.user()) {
@@ -1042,9 +1240,19 @@ export class HomeViewComponent implements OnInit {
       'board_marble': 'https://xxvlfbozkveeydritfeo.supabase.co/storage/v1/object/public/library/board_marble.glb',
       'board_glass': 'https://xxvlfbozkveeydritfeo.supabase.co/storage/v1/object/public/library/board_glass.glb',
       'classic_ivory': {
+        'board': 'https://xxvlfbozkveeydritfeo.supabase.co/storage/v1/object/public/library/board_wood.glb',
         'p_w': 'https://xxvlfbozkveeydritfeo.supabase.co/storage/v1/object/public/library/ivory_pawn_w.glb',
+        'r_w': 'https://xxvlfbozkveeydritfeo.supabase.co/storage/v1/object/public/library/ivory_rook_w.glb',
         'n_w': 'https://xxvlfbozkveeydritfeo.supabase.co/storage/v1/object/public/library/ivory_knight_w.glb',
-        // Add other pieces as needed
+        'b_w': 'https://xxvlfbozkveeydritfeo.supabase.co/storage/v1/object/public/library/ivory_bishop_w.glb',
+        'q_w': 'https://xxvlfbozkveeydritfeo.supabase.co/storage/v1/object/public/library/ivory_queen_w.glb',
+        'k_w': 'https://xxvlfbozkveeydritfeo.supabase.co/storage/v1/object/public/library/ivory_king_w.glb',
+        'p_b': 'https://xxvlfbozkveeydritfeo.supabase.co/storage/v1/object/public/library/ivory_pawn_b.glb',
+        'r_b': 'https://xxvlfbozkveeydritfeo.supabase.co/storage/v1/object/public/library/ivory_rook_b.glb',
+        'n_b': 'https://xxvlfbozkveeydritfeo.supabase.co/storage/v1/object/public/library/ivory_knight_b.glb',
+        'b_b': 'https://xxvlfbozkveeydritfeo.supabase.co/storage/v1/object/public/library/ivory_bishop_b.glb',
+        'q_b': 'https://xxvlfbozkveeydritfeo.supabase.co/storage/v1/object/public/library/ivory_queen_b.glb',
+        'k_b': 'https://xxvlfbozkveeydritfeo.supabase.co/storage/v1/object/public/library/ivory_king_b.glb'
       },
       'neon_cyber': 'LOCKED'
     };
@@ -1082,6 +1290,7 @@ export class HomeViewComponent implements OnInit {
   }
 
   async onFileSelected(event: Event, type: string, colorSuffix?: string) {
+    console.log(`File selected for ${type} ${colorSuffix || ''}`);
     const input = event.target as HTMLInputElement;
     if (!input.files || !input.files[0]) return;
     const file = input.files[0];

@@ -32,6 +32,7 @@ export class GameService {
 
   // Custom Assets (Signal for reactivity)
   customMeshUrls = signal<Record<string, string>>({});
+  customRotationOffsets = signal<Record<string, number>>({});
 
   // Career State
   careerLevel = signal<number>(1);
@@ -69,56 +70,103 @@ export class GameService {
     this.pieceStyle.set(style);
   }
 
+  updateRotation(key: string) {
+    this.customRotationOffsets.update(current => ({
+      ...current,
+      [key]: (current[key] || 0) + (Math.PI / 4) // +45 degrees (CCW in Three.js standard)
+    }));
+    console.log(`🔄 Rotation updated for ${key}:`, this.customRotationOffsets()[key]);
+  }
+
   async loadUserAssets() {
-    const user = this.supabase.user();
-    if (!user) return;
-
     try {
-      // 1. Check for Full Kit
-      const { data: profile } = await this.supabase.client
-        .from('profiles')
-        .select('current_kit_id, active_assets')
-        .eq('id', user.id)
-        .maybeSingle();
+      const mergedAssets: Record<string, string> = {};
 
-      if (profile?.current_kit_id && profile.current_kit_id !== 'default') {
-        // Load Kit Assets
-        const { data: kit } = await this.supabase.client
-          .from('asset_collections')
-          .select('*')
-          .eq('id', profile.current_kit_id)
+      // Layer 0: Hardcoded App Defaults (Absolute Base)
+      const appDefaults = {
+        'board': 'https://xxvlfbozkveeydritfeo.supabase.co/storage/v1/object/public/library/board_wood.glb',
+        'p': 'https://xxvlfbozkveeydritfeo.supabase.co/storage/v1/object/public/library/ivory_pawn_w.glb',
+        'r': 'https://xxvlfbozkveeydritfeo.supabase.co/storage/v1/object/public/library/ivory_rook_w.glb',
+        'n': 'https://xxvlfbozkveeydritfeo.supabase.co/storage/v1/object/public/library/ivory_knight_w.glb',
+        'b': 'https://xxvlfbozkveeydritfeo.supabase.co/storage/v1/object/public/library/ivory_bishop_w.glb',
+        'q': 'https://xxvlfbozkveeydritfeo.supabase.co/storage/v1/object/public/library/ivory_queen_w.glb',
+        'k': 'https://xxvlfbozkveeydritfeo.supabase.co/storage/v1/object/public/library/ivory_king_w.glb'
+      };
+      Object.assign(mergedAssets, appDefaults);
+
+      // 1. Layer 1: Base Official Kit from DB
+      const { data: officialKits } = await this.supabase.client
+        .from('asset_collections')
+        .select('assets, name')
+        .eq('is_official', true)
+        .eq('status', 'approved')
+        .order('created_at', { ascending: true })
+        .limit(1);
+
+      if (officialKits && officialKits[0]?.assets) {
+        Object.assign(mergedAssets, this.normalizeAssetKeys(officialKits[0].assets));
+        console.log('📦 Base Kit:', officialKits[0].name);
+      }
+
+      // 2. User Specific Layers
+      const user = this.supabase.user();
+      if (user) {
+        const { data: profile } = await this.supabase.client
+          .from('profiles')
+          .select('current_kit_id, active_assets')
+          .eq('id', user.id)
           .maybeSingle();
 
-        if (kit && kit.assets) {
-          console.log('📦 Loading Kit:', kit.name);
-          this.customMeshUrls.set(kit.assets);
-          this.setPieceStyle('custom');
-          return; // Stop here if kit is loaded (overrides individual assets)
+        if (profile?.current_kit_id && profile.current_kit_id !== 'default') {
+          const { data: userKit } = await this.supabase.client
+            .from('asset_collections')
+            .select('assets')
+            .eq('id', profile.current_kit_id)
+            .maybeSingle();
+
+          if (userKit?.assets) {
+            Object.assign(mergedAssets, this.normalizeAssetKeys(userKit.assets));
+            console.log('📦 User Kit Overlays applied');
+          }
+        }
+
+        if (profile?.active_assets) {
+          Object.assign(mergedAssets, this.normalizeAssetKeys(profile.active_assets));
+          console.log('📦 Personal piece overrides applied');
         }
       }
 
-      // 2. Fallback to Individual Assets (Legacy/Manual Mix)
-      const assets = profile?.active_assets || {};
-      if (assets && Object.keys(assets).length > 0) {
-        let hasCustomPieces = false;
-
-        this.customMeshUrls.update(current => {
-          const updated = { ...current };
-          Object.keys(assets).forEach(key => {
-            updated[key] = assets[key];
-            if (key !== 'board') hasCustomPieces = true;
-          });
-          return updated;
-        });
-
-        if (hasCustomPieces) {
-          this.setPieceStyle('custom');
-        }
-        console.log('✅ GameService: Custom Assets Synchronized', assets);
+      // Final synchronization
+      if (Object.keys(mergedAssets).length > 0) {
+        this.customMeshUrls.set(mergedAssets);
+        this.setPieceStyle('custom');
+        console.log('✅ GameService: Assets synchronized successfully');
       }
     } catch (e) {
-      console.error('❌ GameService: Error syncing assets', e);
+      console.error('❌ GameService: Asset merge error', e);
     }
+  }
+
+  private normalizeAssetKeys(assets: any): Record<string, string> {
+    const normalized: Record<string, string> = {};
+    const map: Record<string, string> = {
+      'pawn': 'p', 'rook': 'r', 'knight': 'n', 'bishop': 'b', 'queen': 'q', 'king': 'k',
+      'pedina': 'cm', 'dama': 'ck', 'board': 'board', 'scacchiera': 'board'
+    };
+
+    Object.keys(assets).forEach(key => {
+      let lowKey = key.toLowerCase();
+      let colorSuffix = lowKey.includes('_w') || lowKey.includes('white') ? '_w' :
+        (lowKey.includes('_b') || lowKey.includes('black') ? '_b' : '');
+
+      let baseKey = lowKey.replace('_w', '').replace('_b', '').replace('white_', '').replace('black_', '').trim();
+
+      let finalKey = map[baseKey] || baseKey;
+      if (finalKey !== 'board' && colorSuffix) finalKey += colorSuffix;
+
+      normalized[finalKey] = assets[key];
+    });
+    return normalized;
   }
 
   toggleOriginalTexture(value: boolean) {

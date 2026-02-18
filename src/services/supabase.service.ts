@@ -27,7 +27,7 @@ export class SupabaseService {
         this.user.set(initialUser);
 
         if (initialUser) {
-            this.fetchProfile(initialUser.id);
+            await this.fetchProfile(initialUser.id);
         }
         this.loading.set(false);
 

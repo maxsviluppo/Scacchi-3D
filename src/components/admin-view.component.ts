@@ -283,8 +283,12 @@ interface KitAssetSlot {
                       <div class="space-y-4">
                         <div>
                           <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Nome del Kit</label>
-                          <input type="text" [(ngModel)]="newKit.name" placeholder="es. Classic Ivory" 
-                            class="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-indigo-500 outline-none transition-colors text-white placeholder-slate-600 font-bold">
+                          <input type="text" [(ngModel)]="newKit.name" (input)="checkNameAvailability()" placeholder="es. Classic Ivory" 
+                            class="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-indigo-500 outline-none transition-colors text-white placeholder-slate-600 font-bold"
+                            [class.border-orange-500]="isNameTaken">
+                          @if (isNameTaken) {
+                            <p class="text-[9px] text-orange-400 font-bold mt-1 uppercase tracking-wider animate-pulse">⚠️ Nome già in uso nell'archivio</p>
+                          }
                         </div>
 
                         <div class="grid grid-cols-2 gap-4">
@@ -514,6 +518,7 @@ export class AdminViewComponent implements OnInit {
     type: 'chess', // 'chess' | 'checkers'
     isPublic: false
   };
+  isNameTaken = false;
 
   assetSlots: KitAssetSlot[] = [];
 
@@ -642,6 +647,23 @@ export class AdminViewComponent implements OnInit {
     return this.assetSlots.filter(s => s.status === 'ready').length;
   }
 
+  async checkNameAvailability() {
+    if (!this.newKit.name || this.newKit.name.length < 3) {
+      this.isNameTaken = false;
+      return;
+    }
+    try {
+      const { data } = await this.supabase.client
+        .from('asset_collections')
+        .select('id')
+        .ilike('name', this.newKit.name)
+        .maybeSingle();
+      this.isNameTaken = !!data;
+    } catch {
+      this.isNameTaken = false;
+    }
+  }
+
   async publishKit() {
     if (!this.newKit.name.trim()) {
       alert('Inserisci un nome per il Kit.');
@@ -661,7 +683,25 @@ export class AdminViewComponent implements OnInit {
 
     this.uploading = true;
     try {
-      const kitId = this.newKit.name.toLowerCase().replace(/\\s+/g, '_') + '_' + Date.now();
+      // 0. Verify Name Uniqueness
+      const { data: existing, error: checkError } = await this.supabase.client
+        .from('asset_collections')
+        .select('name')
+        .ilike('name', this.newKit.name)
+        .maybeSingle();
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        console.error('Check Name Error:', checkError);
+      }
+
+      if (existing) {
+        if (!confirm(`Esiste già un kit chiamato "${this.newKit.name}". Vuoi continuare lo stesso? (Verrà creato un duplicato)`)) {
+          this.uploading = false;
+          return;
+        }
+      }
+
+      const kitId = this.newKit.name.toLowerCase().replace(/\s+/g, '_') + '_' + Date.now();
       const assetMap: Record<string, string> = {};
 
       // 1. Upload Loop
@@ -669,16 +709,19 @@ export class AdminViewComponent implements OnInit {
         if (!slot.file) continue;
 
         slot.status = 'uploading';
-
-        // Path: public/kits/{kitId}/{slotId}.glb
         const fileExt = slot.file.name.split('.').pop() || 'glb';
         const filePath = `kits/${kitId}/${slot.id}.${fileExt}`;
 
+        console.log(`Uploading ${slot.id} to: ${filePath}`);
+
         const { error: uploadError } = await this.supabase.client.storage
-          .from('custom_assets') // We use the same bucket
+          .from('custom_assets')
           .upload(filePath, slot.file, { upsert: true });
 
-        if (uploadError) throw uploadError;
+        if (uploadError) {
+          console.error(`Upload error for slot ${slot.id}:`, uploadError);
+          throw { message: `Errore caricamento file ${slot.label}`, details: uploadError };
+        }
 
         const { data } = this.supabase.client.storage
           .from('custom_assets')
@@ -694,10 +737,10 @@ export class AdminViewComponent implements OnInit {
         name: this.newKit.name,
         type: this.newKit.type,
         price_eur: this.newKit.price,
-        assets: assetMap, // JSONB column
+        assets: assetMap,
         is_public: this.newKit.isPublic,
-        is_official: true, // Admin kits are official
-        status: 'approved', // Admin kits are auto-approved
+        is_official: true,
+        status: 'approved',
         created_at: new Date().toISOString()
       };
 
@@ -705,7 +748,10 @@ export class AdminViewComponent implements OnInit {
         .from('asset_collections')
         .insert(kitEntry);
 
-      if (dbError) throw dbError;
+      if (dbError) {
+        console.error('DB Insert Error:', dbError);
+        throw { message: 'Errore salvataggio database', details: dbError };
+      }
 
       alert('✅ Kit Pubblicato con Successo!');
       this.resetForm();
@@ -713,8 +759,9 @@ export class AdminViewComponent implements OnInit {
       this.fetchPublishedKits();
 
     } catch (e: any) {
-      console.error('Publish Error', e);
-      alert('Errore durante la pubblicazione: ' + e.message);
+      console.error('Core Kit Publication Failure:', e);
+      const detailMsg = e.details?.message || e.message || 'Errore sconosciuto';
+      alert(`❌ Errore: ${e.message}\n\nDettaglio: ${detailMsg}`);
     } finally {
       this.uploading = false;
     }
@@ -726,7 +773,7 @@ export class AdminViewComponent implements OnInit {
       const { data, error } = await this.supabase.client
         .from('asset_collections')
         .select('*')
-        .eq('is_official', true) // In List view we only show official kits by default, or maybe all admin-managed
+        // Removed .eq('is_official', true) so admin sees both official and community kits
         .order('created_at', { ascending: false });
 
       if (error) throw error;

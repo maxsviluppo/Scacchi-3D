@@ -142,9 +142,11 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
       const useOriginal = this.gameService.useOriginalTexture();
 
       if (this.three && this.scene) {
-        // ALWAYS check for new custom URLs to load them into cache
-        // Track the signal!
+        // Track the signals!
         const customUrls = this.gameService.customMeshUrls();
+        const rotations = this.gameService.customRotationOffsets(); // Track for reactivity
+
+        // Load new models if needed
         Object.keys(customUrls).forEach(key => {
           const cached = this.customCache.get(key);
           if ((!cached || cached.url !== customUrls[key]) && key !== 'board_last_loaded') {
@@ -152,7 +154,7 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
           }
         });
 
-        // Always verify if we are in a safe state to render
+        // Always force update pieces if rotations change (or URLs)
         if (!this.isLoadingModel) {
 
           // Fix: Detect new move and set state BEFORE updatePieces to hide destination piece
@@ -163,6 +165,7 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
             this.lastAnimatedMove = lastMove;
           }
 
+          this.createBoard(); // Refresh board (for rotation)
           this.updatePieces(board, selected, style, lastMove);
           this.updateHighlights(validMoves, selected);
 
@@ -207,6 +210,7 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
 
   async loadCustomModelFromUrl(url: string, key: string) {
     if (!this.three || !url) return;
+    console.log(`Loading custom model from URL: ${url} for key: ${key}`);
 
     // Prevent double loading
     if (this.loadingKeys.has(key)) return;
@@ -215,17 +219,36 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
     try {
       const isGLB = url.toLowerCase().includes('.glb') || url.toLowerCase().includes('.gltf');
       const isSTL = url.toLowerCase().includes('.stl');
+      const isBlob = url.startsWith('blob:');
 
       let result: any = null;
-      if (isSTL) {
-        const geo = await this.loadSTL(url);
-        result = { geometry: geo, material: null };
-      } else if (isGLB) {
-        result = await this.loadGLTF(url);
+
+      // Robust loader selection
+      if (isSTL || (isBlob && !isGLB)) {
+        try {
+          const geo = await this.loadSTL(url);
+          result = { geometry: geo, material: null };
+        } catch (stlErr) {
+          if (isBlob) {
+            // Try GLTF if STL failed on a blob
+            result = await this.loadGLTF(url);
+          } else throw stlErr;
+        }
+      } else if (isGLB || isBlob) {
+        try {
+          result = await this.loadGLTF(url);
+        } catch (gltfErr) {
+          if (isBlob) {
+            // Try STL if GLTF failed on a blob
+            const geo = await this.loadSTL(url);
+            result = { geometry: geo, material: null };
+          } else throw gltfErr;
+        }
       }
 
       if (result && result.geometry) {
         this.processAndCacheGeometry(result.geometry, result.material, key, url);
+        console.log(`Successfully loaded ${key} from ${url}`);
       }
     } catch (e) {
       console.error('Failed to load Model from URL:', url, e);
@@ -237,6 +260,7 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
 
   async loadCustomModel(file: File, key: string) {
     if (!this.three) return;
+    console.log(`Loading custom model file for ${key}: ${file.name}`);
 
     // START LOCK
     this.loadingKeys.add(key);
@@ -261,9 +285,8 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
     } catch (e) {
       console.error('Failed to load Model', e);
     } finally {
-      if (url.startsWith('blob:')) {
-        URL.revokeObjectURL(url);
-      }
+      // NOTE: We DO NOT revoke the URL here anymore because it breaks re-rendering
+      // if the scene needs to refresh the pieces from the same blob URL.
 
       // END LOCK
       this.loadingKeys.delete(key);
@@ -328,8 +351,8 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
     finalBox.getSize(finalSize);
 
     if (key === 'board') {
+      const targetSize = 8.3; // Better fit for 8x8 squares + small border
       const maxDim = Math.max(finalSize.x, finalSize.z);
-      const targetSize = 12.0;
       const scaleFactor = targetSize / maxDim;
       geometry.scale(scaleFactor, scaleFactor, scaleFactor);
 
@@ -520,20 +543,14 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
 
   private animateMove(move: LastMove, style: string) {
     if (!this.three) return;
+    console.log('🎬 Animating Move:', move.piece.type, move.from, '->', move.to);
 
-    // Safety check: Do not animate if models are reloading or unstable
-    if (this.isLoadingModel) {
-      this.updatePieces(
-        this.gameService.board(),
-        this.gameService.selectedPos(),
-        this.gameService.pieceStyle(),
-        null
-      );
-      return;
-    }
+    // Sync animation group rotation with board
+    const rotations = this.gameService.customRotationOffsets();
+    const boardRot = rotations['board'] || 0;
+    this.animGroup.rotation.y = boardRot;
 
     this.animGroup.clear();
-    // Use existing variable, assignment here just confirms it for the loop
     this.currentlyAnimatingMove = move;
 
     // --- SETUP ---
@@ -545,7 +562,8 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
     // Moving Piece Clone
     const movingMesh = this.createPieceMesh(move.piece, false, style);
     movingMesh.position.set(startX, 0.1, startZ);
-    // Cleanup metadata
+
+    // Cleanup metadata to avoid raycaster hits during animation
     if (movingMesh.userData) movingMesh.userData = {};
     if (movingMesh.children) movingMesh.children.forEach((c: any) => c.userData = {});
 
@@ -565,12 +583,12 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
     const startTime = performance.now();
     const duration = 650; // Slower for elegance
 
-    // Determine Height: Knight, Capture or Jump get high arcs. Normal moves get a small lift.
+    // Determine Height: Knight, Capture or Jump get high arcs. Normal moves get a decent lift.
     const isKnight = move.piece.type === 'n';
     const isCapture = !!move.capturedPiece;
     const isBigJump = isKnight || isCapture || move.isJump;
 
-    const peakHeight = isBigJump ? 2.5 : 0.6; // 0.6 is a subtle "lift" for sliding pieces
+    const peakHeight = isBigJump ? 2.5 : 1.2; // 1.2 for visible sliding, 2.5 for jumps/captures
 
     // Vectors for rotation logic
     const dx = endX - startX;
@@ -692,6 +710,10 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
     if (!this.three || !this.boardGroup) return;
     this.boardGroup.clear();
 
+    const rotations = this.gameService.customRotationOffsets();
+    const boardRot = rotations['board'] || 0;
+    this.boardGroup.rotation.y = boardRot; // Apply to the whole group
+
     if (this.customBoardGeometry) {
       const mat = new this.three.MeshStandardMaterial({ color: 0x888888, roughness: 0.4, metalness: 0.3 });
       const mesh = new this.three.Mesh(this.customBoardGeometry, mat);
@@ -737,6 +759,10 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
     if (!this.three) return;
     this.piecesGroup.clear();
 
+    const rotations = this.gameService.customRotationOffsets();
+    const boardRot = rotations['board'] || 0;
+    this.piecesGroup.rotation.y = boardRot; // Sync rotation with board
+
     board.forEach((row, r) => {
       row.forEach((piece, c) => {
         if (piece) {
@@ -772,11 +798,8 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
   // --- STYLE: CUSTOM ---
   private createCustomPiece(piece: Piece, isSelected: boolean): any {
     const colorKey = `${piece.type}_${piece.color}`;
-    let cached = this.customCache.get(colorKey);
-
-    if (!cached) {
-      cached = this.customCache.get(piece.type);
-    }
+    // Optimized lookup: color-specific > generic type > fallback
+    let cached = this.customCache.get(colorKey) || this.customCache.get(piece.type);
 
     if (cached) {
       let material;
@@ -788,8 +811,8 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
           material.emissiveIntensity = 0.4;
         }
       } else {
-        // Brighter "Black" for custom pieces too
-        const color = piece.color === 'w' ? 0xffffff : 0x2c2c2c;
+        // Brighter colors for visibility
+        const color = piece.color === 'w' ? 0xffffff : 0x222222;
         material = this.createPieceMaterial(color, isSelected);
       }
 
@@ -797,19 +820,23 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
       mesh.castShadow = true;
       mesh.receiveShadow = true;
 
-      if (piece.type === 'n') {
-        mesh.rotation.y = piece.color === 'w' ? 0 : Math.PI;
-      }
+      // Apply custom rotation + standard logic
+      const rotations = this.gameService.customRotationOffsets();
+      const customRot = rotations[colorKey] || rotations[piece.type] || 0;
+      mesh.rotation.y = customRot;
 
+      if (piece.type === 'n') {
+        mesh.rotation.y += piece.color === 'w' ? 0 : Math.PI;
+      }
       return mesh;
     } else {
+      // High-quality fallback to Classic
       if (piece.type === 'cm' || piece.type === 'ck') {
-        return this.createCheckersPiece(piece, isSelected, 'minimal');
+        return this.createCheckersPiece(piece, isSelected, 'classic');
       }
-      return this.createMinimalPiece(piece, isSelected);
+      return this.createClassicPiece(piece, isSelected);
     }
   }
-
   // --- CHECKERS DEFAULT ---
   private createCheckersPiece(piece: Piece, isSelected: boolean, style: string): any {
     // Color adjustment: 0x1a1a1a -> 0x2c2c2c (Dark Charcoal)

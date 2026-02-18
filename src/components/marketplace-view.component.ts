@@ -207,15 +207,24 @@ export class MarketplaceViewComponent implements OnInit {
   async fetchAssets() {
     this.loading = true;
     try {
+      // JOIN with profiles to get author details
       const { data, error } = await this.supabase.client
         .from('asset_collections')
-        .select('*')
+        .select(`
+          *,
+          author:profiles(username, nickname)
+        `)
         .eq('is_public', true)
         .eq('status', 'approved')
         .order('created_at', { ascending: false });
 
-      if (!error && data) {
-        this.assets = data;
+      if (error) throw error;
+
+      if (data) {
+        this.assets = data.map(kit => ({
+          ...kit,
+          author_name: kit.author?.nickname || kit.author?.username || 'Community Member'
+        }));
       }
     } catch (e) {
       console.error('Error fetching assets:', e);
