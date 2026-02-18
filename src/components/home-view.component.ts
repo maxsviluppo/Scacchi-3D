@@ -553,7 +553,7 @@ import { ImageUtils } from '../utils/image-utils';
                           <div class="w-full h-full flex items-center justify-center gap-3 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 text-xs font-black uppercase py-4 rounded-xl border border-amber-500/20 hover:border-amber-400/40 transition-all shadow-lg">
                             &#8679; Carica Scacchiera &middot; STL / GLB / GLTF
                           </div>
-                          <input type="file" accept=".stl,.glb,.gltf" 
+                          <input type="file" accept=".stl,.glb,.gltf,model/stl,model/gltf-binary,model/gltf+json,application/sla" 
                                  class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
                                  (change)="onFileSelected($event, 'board')">
                         </label>
@@ -600,7 +600,7 @@ import { ImageUtils } from '../utils/image-utils';
                                     <span class="text-[10px] font-black uppercase tracking-wider">Bianco</span>
                                     @if(loadedStatus[type.id + '_w']) { <span class="text-sm font-bold">✓</span> }
                                   </div>
-                                  <input type="file" accept=".stl,.glb,.gltf" 
+                                  <input type="file" accept=".stl,.glb,.gltf,model/stl,model/gltf-binary,model/gltf+json,application/sla" 
                                          class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
                                          (change)="onFileSelected($event, type.id, 'w')">
                                 </label>
@@ -626,7 +626,7 @@ import { ImageUtils } from '../utils/image-utils';
                                     <span class="text-[10px] font-black uppercase tracking-wider">Nero</span>
                                     @if(loadedStatus[type.id + '_b']) { <span class="text-sm font-bold">✓</span> }
                                   </div>
-                                  <input type="file" accept=".stl,.glb,.gltf" 
+                                  <input type="file" accept=".stl,.glb,.gltf,model/stl,model/gltf-binary,model/gltf+json,application/sla" 
                                          class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
                                          (change)="onFileSelected($event, type.id, 'b')">
                                 </label>
@@ -676,7 +676,7 @@ import { ImageUtils } from '../utils/image-utils';
                                     <span class="text-[10px] font-black uppercase tracking-wider">Bianco</span>
                                     @if(loadedStatus[type.id + '_w']) { <span class="text-sm font-bold">✓</span> }
                                   </div>
-                                  <input type="file" accept=".stl,.glb,.gltf" 
+                                  <input type="file" accept=".stl,.glb,.gltf,model/stl,model/gltf-binary,model/gltf+json,application/sla" 
                                          class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
                                          (change)="onFileSelected($event, type.id, 'w')">
                                 </label>
@@ -702,7 +702,7 @@ import { ImageUtils } from '../utils/image-utils';
                                     <span class="text-[10px] font-black uppercase tracking-wider">Nero</span>
                                     @if(loadedStatus[type.id + '_b']) { <span class="text-sm font-bold">✓</span> }
                                   </div>
-                                  <input type="file" accept=".stl,.glb,.gltf" 
+                                  <input type="file" accept=".stl,.glb,.gltf,model/stl,model/gltf-binary,model/gltf+json,application/sla" 
                                          class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
                                          (change)="onFileSelected($event, type.id, 'b')">
                                 </label>
