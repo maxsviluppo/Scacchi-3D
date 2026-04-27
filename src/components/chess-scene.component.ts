@@ -675,12 +675,10 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
   }
 
   private createPieceMesh(piece: Piece, isSelected: boolean, style: string): any {
-    let mesh;
+    let mesh: any;
     if (style === 'custom') {
-      return this.createCustomPiece(piece, isSelected);
-    }
-
-    if (piece.type === 'cm' || piece.type === 'ck') {
+      mesh = this.createCustomPiece(piece, isSelected);
+    } else if (piece.type === 'cm' || piece.type === 'ck') {
       mesh = this.createCheckersPiece(piece, isSelected, style);
     } else {
       if (style === 'classic') {
@@ -691,6 +689,21 @@ export class ChessSceneComponent implements AfterViewInit, OnDestroy {
         mesh = this.createMinimalPiece(piece, isSelected);
       }
     }
+
+    // --- UNIVERSAL PROPORTIONAL ADJUSTMENTS (Increased +20%) ---
+    if (mesh && piece.type !== 'cm' && piece.type !== 'ck') {
+      let scaleValue = 1.0;
+      switch (piece.type) {
+        case 'k': scaleValue = 1.20; break; // King: 1.0 * 1.2 = 120%
+        case 'q': scaleValue = 1.02; break; // Queen: 0.85 * 1.2 = 102%
+        case 'b': scaleValue = 0.90; break; // Bishop: 0.75 * 1.2 = 90%
+        case 'n': scaleValue = 0.72; break; // Knight: 0.60 * 1.2 = 72%
+        case 'r': scaleValue = 0.66; break; // Rook: 0.55 * 1.2 = 66%
+        case 'p': scaleValue = 0.54; break; // Pawn: 0.45 * 1.2 = 54%
+      }
+      mesh.scale.set(scaleValue, scaleValue, scaleValue);
+    }
+
     return mesh;
   }
 

@@ -210,11 +210,10 @@ export class AppComponent {
   constructor() {
     // Persistent assets loading logic
     effect(async () => {
-      const user = this.supabase.user();
-      if (user) {
-        console.log('AppComponent: User detected, loading persistent assets...');
-        await this.gameService.loadUserAssets();
-      }
+      // Reload on any user change (login or logout) to ensure assets stay in sync
+      const user = this.supabase.user(); 
+      console.log('AppComponent: Auth change detected, synchronizing assets...');
+      await this.gameService.loadUserAssets();
     });
   }
 

@@ -1,5 +1,5 @@
 
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SupabaseService } from '../services/supabase.service';
 import { GameService } from '../services/game.service';
@@ -35,7 +35,6 @@ interface AssetCollection {
           </button>
           <div>
             <h1 class="text-3xl md:text-4xl font-black text-white uppercase tracking-tighter">THE KING SHOP</h1>
-            <p class="text-indigo-400/80 text-[10px] md:text-xs font-black uppercase tracking-[0.4em]">Design & Custom Assets</p>
           </div>
         </div>
 
@@ -50,27 +49,27 @@ interface AssetCollection {
 
       <!-- Navigation Tabs -->
       <div class="px-6 md:px-12 pt-8 flex gap-4 overflow-x-auto scrollbar-hide shrink-0">
-        <button (click)="activeTab = 'free'"
-                [class.bg-indigo-600]="activeTab === 'free'"
-                [class.text-white]="activeTab === 'free'"
-                [class.bg-slate-900/50]="activeTab !== 'free'"
-                [class.text-slate-500]="activeTab !== 'free'"
+        <button (click)="activeTab.set('free')"
+                [class.bg-indigo-600]="activeTab() === 'free'"
+                [class.text-white]="activeTab() === 'free'"
+                [class.bg-slate-900/50]="activeTab() !== 'free'"
+                [class.text-slate-500]="activeTab() !== 'free'"
                 class="px-8 py-3 rounded-2xl font-black uppercase text-xs tracking-widest transition-all border border-white/5 min-w-[160px] whitespace-nowrap">
           Kit Gratuiti
         </button>
-        <button (click)="activeTab = 'paid'"
-                [class.bg-amber-600]="activeTab === 'paid'"
-                [class.text-white]="activeTab === 'paid'"
-                [class.bg-slate-900/50]="activeTab !== 'paid'"
-                [class.text-slate-500]="activeTab !== 'paid'"
+        <button (click)="activeTab.set('paid')"
+                [class.bg-amber-600]="activeTab() === 'paid'"
+                [class.text-white]="activeTab() === 'paid'"
+                [class.bg-slate-900/50]="activeTab() !== 'paid'"
+                [class.text-slate-500]="activeTab() !== 'paid'"
                 class="px-8 py-3 rounded-2xl font-black uppercase text-xs tracking-widest transition-all border border-white/5 min-w-[160px]">
           Kit Premium
         </button>
-        <button (click)="activeTab = 'community'"
-                [class.bg-emerald-600]="activeTab === 'community'"
-                [class.text-white]="activeTab === 'community'"
-                [class.bg-slate-900/50]="activeTab !== 'community'"
-                [class.text-slate-500]="activeTab !== 'community'"
+        <button (click)="activeTab.set('community')"
+                [class.bg-emerald-600]="activeTab() === 'community'"
+                [class.text-white]="activeTab() === 'community'"
+                [class.bg-slate-900/50]="activeTab() !== 'community'"
+                [class.text-slate-500]="activeTab() !== 'community'"
                 class="px-8 py-3 rounded-2xl font-black uppercase text-xs tracking-widest transition-all border border-white/5 min-w-[160px]">
           Kit Utenti
         </button>
@@ -85,15 +84,12 @@ interface AssetCollection {
           <div class="flex items-end justify-between border-b border-white/5 pb-4">
             <div>
               <h2 class="text-2xl font-black text-white uppercase tracking-tight">
-                {{ activeTab === 'free' ? 'Collezione Gratuita' : (activeTab === 'paid' ? 'Contenuti Premium' : 'Creazioni della Community') }}
+                {{ activeTab() === 'free' ? 'Collezione Gratuita' : (activeTab() === 'paid' ? 'Contenuti Premium' : 'Creazioni della Community') }}
               </h2>
-              <p class="text-slate-500 text-xs font-bold uppercase tracking-widest mt-1">
-                {{ activeTab === 'free' ? 'Set ufficiali pronti all\'uso' : (activeTab === 'paid' ? 'Design esclusivi di alta qualità' : 'I migliori kit creati dai giocatori') }}
-              </p>
             </div>
           </div>
 
-          @if (loading) {
+          @if (loading()) {
             <div class="flex flex-col items-center justify-center py-20 opacity-40">
               <div class="w-12 h-12 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin mb-4"></div>
               <p class="text-[10px] font-black uppercase tracking-widest">Sincronizzazione Shop...</p>
@@ -102,11 +98,17 @@ interface AssetCollection {
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
               
               <!-- Default Kit (Only in Free tab) -->
-              @if (activeTab === 'free') {
-                <div class="group relative bg-slate-900/40 border border-white/5 rounded-[2rem] overflow-hidden hover:border-indigo-500/30 transition-all hover:translate-y-[-4px] shadow-2xl flex flex-col">
+              @if (activeTab() === 'free') {
+                <div class="group relative bg-slate-900/40 border border-white/5 rounded-[2rem] overflow-hidden hover:border-indigo-500/30 transition-all hover:translate-y-[-4px] shadow-2xl flex flex-col"
+                  [class.ring-2]="gameService.currentKitId() === 'default'" [class.ring-yellow-500]="gameService.currentKitId() === 'default'">
                   <div class="aspect-[4/3] bg-slate-950 relative overflow-hidden flex items-center justify-center group-hover:bg-slate-900 transition-colors">
                     <span class="text-6xl group-hover:scale-110 transition-transform duration-500 filter drop-shadow-[0_0_20px_rgba(255,255,255,0.2)]">♟️</span>
                     <div class="absolute top-4 left-4 px-3 py-1 bg-slate-800/80 backdrop-blur-md text-white/80 text-[9px] font-black uppercase rounded-lg tracking-widest border border-white/10">Default</div>
+                    @if(gameService.currentKitId() === 'default') {
+                      <div class="absolute inset-0 bg-yellow-500/10 flex items-center justify-center backdrop-blur-[2px]">
+                        <span class="bg-yellow-500 text-black px-4 py-1 rounded-full font-black text-[10px] uppercase shadow-xl animate-pulse">In Uso</span>
+                      </div>
+                    }
                   </div>
                   <div class="p-6 flex flex-col flex-1">
                     <div class="mb-4">
@@ -116,8 +118,9 @@ interface AssetCollection {
                     
                     <div class="mt-auto">
                       <button (click)="useKit('default')" 
-                        class="w-full py-3 bg-white/5 hover:bg-indigo-600 text-slate-400 hover:text-white border border-white/5 hover:border-indigo-400/50 rounded-xl font-black uppercase tracking-[0.2em] text-[10px] transition-all flex items-center justify-center gap-2 group/btn">
-                        <span>Installa</span>
+                        [disabled]="gameService.currentKitId() === 'default'"
+                        class="w-full py-3 bg-white/5 hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed text-slate-400 hover:text-white border border-white/5 hover:border-indigo-400/50 rounded-xl font-black uppercase tracking-[0.2em] text-[10px] transition-all flex items-center justify-center gap-2 group/btn">
+                        <span>{{ gameService.currentKitId() === 'default' ? 'Attivo' : 'Installa' }}</span>
                       </button>
                     </div>
                   </div>
@@ -125,8 +128,9 @@ interface AssetCollection {
               }
 
               <!-- Dynamic Kits -->
-              @for (kit of filteredKits; track kit.id) {
-                 <div class="group relative bg-slate-900/40 border border-white/5 rounded-[2rem] overflow-hidden hover:border-indigo-500/30 transition-all hover:translate-y-[-4px] shadow-2xl flex flex-col">
+              @for (kit of filteredKits(); track kit.id) {
+                 <div class="group relative bg-slate-900/40 border border-white/5 rounded-[2rem] overflow-hidden hover:border-indigo-500/30 transition-all hover:translate-y-[-4px] shadow-2xl flex flex-col"
+                   [class.ring-2]="gameService.currentKitId() === kit.id" [class.ring-indigo-500]="gameService.currentKitId() === kit.id">
                     <div class="aspect-[4/3] bg-slate-950 relative overflow-hidden flex items-center justify-center">
                       @if (kit.preview_image_url) {
                         <img [src]="kit.preview_image_url" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-all duration-700 group-hover:scale-105">
@@ -139,6 +143,12 @@ interface AssetCollection {
                           {{ kit.price_eur === 0 ? 'Gratis' : '€ ' + kit.price_eur }}
                         </span>
                       </div>
+
+                      @if(gameService.currentKitId() === kit.id) {
+                        <div class="absolute inset-0 bg-indigo-500/10 flex items-center justify-center backdrop-blur-[2px]">
+                          <span class="bg-indigo-600 text-white px-4 py-1 rounded-full font-black text-[10px] uppercase shadow-xl animate-pulse">In Uso</span>
+                        </div>
+                      }
 
                       <div class="absolute top-4 left-4 px-2 py-1 bg-indigo-500/20 backdrop-blur-md text-[8px] font-black uppercase rounded border border-indigo-400/20 tracking-widest">
                         {{ kit.type === 'chess' ? 'Scacchi' : 'Dama' }}
@@ -155,14 +165,16 @@ interface AssetCollection {
                       
                       <div class="mt-auto">
                         <button (click)="useKit(kit)" 
-                          [class.bg-indigo-600]="activeTab === 'free'"
-                          [class.hover:bg-indigo-500]="activeTab === 'free'"
-                          [class.bg-amber-600]="activeTab === 'paid'"
-                          [class.hover:bg-amber-500]="activeTab === 'paid'"
-                          [class.bg-emerald-600]="activeTab === 'community'"
-                          [class.hover:bg-emerald-500]="activeTab === 'community'"
-                          class="w-full py-3 text-white rounded-xl font-black uppercase tracking-[0.2em] text-[10px] transition-all shadow-xl transform active:scale-95">
-                          {{ kit.price_eur > 0 ? 'Acquista' : 'Installa' }}
+                          [disabled]="gameService.currentKitId() === kit.id"
+                          [class.bg-indigo-600]="activeTab() === 'free' && gameService.currentKitId() !== kit.id"
+                          [class.hover:bg-indigo-500]="activeTab() === 'free' && gameService.currentKitId() !== kit.id"
+                          [class.bg-amber-600]="activeTab() === 'paid' && gameService.currentKitId() !== kit.id"
+                          [class.hover:bg-amber-500]="activeTab() === 'paid' && gameService.currentKitId() !== kit.id"
+                          [class.bg-emerald-600]="activeTab() === 'community' && gameService.currentKitId() !== kit.id"
+                          [class.hover:bg-emerald-500]="activeTab() === 'community' && gameService.currentKitId() !== kit.id"
+                          [class.bg-slate-700]="gameService.currentKitId() === kit.id"
+                          class="w-full py-3 text-white rounded-xl font-black uppercase tracking-[0.2em] text-[10px] transition-all shadow-xl transform active:scale-95 disabled:opacity-50">
+                          {{ gameService.currentKitId() === kit.id ? 'Attivo' : (kit.price_eur > 0 ? 'Acquista' : 'Installa') }}
                         </button>
                       </div>
                     </div>
@@ -196,18 +208,31 @@ export class MarketplaceViewComponent implements OnInit {
   supabase = inject(SupabaseService);
   gameService = inject(GameService);
 
-  assets: AssetCollection[] = [];
-  loading = true;
-  activeTab: 'free' | 'paid' | 'community' = 'free';
+  assets = signal<AssetCollection[]>([]);
+  loading = signal<boolean>(true);
+  activeTab = signal<'free' | 'paid' | 'community'>('free');
+
+  // Computed signal for filtered kits
+  filteredKits = computed(() => {
+    const all = this.assets();
+    const tab = this.activeTab();
+    
+    if (tab === 'free') {
+      return all.filter(a => a.is_official && a.price_eur === 0);
+    } else if (tab === 'paid') {
+      return all.filter(a => a.is_official && a.price_eur > 0);
+    } else {
+      return all.filter(a => !a.is_official);
+    }
+  });
 
   ngOnInit() {
     this.fetchAssets();
   }
 
   async fetchAssets() {
-    this.loading = true;
+    this.loading.set(true);
     try {
-      // JOIN with profiles to get author details
       const { data, error } = await this.supabase.client
         .from('asset_collections')
         .select(`
@@ -221,25 +246,15 @@ export class MarketplaceViewComponent implements OnInit {
       if (error) throw error;
 
       if (data) {
-        this.assets = data.map(kit => ({
+        this.assets.set(data.map(kit => ({
           ...kit,
           author_name: kit.author?.nickname || kit.author?.username || 'Community Member'
-        }));
+        })));
       }
     } catch (e) {
       console.error('Error fetching assets:', e);
     } finally {
-      this.loading = false;
-    }
-  }
-
-  get filteredKits(): AssetCollection[] {
-    if (this.activeTab === 'free') {
-      return this.assets.filter(a => a.is_official && a.price_eur === 0);
-    } else if (this.activeTab === 'paid') {
-      return this.assets.filter(a => a.is_official && a.price_eur > 0);
-    } else {
-      return this.assets.filter(a => !a.is_official);
+      this.loading.set(false);
     }
   }
 
@@ -247,24 +262,24 @@ export class MarketplaceViewComponent implements OnInit {
     if (kit === 'default') {
       this.gameService.pieceStyle.set('classic');
       this.gameService.customMeshUrls.set({});
+      this.gameService.currentKitId.set('default');
       this.saveUserPreference('default');
-      alert('Kit Classic v1 Attivato! 👑');
+      this.gameService.showToast('Kit Classic v1 Attivato! 👑', 'success');
     } else if (typeof kit !== 'string') {
       if (kit.price_eur > 0) {
-        alert('Il sistema di pagamenti sarà disponibile a breve!');
+        this.gameService.showToast('Il sistema di pagamenti sarà disponibile a breve!', 'info');
         return;
       }
 
       console.log('Activating Kit:', kit.name);
 
-      // Update GameService with the map of assets
-      // The 'assets' field in DB is JSONB { "p_w": "url", ... }
+      // Update GameService
       this.gameService.customMeshUrls.set(kit.assets);
       this.gameService.pieceStyle.set('custom');
+      this.gameService.currentKitId.set(kit.id);
 
       this.saveUserPreference(kit.id);
-
-      alert(`Kit ${kit.name} installato con successo!`);
+      this.gameService.showToast(`Kit ${kit.name} installato!`, 'success');
     }
   }
 
@@ -272,7 +287,6 @@ export class MarketplaceViewComponent implements OnInit {
     const user = this.supabase.user();
     if (!user) return;
 
-    // Only works if profile has the column, fails gracefully otherwise
     try {
       const { error } = await this.supabase.client.from('profiles').update({
         current_kit_id: kitId

@@ -558,9 +558,14 @@ import { ImageUtils } from '../utils/image-utils';
                                  (change)="onFileSelected($event, 'board')">
                         </label>
                         
-                        <button (click)="rotateAsset('board')" title="Ruota 45°"
-                          class="relative z-20 w-14 flex items-center justify-center bg-slate-800 hover:bg-amber-500/20 text-amber-400 rounded-xl border border-white/10 hover:border-amber-400/50 transition-all shadow-lg active:scale-95">
-                          <span class="text-xl">↻</span>
+                        <button (click)="rotateAsset('board')" title="Ruota 90°"
+                          class="relative z-20 w-16 flex flex-col items-center justify-center bg-slate-800 hover:bg-amber-500/20 text-amber-400 rounded-xl border border-white/10 hover:border-amber-400/50 transition-all shadow-lg active:scale-95 group/rot">
+                          <span class="text-xl group-hover/rot:rotate-90 transition-transform duration-300">↻</span>
+                          <span class="text-[7px] font-black mt-0.5">{{ ((gameService.customRotationOffsets()['board'] || 0) * 180 / Math.PI) % 360 | number:'1.0-0' }}°</span>
+                          <!-- Directional Arrow Indicator -->
+                          <div class="absolute -top-1 right-0 transform translate-x-1/2 -translate-y-1/2 bg-amber-500 text-black rounded-full w-4 h-4 flex items-center justify-center text-[8px] font-black shadow-lg opacity-0 group-hover/rot:opacity-100 transition-opacity">
+                            ➔
+                          </div>
                         </button>
                       </div>
                     </div>
@@ -606,9 +611,13 @@ import { ImageUtils } from '../utils/image-utils';
                                 </label>
                                 
                                 <button (click)="rotateAsset(type.id, 'w')" 
-                                  class="relative z-20 w-10 flex flex-col items-center justify-center bg-yellow-500/20 text-yellow-500 rounded-xl border border-yellow-500/30 hover:bg-yellow-500/40 transition-all shadow-lg active:scale-95"
-                                  title="Ruota Modello">
-                                  <span class="text-lg leading-none">↻</span>
+                                  class="relative z-20 w-12 flex flex-col items-center justify-center bg-yellow-500/20 text-yellow-500 rounded-xl border border-yellow-500/30 hover:bg-yellow-500/40 transition-all shadow-lg active:scale-95 group/rot"
+                                  title="Ruota Modello (Step 90°)">
+                                  <span class="text-lg leading-none group-hover/rot:rotate-90 transition-transform duration-300">↻</span>
+                                  <span class="text-[7px] font-black mt-0.5">{{ ((gameService.customRotationOffsets()[type.id + '_w'] || 0) * 180 / Math.PI) % 360 | number:'1.0-0' }}°</span>
+                                  <div class="absolute -top-1 -right-1 bg-yellow-500 text-black rounded-full w-3 h-3 flex items-center justify-center text-[7px] font-black opacity-0 group-hover/rot:opacity-100 transition-opacity">
+                                    ➔
+                                  </div>
                                 </button>
                               </div>
 
@@ -632,9 +641,13 @@ import { ImageUtils } from '../utils/image-utils';
                                 </label>
 
                                 <button (click)="rotateAsset(type.id, 'b')" 
-                                  class="relative z-20 w-10 flex flex-col items-center justify-center bg-yellow-500/20 text-yellow-500 rounded-xl border border-yellow-500/30 hover:bg-yellow-500/40 transition-all shadow-lg active:scale-95"
-                                  title="Ruota Modello">
-                                  <span class="text-lg leading-none">↻</span>
+                                  class="relative z-20 w-12 flex flex-col items-center justify-center bg-yellow-500/20 text-yellow-500 rounded-xl border border-yellow-500/30 hover:bg-yellow-500/40 transition-all shadow-lg active:scale-95 group/rot"
+                                  title="Ruota Modello (Step 90°)">
+                                  <span class="text-lg leading-none group-hover/rot:rotate-90 transition-transform duration-300">↻</span>
+                                  <span class="text-[7px] font-black mt-0.5">{{ ((gameService.customRotationOffsets()[type.id + '_b'] || 0) * 180 / Math.PI) % 360 | number:'1.0-0' }}°</span>
+                                  <div class="absolute -top-1 -right-1 bg-yellow-500 text-black rounded-full w-3 h-3 flex items-center justify-center text-[7px] font-black opacity-0 group-hover/rot:opacity-100 transition-opacity">
+                                    ➔
+                                  </div>
                                 </button>
                               </div>
                             </div>
@@ -682,9 +695,13 @@ import { ImageUtils } from '../utils/image-utils';
                                 </label>
                                 
                                 <button (click)="rotateAsset(type.id, 'w')" 
-                                  class="relative z-20 w-10 flex flex-col items-center justify-center bg-emerald-500/20 text-emerald-500 rounded-xl border border-emerald-500/30 hover:bg-emerald-500/40 transition-all shadow-lg active:scale-95"
-                                  title="Ruota Modello">
-                                  <span class="text-lg leading-none">↻</span>
+                                  class="relative z-20 w-12 flex flex-col items-center justify-center bg-emerald-500/20 text-emerald-500 rounded-xl border border-emerald-500/30 hover:bg-emerald-500/40 transition-all shadow-lg active:scale-95 group/rot"
+                                  title="Ruota Modello (Step 90°)">
+                                  <span class="text-lg leading-none group-hover/rot:rotate-90 transition-transform duration-300">↻</span>
+                                  <span class="text-[7px] font-black mt-0.5">{{ ((gameService.customRotationOffsets()[type.id + '_w'] || 0) * 180 / Math.PI) % 360 | number:'1.0-0' }}°</span>
+                                  <div class="absolute -top-1 -right-1 bg-emerald-500 text-black rounded-full w-3 h-3 flex items-center justify-center text-[7px] font-black opacity-0 group-hover/rot:opacity-100 transition-opacity">
+                                    ➔
+                                  </div>
                                 </button>
                               </div>
 
@@ -708,9 +725,13 @@ import { ImageUtils } from '../utils/image-utils';
                                 </label>
 
                                 <button (click)="rotateAsset(type.id, 'b')" 
-                                  class="relative z-20 w-10 flex flex-col items-center justify-center bg-emerald-500/20 text-emerald-500 rounded-xl border border-emerald-500/30 hover:bg-emerald-500/40 transition-all shadow-lg active:scale-95"
-                                  title="Ruota Modello">
-                                  <span class="text-lg leading-none">↻</span>
+                                  class="relative z-20 w-12 flex flex-col items-center justify-center bg-emerald-500/20 text-emerald-500 rounded-xl border border-emerald-500/30 hover:bg-emerald-500/40 transition-all shadow-lg active:scale-95 group/rot"
+                                  title="Ruota Modello (Step 90°)">
+                                  <span class="text-lg leading-none group-hover/rot:rotate-90 transition-transform duration-300">↻</span>
+                                  <span class="text-[7px] font-black mt-0.5">{{ ((gameService.customRotationOffsets()[type.id + '_b'] || 0) * 180 / Math.PI) % 360 | number:'1.0-0' }}°</span>
+                                  <div class="absolute -top-1 -right-1 bg-emerald-500 text-black rounded-full w-3 h-3 flex items-center justify-center text-[7px] font-black opacity-0 group-hover/rot:opacity-100 transition-opacity">
+                                    ➔
+                                  </div>
                                 </button>
                               </div>
                             </div>

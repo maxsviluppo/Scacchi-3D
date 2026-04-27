@@ -33,6 +33,7 @@ export class GameService {
   // Custom Assets (Signal for reactivity)
   customMeshUrls = signal<Record<string, string>>({});
   customRotationOffsets = signal<Record<string, number>>({});
+  currentKitId = signal<string>('default');
 
   // Career State
   careerLevel = signal<number>(1);
@@ -71,10 +72,20 @@ export class GameService {
   }
 
   updateRotation(key: string) {
-    this.customRotationOffsets.update(current => ({
-      ...current,
-      [key]: (current[key] || 0) + (Math.PI / 4) // +45 degrees (CCW in Three.js standard)
-    }));
+    this.customRotationOffsets.update(current => {
+      const step = Math.PI / 2; // 90 degrees
+      const currentRot = current[key] || 0;
+      // Snap to next 90 degree increment
+      const newRotation = (Math.round(currentRot / step) + 1) * step;
+
+      // PERSIST: We don't await this to keep UI snappy
+      this.supabase.saveAssetRotation(key, newRotation);
+
+      return {
+        ...current,
+        [key]: newRotation
+      };
+    });
     console.log(`🔄 Rotation updated for ${key}:`, this.customRotationOffsets()[key]);
   }
 
@@ -117,6 +128,8 @@ export class GameService {
           .eq('id', user.id)
           .maybeSingle();
 
+        this.currentKitId.set(profile?.current_kit_id || 'default');
+
         if (profile?.current_kit_id && profile.current_kit_id !== 'default') {
           const { data: userKit } = await this.supabase.client
             .from('asset_collections')
@@ -137,8 +150,21 @@ export class GameService {
       }
 
       // Final synchronization
+      this.customMeshUrls.set(mergedAssets);
+
+      // Load persistent rotations and snap to 90-degree increments (cleans up legacy 45s)
+      const userRotations = await this.supabase.getUserAssetRotations();
+      const snappedRotations: Record<string, number> = {};
+      const step = Math.PI / 2;
+      
+      Object.entries(userRotations || {}).forEach(([k, v]) => {
+        snappedRotations[k] = Math.round((v as number) / step) * step;
+      });
+
+      this.customRotationOffsets.set(snappedRotations);
+      console.log('🔄 Asset rotations loaded and snapped to 90°:', snappedRotations);
+      
       if (Object.keys(mergedAssets).length > 0) {
-        this.customMeshUrls.set(mergedAssets);
         this.setPieceStyle('custom');
         console.log('✅ GameService: Assets synchronized successfully');
       }

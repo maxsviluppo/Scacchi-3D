@@ -54,15 +54,20 @@ export class SupabaseService {
 
         try {
             const { data, error } = await this.supabase.from('profiles')
-                .select('username, nickname, avatar_url')
+                .select('username, nickname, avatar_url, active_assets, custom_rotations, current_kit_id')
                 .eq('id', uid)
                 .maybeSingle();
 
             if (error) throw error;
 
             console.log('SupabaseService: Profilo recuperato:', data);
-            this.username.set(data?.nickname || data?.username || null);
+            
+            // Set signals based on available data
+            const displayName = data?.nickname || data?.username || null;
+            this.username.set(displayName);
             this.avatarUrl.set(data?.avatar_url ?? null);
+            
+            return data;
         } catch (e) {
             console.warn('SupabaseService: Error fetching profile:', e);
             // Fallback: use email as username if profile fetch fails
@@ -70,6 +75,7 @@ export class SupabaseService {
                 const user = this.user();
                 if (user) this.username.set(user.email?.split('@')[0] || 'Utente');
             }
+            return null;
         }
     }
 
@@ -125,21 +131,38 @@ export class SupabaseService {
         signIn: async (nickname: string, pass: string) => {
             console.log('AuthService: Login per', nickname);
 
-            // A. Risolvi email da nickname (Case Insensitive)
-            const { data: profile, error: lookupError } = await this.supabase
-                .from('profiles')
-                .select('email')
-                .or(`username.ilike.${nickname},nickname.ilike.${nickname}`)
-                .maybeSingle();
+            try {
+                // A. Risolvi email da nickname (Case Insensitive)
+                // Usiamo un tentativo di fetch flessibile
+                let { data: profile, error: lookupError } = await this.supabase
+                    .from('profiles')
+                    .select('email, nickname, username')
+                    .or(`username.ilike.${nickname},nickname.ilike.${nickname}`)
+                    .maybeSingle();
 
-            if (lookupError) return { data: null, error: lookupError };
-            if (!profile) return { data: null, error: { message: 'Operatore non trovato.' } as any };
+                if (lookupError) {
+                    console.error('AuthService: Lookup error', lookupError);
+                    // Prova solo per username se nickname fallisce (colonna mancante?)
+                    const { data: fallback } = await this.supabase
+                        .from('profiles')
+                        .select('email, nickname, username')
+                        .ilike('username', nickname)
+                        .maybeSingle();
+                    
+                    if (!fallback) return { data: null, error: lookupError };
+                    profile = fallback;
+                }
+                
+                if (!profile) return { data: null, error: { message: 'Operatore non trovato.' } as any };
 
-            // B. Login con email
-            return await this.supabase.auth.signInWithPassword({
-                email: profile.email,
-                password: pass
-            });
+                // B. Login con email
+                return await this.supabase.auth.signInWithPassword({
+                    email: profile.email,
+                    password: pass
+                });
+            } catch (e: any) {
+                return { data: null, error: { message: e.message } as any };
+            }
         },
 
         signOut: async () => {
@@ -264,6 +287,46 @@ export class SupabaseService {
             .maybeSingle();
 
         return data?.active_assets || {};
+    }
+
+    async saveAssetRotation(assetType: string, rotation: number) {
+        const userId = this.user()?.id;
+        if (!userId) {
+            // Store in localStorage for guests
+            const guestRotations = JSON.parse(localStorage.getItem('chess_guest_rotations') || '{}');
+            guestRotations[assetType] = rotation;
+            localStorage.setItem('chess_guest_rotations', JSON.stringify(guestRotations));
+            return;
+        }
+
+        const { data: profile } = await this.supabase
+            .from('profiles')
+            .select('custom_rotations')
+            .eq('id', userId)
+            .maybeSingle();
+
+        const currentRotations = profile?.custom_rotations || {};
+        currentRotations[assetType] = rotation;
+
+        await this.supabase
+            .from('profiles')
+            .update({ custom_rotations: currentRotations })
+            .eq('id', userId);
+    }
+
+    async getUserAssetRotations() {
+        const userId = this.user()?.id;
+        if (!userId) {
+            return JSON.parse(localStorage.getItem('chess_guest_rotations') || '{}');
+        }
+
+        const { data } = await this.supabase
+            .from('profiles')
+            .select('custom_rotations')
+            .eq('id', userId)
+            .maybeSingle();
+
+        return data?.custom_rotations || {};
     }
 
     async uploadCustomAssetFile(file: File, assetType: string): Promise<string> {
